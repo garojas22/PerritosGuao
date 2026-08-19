@@ -1,19 +1,22 @@
-<<<<<<< HEAD
-# Sistema de Pedidos — Prototipo (React + Vite)
+# 🌭 PerritosGuao — Sistema de Pedidos (React + Vite)
 
-Misma interfaz y comportamiento que la versión vanilla, reescrita
-como componentes de React, con el estado centralizado en un hook.
+Aplicación web de registros de comida rápida. Reescritura del prototipo vanilla a componentes funcionales de React con gestión de estado centralizada a través de custom hooks.
 
-## Cómo correrlo
+## 📚​ Características
+
+- **Gestión de pedidos:** Carrito interactivo, cálculo de totales y generación de tickets imprimibles.
+- **Tablero activo:** Seguimiento de pedidos en tiempo real con actualización de estados.
+- **Arquitectura modular:** Separación clara entre lógica de negocio, datos del menú e interfaz.
+- **Lógica desacoplada:** Manejo centralizado del estado (`useState`) preparado para integración con API/Backend.
+
+## 🔌 Cómo correrlo
 
 ```
 npm install
 npm run dev
 ```
 
-Abre la URL que muestra la terminal (normalmente `http://localhost:5173`).
-
-## Estructura
+## 📓 Estructura
 
 ```
 src/
@@ -32,24 +35,3 @@ src/
     Board.jsx               Tablero de pedidos activos (incluye OrderCard)
   styles.css              Mismo diseño visual que la versión vanilla
 ```
-
-## Por qué está dividido así
-
-- **`data/menu.js`** separado porque es lo único que cambia seguido
-  (si agregan un producto nuevo, se toca solo este archivo).
-- **`useOrders.js`** concentra toda la lógica de negocio (agregar al
-  carrito, generar comprobante, avanzar estado) para que los
-  componentes se ocupen solo de mostrar cosas, no de calcular nada.
-- **Un componente por responsabilidad visual**, para que cada
-  archivo se pueda leer y modificar sin tener que entender el resto.
-
-## Qué es y qué no es esto
-
-Este es el prototipo de interfaz, con los pedidos guardados en
-memoria (`useState`) — se pierden al recargar. El siguiente paso
-real es conectar `useOrders.js` a una API (por ejemplo FastAPI +
-base de datos) en lugar de guardar todo en el estado de React.
-=======
-# PerritosGuao
-aplicacion web de registros de comida rapida 
->>>>>>> 19f2544fa163218b5821f2eb11f9eeb69d7eca2d
