@@ -14,6 +14,7 @@ Aplicación web de registros de comida rápida. Reescritura del prototipo vanill
 ```
 npm install
 npm run dev
+
 ```
 
 ## 📓 Estructura
@@ -35,3 +36,5 @@ src/
     Board.jsx               Tablero de pedidos activos (incluye OrderCard)
   styles.css              Mismo diseño visual que la versión vanilla
 ```
+```
+

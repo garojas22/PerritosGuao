@@ -185,3 +185,8 @@ main{max-width:1280px;margin:0 auto;padding:26px 28px 60px;}
   #printArea{position:absolute;top:0;left:0;width:320px;}
   .ticket-actions, .ticket::after{display:none;}
 }
+
+.logo-img{
+  height:42px;
+  width:auto;
+}

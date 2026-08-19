@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import logo from "../assets/logo-perritos-guao.png";
 
 export default function Header({ view, setView, pendingCount }) {
   const [clock, setClock] = useState("");
@@ -19,7 +20,7 @@ export default function Header({ view, setView, pendingCount }) {
   return (
     <header>
       <div className="brand">
-        <span className="paw">🐾</span>
+          <img src={logo} alt="Perritos Guao" className="logo-img" />
         <div>
           <h1>PUNTO&nbsp;PEDIDO</h1>
           <span className="tag">Panel interno · no visible al cliente</span>
