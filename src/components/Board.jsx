@@ -5,6 +5,8 @@ const COLUMNS = [
 ];
 
 function OrderCard({ order, onClick }) {
+  const totalBs = typeof order.totalBs === 'number' ? order.totalBs : null;
+
   return (
     <div className="order-card" onClick={() => onClick(order.num)}>
       <div className="oc-top"><span>#{order.num}</span><span>{order.time}</span></div>
@@ -12,7 +14,12 @@ function OrderCard({ order, onClick }) {
       <div className="oc-items">{order.items.map(l => `${l.qty}x ${l.name}`).join(", ")}</div>
       <div className="oc-foot">
         <span>{order.type} · {order.pay}</span>
-        <span>${order.total.toFixed(2)}</span>
+        <div className="oc-total">
+          <span>${order.total.toFixed(2)}</span>
+          {totalBs !== null && (
+            <span className="oc-total-bs">Bs. {totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          )}
+        </div>
       </div>
     </div>
   );

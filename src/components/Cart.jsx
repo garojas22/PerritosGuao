@@ -1,7 +1,35 @@
 import { useRef, useState } from 'react';
 import { useBcvRate } from '../hooks/useBcvRate';
 
-function CartLine({ line, onQty, onRemove, onToggleMod }) {
+function normalizeIngredientKey(value = "") {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getModIngredientKey(mod = "") {
+  const withoutPrefix = mod
+    .replace(/^sin\s+/i, "")
+    .replace(/^extra\s+/i, "")
+    .replace(/^sabor\s+/i, "");
+
+  return normalizeIngredientKey(withoutPrefix);
+}
+
+const INGREDIENT_LABELS = {
+  "queso de ano": "queso de año",
+  "maiz": "maíz",
+  "limon": "limón",
+};
+
+function getIngredientLabel(ingredient) {
+  return INGREDIENT_LABELS[ingredient] ?? ingredient;
+}
+
+function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }) {
   return (
     <div className="cart-line">
       <div className="top">
@@ -16,15 +44,24 @@ function CartLine({ line, onQty, onRemove, onToggleMod }) {
       </div>
       {line.availMods.length > 0 && (
         <div className="chips">
-          {line.availMods.map(m => (
-            <span
-              key={m}
-              className={`chip ${line.mods.includes(m) ? "on" : ""}`}
-              onClick={() => onToggleMod(line.uid, m)}
-            >
-              {m}
-            </span>
-          ))}
+          {line.availMods.map(mod => {
+            const ingredientKey = getModIngredientKey(mod);
+            const isAvailable = ingredientKey ? (ingredientAvailability[ingredientKey] ?? true) : true;
+            const isSelected = line.mods.includes(mod);
+
+            return (
+              <button
+                key={mod}
+                type="button"
+                className={`chip ${isSelected ? 'on' : ''} ${!isAvailable ? 'disabled' : ''}`}
+                onClick={() => isAvailable && onToggleMod(line.uid, mod)}
+                disabled={!isAvailable}
+                title={!isAvailable ? 'Ingrediente agotado' : mod}
+              >
+                {!isAvailable ? `${mod} · Agotado` : mod}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -34,11 +71,13 @@ function CartLine({ line, onQty, onRemove, onToggleMod }) {
 export default function Cart({
   cart, cartTotal, onQty, onRemove, onToggleMod,
   customer, setCustomer, orderType, setOrderType, payType, setPayType,
+  ingredientAvailability, toggleIngredientAvailability,
   onGenerate,
 }) {
   const inputRef = useRef(null);
   const [showCustomerError, setShowCustomerError] = useState(false);
   const [showEmptyCartError, setShowEmptyCartError] = useState(false);
+  const [showKitchenSettings, setShowKitchenSettings] = useState(false);
   const bcvRate = useBcvRate();
   const totalBs = bcvRate !== null && bcvRate !== undefined ? cartTotal * bcvRate : null;
   const isCustomerValid = customer.trim().length > 0;
@@ -68,6 +107,8 @@ export default function Cart({
       setShowCustomerError(false);
     }
   }
+
+  const ingredientList = Object.entries(ingredientAvailability || {}).sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <aside className="cart">
@@ -112,12 +153,41 @@ export default function Cart({
         </div>
       </div>
 
+      <div className="kitchen-panel">
+        <button type="button" className="kitchen-toggle" onClick={() => setShowKitchenSettings(open => !open)}>
+          {showKitchenSettings ? 'Ocultar ajustes de cocina' : 'Ajustes de cocina'}
+        </button>
+
+        {showKitchenSettings && (
+          <div className="ingredient-stock-grid">
+            {ingredientList.map(([ingredient, available]) => (
+              <button
+                key={ingredient}
+                type="button"
+                className={`stock-toggle ${available ? 'on' : 'off'}`}
+                onClick={() => toggleIngredientAvailability(ingredient)}
+              >
+                <span className="stock-dot" aria-hidden="true" />
+                <span className="stock-name">{getIngredientLabel(ingredient)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="cart-items">
         {cart.length === 0 ? (
           <div className="cart-empty">Toca un producto del menú para agregarlo.</div>
         ) : (
           cart.map(line => (
-            <CartLine key={line.uid} line={line} onQty={onQty} onRemove={onRemove} onToggleMod={onToggleMod} />
+            <CartLine
+              key={line.uid}
+              line={line}
+              onQty={onQty}
+              onRemove={onRemove}
+              onToggleMod={onToggleMod}
+              ingredientAvailability={ingredientAvailability}
+            />
           ))
         )}
       </div>

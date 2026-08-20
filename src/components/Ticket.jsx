@@ -2,7 +2,7 @@ import { useBcvRate } from '../hooks/useBcvRate';
 
 export default function Ticket({ order, onNewOrder }) {
   const bcvRate = useBcvRate();
-  const totalBs = bcvRate !== null && bcvRate !== undefined ? order.total * bcvRate : null;
+  const totalBs = bcvRate !== null && bcvRate !== undefined && order ? order.total * bcvRate : null;
 
   if (!order) {
     return (
@@ -46,6 +46,16 @@ export default function Ticket({ order, onNewOrder }) {
             )}
           </div>
         ))}
+        {order.stockWarnings && order.stockWarnings.length > 0 && (
+          <div className="stock-warning-box">
+            <div className="stock-warning-label">*** INSUMOS AGOTADOS ***</div>
+            <div className="stock-warning-items">
+              {order.stockWarnings.map((ingredient, index) => (
+                <span key={ingredient}>{ingredient.toUpperCase()}{index < order.stockWarnings.length - 1 ? ', ' : ''}</span>
+              ))}
+            </div>
+          </div>
+        )}
         <hr />
         <div className="ttotal"><span>TOTAL USD</span><span>${order.total.toFixed(2)}</span></div>
         {totalBs !== null && (

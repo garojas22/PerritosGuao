@@ -45,6 +45,28 @@
   line-height:1;
 }
 .cart-warning{margin:0 0 12px;}
+.kitchen-panel{margin-bottom:14px;}
+.kitchen-toggle{
+  width:100%;
+  background:var(--cream);
+  border:1.5px solid var(--line);
+  color:var(--ink-soft);
+  border-radius:10px;
+  padding:9px 10px;
+  font-weight:700;
+  cursor:pointer;
+  text-align:left;
+}
+.ingredient-stock-grid{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:6px;margin-top:8px;}
+.stock-toggle{
+  display:flex;align-items:center;justify-content:flex-start;gap:7px;
+  width:100%; min-height:32px; border:1px solid var(--line); border-radius:8px; padding:6px 8px;
+  background:var(--paper); color:var(--ink); font-size:10.5px; font-weight:700; cursor:pointer; text-align:left;
+}
+.stock-toggle.on{border-color: rgba(34, 197, 94, 0.45); background: rgba(34, 197, 94, 0.08); color: rgba(18, 82, 25, 0.92);}
+.stock-toggle.off{border-color: rgba(239, 68, 68, 0.38); background: rgba(239, 68, 68, 0.08); color: rgba(120, 21, 21, 0.95);}
+.stock-dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,0.7);}
+.stock-name{line-height:1.1;word-break:break-word;}
 .segmented{display:flex;gap:6px;}
 .segmented button{
   flex:1;padding:10px 6px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);
@@ -73,6 +95,7 @@
   touch-action: manipulation;
 }
 .chip.on{background:var(--rust);border-color:var(--rust);color:#fff;}
+.chip.disabled{opacity:0.5;cursor:not-allowed;text-decoration:line-through;}
 .remove-x{font-size:13px;color:var(--rust);font-weight:700;cursor:pointer;margin-left:6px;padding:4px;}
 
 .total-row{margin:16px 0 12px;padding-top:12px;border-top:2px solid var(--ink);}
