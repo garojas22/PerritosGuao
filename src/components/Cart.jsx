@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { useBcvRate } from '../hooks/useBcvRate';
 
 function CartLine({ line, onQty, onRemove, onToggleMod }) {
@@ -35,8 +36,38 @@ export default function Cart({
   customer, setCustomer, orderType, setOrderType, payType, setPayType,
   onGenerate,
 }) {
+  const inputRef = useRef(null);
+  const [showCustomerError, setShowCustomerError] = useState(false);
+  const [showEmptyCartError, setShowEmptyCartError] = useState(false);
   const bcvRate = useBcvRate();
   const totalBs = bcvRate !== null && bcvRate !== undefined ? cartTotal * bcvRate : null;
+  const isCustomerValid = customer.trim().length > 0;
+
+  function handleGenerateClick() {
+    if (cart.length === 0) {
+      setShowEmptyCartError(true);
+      setShowCustomerError(false);
+      return;
+    }
+
+    if (!isCustomerValid) {
+      setShowEmptyCartError(false);
+      setShowCustomerError(true);
+      inputRef.current?.focus();
+      return;
+    }
+
+    setShowCustomerError(false);
+    setShowEmptyCartError(false);
+    onGenerate();
+  }
+
+  function handleCustomerChange(value) {
+    setCustomer(value);
+    if (showCustomerError && value.trim().length > 0) {
+      setShowCustomerError(false);
+    }
+  }
 
   return (
     <aside className="cart">
@@ -45,17 +76,24 @@ export default function Cart({
       <div className="field">
         <label>Cliente</label>
         <input
+          ref={inputRef}
           type="text"
           value={customer}
-          onChange={e => setCustomer(e.target.value)}
+          onChange={e => handleCustomerChange(e.target.value)}
           placeholder="Nombre del cliente"
+          required
+          aria-invalid={!isCustomerValid}
+          className={showCustomerError && !isCustomerValid ? 'invalid' : ''}
         />
+        {showCustomerError && !isCustomerValid && (
+          <div className="field-error">Falta el nombre del cliente para continuar.</div>
+        )}
       </div>
 
       <div className="field">
         <label>Tipo de pedido</label>
         <div className="segmented">
-          {["Local", "Para llevar", "Delivery"].map(opt => (
+          {["Local", "Delivery"].map(opt => (
             <button key={opt} className={orderType === opt ? "active" : ""} onClick={() => setOrderType(opt)}>
               {opt}
             </button>
@@ -66,7 +104,7 @@ export default function Cart({
       <div className="field">
         <label>Forma de pago</label>
         <div className="segmented">
-          {["Efectivo", "Pago móvil"].map(opt => (
+          {["Efectivo", "Pago móvil", "Tarjeta"].map(opt => (
             <button key={opt} className={payType === opt ? "active" : ""} onClick={() => setPayType(opt)}>
               {opt}
             </button>
@@ -102,7 +140,11 @@ export default function Cart({
         </div>
       </div>
 
-      <button className="btn-primary" disabled={cart.length === 0} onClick={onGenerate}>
+      {showEmptyCartError && (
+        <div className="cart-warning">Agrega al menos un producto antes de generar el comprobante.</div>
+      )}
+
+      <button className="btn-primary" onClick={handleGenerateClick}>
         Generar comprobante →
       </button>
     </aside>

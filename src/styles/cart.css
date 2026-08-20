@@ -8,6 +8,43 @@
 .field input[type=text]{
   width:100%;padding:10px 14px;border-radius:99px;border:1.5px solid var(--line);font-family:'Inter';font-size:16px;background:var(--cream);
 }
+.field input[type=text].invalid{
+  border-color: rgba(193, 80, 46, 0.8);
+  background: rgba(193, 80, 46, 0.04);
+  box-shadow: 0 0 0 3px rgba(193, 80, 46, 0.08);
+  transition: all .15s ease;
+}
+.field-error,
+.cart-warning{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-top:8px;
+  padding:8px 10px;
+  border-radius:10px;
+  background: rgba(193, 80, 46, 0.06);
+  border:1px solid rgba(193, 80, 46, 0.18);
+  color: var(--rust);
+  font-size:11px;
+  font-weight:700;
+  line-height:1.4;
+}
+.field-error::before,
+.cart-warning::before{
+  content:"!";
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background: var(--rust);
+  color:#fff;
+  font-size:10px;
+  font-weight:800;
+  line-height:1;
+}
+.cart-warning{margin:0 0 12px;}
 .segmented{display:flex;gap:6px;}
 .segmented button{
   flex:1;padding:10px 6px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);
