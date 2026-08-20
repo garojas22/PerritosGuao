@@ -145,9 +145,12 @@ main{
 .chip.on{background:var(--rust);border-color:var(--rust);color:#fff;}
 .remove-x{font-size:13px;color:var(--rust);font-weight:700;cursor:pointer;margin-left:6px;padding:4px;}
 
-.total-row{display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px;padding-top:12px;border-top:2px solid var(--ink);}
-.total-row .label{font-family:'Baloo 2';font-size:15px;}
-.total-row .amount{font-family:'JetBrains Mono';font-size:22px;font-weight:700;color:var(--orange-deep);}
+.total-row{margin:16px 0 12px;padding-top:12px;border-top:2px solid var(--ink);}
+.total-summary{display:grid;gap:6px;}
+.total-line{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:12px;}
+.total-label{font-family:'Baloo 2';font-size:15px;line-height:1.2;display:flex;align-items:center;}
+.total-row .amount{font-family:'JetBrains Mono';font-size:22px;font-weight:700;color:var(--orange-deep);line-height:1.2;}
+.amount-bs{font-family:'JetBrains Mono', monospace;font-size:13px;color:var(--ink-soft);font-weight:600;line-height:1.2;justify-self:end;}
 .btn-primary{
   width:100%;padding:14px;background:var(--orange);color:#fff;border:none;border-radius:10px;
   font-family:'Baloo 2';font-weight:700;font-size:16px;cursor:pointer;transition:background .15s ease;
@@ -182,7 +185,8 @@ main{
 .ticket .litem .lhead{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;min-width:0;}
 .ticket .litem .lhead span{min-width:0;overflow-wrap:anywhere;}
 .ticket .litem .lmods{font-size:10.5px;color:var(--rust);padding-left:10px;font-weight:600;}
-.ticket .ttotal{display:flex;justify-content:space-between;font-size:15px;font-weight:700;margin-top:6px;}
+.ticket .ttotal{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px;font-weight:700;margin-top:6px;}
+.ticket .ttotal-bs{font-size:13px;color:var(--ink-soft);margin-top:4px;}
 .ticket .badge-row{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap;}
 .ticket .badge{font-size:9.5px;font-weight:700;padding:3px 8px;border:1.5px solid var(--ink);border-radius:5px;letter-spacing:.4px;text-transform:uppercase;}
 .ticket-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;justify-content:center;width:100%;}

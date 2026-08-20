@@ -1,3 +1,5 @@
+import { useBcvRate } from '../hooks/useBcvRate';
+
 function CartLine({ line, onQty, onRemove, onToggleMod }) {
   return (
     <div className="cart-line">
@@ -33,6 +35,9 @@ export default function Cart({
   customer, setCustomer, orderType, setOrderType, payType, setPayType,
   onGenerate,
 }) {
+  const bcvRate = useBcvRate();
+  const totalBs = bcvRate !== null && bcvRate !== undefined ? cartTotal * bcvRate : null;
+
   return (
     <aside className="cart">
       <h2>Pedido actual</h2>
@@ -80,8 +85,21 @@ export default function Cart({
       </div>
 
       <div className="total-row">
-        <span className="label">Total</span>
-        <span className="amount">${cartTotal.toFixed(2)}</span>
+        <div className="total-summary">
+          <div className="total-line">
+            <span className="total-label">Total USD</span>
+            <span className="amount">${cartTotal.toFixed(2)}</span>
+          </div>
+
+          {totalBs !== null && (
+            <div className="total-line">
+              <span className="total-label">Total Bs</span>
+              <span className="amount-bs">
+                Bs. {totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <button className="btn-primary" disabled={cart.length === 0} onClick={onGenerate}>

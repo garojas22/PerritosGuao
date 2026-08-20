@@ -1,4 +1,9 @@
+import { useBcvRate } from '../hooks/useBcvRate';
+
 export default function Ticket({ order, onNewOrder }) {
+  const bcvRate = useBcvRate();
+  const totalBs = bcvRate !== null && bcvRate !== undefined ? order.total * bcvRate : null;
+
   if (!order) {
     return (
       <div className="ticket-wrap">
@@ -42,7 +47,10 @@ export default function Ticket({ order, onNewOrder }) {
           </div>
         ))}
         <hr />
-        <div className="ttotal"><span>TOTAL</span><span>${order.total.toFixed(2)}</span></div>
+        <div className="ttotal"><span>TOTAL USD</span><span>${order.total.toFixed(2)}</span></div>
+        {totalBs !== null && (
+          <div className="ttotal ttotal-bs"><span>TOTAL BS</span><span>Bs. {totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        )}
         <div className="tcenter" style={{ marginTop: 14, fontSize: 10, color: "var(--ink-soft)" }}>
           ¡Gracias por su pedido!
         </div>
