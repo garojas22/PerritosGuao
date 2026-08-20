@@ -1,0 +1,33 @@
+:root{
+  --cream:#F2EDE7;
+  --paper:#FFFDF9;
+  --ink:#3A2A1C;
+  --ink-soft:#7A6A5A;
+  --orange:#E35B1E;
+  --orange-deep:#C1471A;
+  --brown:#5C3A21;
+  --amber:#D99A2B;
+  --green:#5E8C5A;
+  --rust:#C1502E;
+  --line: rgba(74,46,28,0.14);
+  --radius: 14px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: clip;
+  width: 100%;
+}
+
+body{
+  margin:0;
+  background:var(--cream);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection{background:var(--orange);color:#fff;}

@@ -1,0 +1,38 @@
+header{
+  background:var(--paper);
+  border-bottom:2px solid var(--ink);
+  padding:14px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .paw{font-size:26px;transform:rotate(-8deg);display:inline-block;}
+.brand h1{
+  font-family:'Baloo 2',sans-serif;font-weight:800;font-size:22px;color:var(--orange);
+  margin:0;letter-spacing:0.5px;
+}
+.brand span.tag{font-size:11px;color:var(--ink-soft);font-weight:600;letter-spacing:1px;text-transform:uppercase;display:block;margin-top:-2px;}
+nav.tabs{display:flex;gap:6px;background:var(--cream);padding:5px;border-radius:999px;border:1.5px solid var(--line);}
+nav.tabs button{
+  font-family:'Inter';font-weight:700;font-size:13.5px;color:var(--ink-soft);
+  background:transparent;border:none;padding:9px 18px;border-radius:999px;cursor:pointer;
+  transition:all .15s ease;
+}
+nav.tabs button.active{background:var(--orange);color:#fff;box-shadow:0 2px 8px rgba(227,91,30,.35);}
+nav.tabs button:not(.active):hover{color:var(--ink);}
+.clock{font-family:'JetBrains Mono';font-size:12.5px;color:var(--ink-soft);text-align:right;}
+
+main{
+  max-width:1280px;
+  margin:0 auto;
+  padding:26px 28px 60px;
+  width: 100%;
+}
+.view{display:none;}
+.view.active{display:block;}
+
+.order-layout{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;}
