@@ -1,4 +1,4 @@
-export default function MenuGrid({ items, onAdd, onAddProduct, onEditProduct, onDeleteProduct }) {
+export default function MenuGrid({ items, onAdd, onAddProduct, onEditProduct }) {
   return (
     <div className="menu-grid">
       {items.map(item => (
@@ -9,16 +9,11 @@ export default function MenuGrid({ items, onAdd, onAddProduct, onEditProduct, on
           </div>
           <p>{item.desc}</p>
           <div className="add-hint">+ Agregar al pedido</div>
-          {item.isCustom && (
-            <div className="item-actions">
-              <button type="button" className="product-action" onClick={event => { event.stopPropagation(); onEditProduct(item); }} aria-label={`Editar ${item.name}`}>
-                <span aria-hidden="true">✎</span> Editar
-              </button>
-              <button type="button" className="product-action" onClick={event => { event.stopPropagation(); onDeleteProduct(item); }} aria-label={`Eliminar ${item.name}`}>
-                <span className="product-action-icon product-action-icon-delete" aria-hidden="true">✕</span> Eliminar
-              </button>
-            </div>
-          )}
+          <div className="item-actions">
+            <button type="button" className="product-action" onClick={event => { event.stopPropagation(); onEditProduct(item); }} aria-label={`Editar ${item.name}`}>
+              <span aria-hidden="true">✎</span> Editar
+            </button>
+          </div>
         </div>
       ))}
       <button type="button" className="add-product-card" onClick={onAddProduct}>

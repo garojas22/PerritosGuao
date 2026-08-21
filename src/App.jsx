@@ -126,6 +126,7 @@ export default function App() {
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [orderToDelete, setOrderToDelete] = useState(null);
 
   const categories = Object.keys(menu);
 
@@ -145,7 +146,7 @@ export default function App() {
   const {
     cart, orders, cartTotal,
     addToCart, updateQty, removeLine, toggleMod,
-    generateTicket, advanceStatus,
+    generateTicket, advanceStatus, removeOrder,
   } = useOrders();
 
   function toggleIngredientAvailability(ingredient) {
@@ -159,13 +160,14 @@ export default function App() {
   function saveProduct(product) {
     setMenu(prev => {
       const next = { ...prev };
+      const id = product.id || `product-${Date.now()}`;
       const item = {
-        id: product.id || `product-${Date.now()}`,
+        id,
         name: product.name,
         price: product.price,
         desc: product.desc,
         ingredients: sanitizeIngredients(product.ingredients),
-        isCustom: true,
+        isCustom: !BASE_PRODUCT_IDS.has(id),
       };
 
       Object.keys(next).forEach(category => {
@@ -192,6 +194,12 @@ export default function App() {
       ])
     ));
     setProductToDelete(null);
+  }
+
+  function confirmDeleteOrder() {
+    if (!orderToDelete) return;
+    removeOrder(orderToDelete.num);
+    setOrderToDelete(null);
   }
 
   function handleGenerate() {
@@ -226,7 +234,6 @@ export default function App() {
                 onAdd={addToCart}
                 onAddProduct={() => setProductModal({ product: null, category: activeCat })}
                 onEditProduct={product => setProductModal({ product, category: activeCat })}
-                onDeleteProduct={product => setProductToDelete(product)}
               />
             </div>
 
@@ -251,7 +258,7 @@ export default function App() {
         )}
 
         {view === "board" && (
-          <Board orders={orders} onAdvance={advanceStatus} />
+          <Board orders={orders} onAdvance={advanceStatus} onDelete={order => setOrderToDelete(order)} />
         )}
       </main>
 
@@ -262,6 +269,7 @@ export default function App() {
           product={productModal.product}
           onClose={() => setProductModal(null)}
           onSave={saveProduct}
+          onDeleteProduct={product => setProductToDelete(product)}
         />
       )}
 
@@ -272,6 +280,16 @@ export default function App() {
           confirmLabel="Eliminar producto"
           onConfirm={confirmDeleteProduct}
           onCancel={() => setProductToDelete(null)}
+        />
+      )}
+
+      {orderToDelete && (
+        <ConfirmDialog
+          title={`¿Eliminar pedido #${orderToDelete.num}?`}
+          message={`El pedido de ${orderToDelete.customer} se eliminará de "Pedidos activos". Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar pedido"
+          onConfirm={confirmDeleteOrder}
+          onCancel={() => setOrderToDelete(null)}
         />
       )}
     </>

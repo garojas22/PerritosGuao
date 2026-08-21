@@ -31,7 +31,7 @@ function productToForm(product, category) {
   };
 }
 
-export default function ProductModal({ categories, activeCategory, product, onClose, onSave }) {
+export default function ProductModal({ categories, activeCategory, product, onClose, onSave, onDeleteProduct }) {
   const [form, setForm] = useState(() => productToForm(product, activeCategory));
   const [error, setError] = useState("");
 
@@ -91,6 +91,11 @@ export default function ProductModal({ categories, activeCategory, product, onCl
     });
   }
 
+  function handleDelete() {
+    onDeleteProduct(product);
+    onClose();
+  }
+
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
       <section className="product-modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
@@ -136,6 +141,14 @@ export default function ProductModal({ categories, activeCategory, product, onCl
             <button type="submit" className="btn-primary">Guardar producto</button>
           </div>
         </form>
+
+        {product?.isCustom && (
+          <div className="modal-danger-zone">
+            <button type="button" className="modal-delete-product" onClick={handleDelete}>
+              <span className="product-action-icon product-action-icon-delete" aria-hidden="true">✕</span> Eliminar producto
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );

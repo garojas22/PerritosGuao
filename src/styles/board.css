@@ -9,8 +9,15 @@
 }
 .col-prep .order-card{border-left-color:var(--amber);}
 .col-listo .order-card{border-left-color:var(--green);}
-.order-card .oc-top{display:flex;justify-content:space-between;gap:8px;font-family:'JetBrains Mono';font-size:11px;color:var(--ink-soft);margin-bottom:4px;min-width:0;}
-.order-card .oc-top span{min-width:0;overflow-wrap:anywhere;}
+.order-card .oc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-family:'JetBrains Mono';font-size:11px;color:var(--ink-soft);margin-bottom:4px;min-width:0;}
+.order-card .oc-top-info{display:flex;gap:8px;min-width:0;}
+.order-card .oc-top-info span{min-width:0;overflow-wrap:anywhere;}
+.order-delete{
+  flex-shrink:0;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--ink-soft);
+  font-size:11px;line-height:1;cursor:pointer;padding:0;
+}
+.order-delete:hover{background:var(--rust);border-color:var(--rust);color:#fff;}
 .order-card .oc-name{font-family:'Baloo 2';font-weight:600;font-size:14.5px;}
 .order-card .oc-items{font-size:11.5px;color:var(--ink-soft);margin-top:4px;}
 .order-card .oc-foot{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px;font-weight:700;color:var(--brown);min-width:0;}

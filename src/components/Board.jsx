@@ -4,12 +4,25 @@ const COLUMNS = [
   { status: "Listo", label: "Listo", colClass: "col-listo" },
 ];
 
-function OrderCard({ order, onClick }) {
+function OrderCard({ order, onClick, onDelete }) {
   const totalBs = typeof order.totalBs === 'number' ? order.totalBs : null;
 
   return (
     <div className="order-card" onClick={() => onClick(order.num)}>
-      <div className="oc-top"><span>#{order.num}</span><span>{order.time}</span></div>
+      <div className="oc-top">
+        <div className="oc-top-info">
+          <span>#{order.num}</span>
+          <span>{order.time}</span>
+        </div>
+        <button
+          type="button"
+          className="order-delete"
+          onClick={event => { event.stopPropagation(); onDelete(order); }}
+          aria-label={`Eliminar pedido #${order.num}`}
+        >
+          ✕
+        </button>
+      </div>
       <div className="oc-name">{order.customer}</div>
       <div className="oc-items">{order.items.map(l => `${l.qty}x ${l.name}`).join(", ")}</div>
       <div className="oc-foot">
@@ -25,7 +38,7 @@ function OrderCard({ order, onClick }) {
   );
 }
 
-export default function Board({ orders, onAdvance }) {
+export default function Board({ orders, onAdvance, onDelete }) {
   return (
     <>
       <div className="hint-bar">
@@ -42,7 +55,7 @@ export default function Board({ orders, onAdvance }) {
                 {items.length === 0 ? (
                   <div className="board-empty">Sin pedidos</div>
                 ) : (
-                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} />)
+                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} onDelete={onDelete} />)
                 )}
               </div>
             </div>

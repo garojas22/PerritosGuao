@@ -132,5 +132,9 @@ export function useOrders() {
     setOrders(prev => prev.map(o => o.num === num ? { ...o, status: STATUS_FLOW[o.status] } : o));
   }
 
-  return { cart, orders, cartTotal, addToCart, updateQty, removeLine, toggleMod, generateTicket, advanceStatus };
+  function removeOrder(num) {
+    setOrders(prev => prev.filter(o => o.num !== num));
+  }
+
+  return { cart, orders, cartTotal, addToCart, updateQty, removeLine, toggleMod, generateTicket, advanceStatus, removeOrder };
 }
