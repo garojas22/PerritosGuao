@@ -8,6 +8,7 @@ import Cart from "./components/Cart.jsx";
 import Ticket from "./components/Ticket.jsx";
 import Board from "./components/Board.jsx";
 import ProductModal from "./components/ProductModal.jsx";
+import ConfirmDialog from "./components/ConfirmDialog.jsx";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
 const MENU_STORAGE_KEY = "perritos_guao_menu";
@@ -22,13 +23,41 @@ function normalizeIngredientKey(value = "") {
     .trim();
 }
 
+/**
+ * Un ingrediente tiene que ser un nombre, no un número.
+ * Escribir "4" o "55" en el campo de ingredientes creaba una entrada basura
+ * que después aparecía en el panel de cocina como si fuera un insumo real.
+ * Se exige al menos una letra, se quitan espacios sobrantes y se descartan
+ * duplicados (comparando por la clave normalizada, para que "Maíz" y "maiz"
+ * no entren dos veces).
+ */
+function sanitizeIngredients(list) {
+  if (!Array.isArray(list)) return [];
+
+  const seen = new Set();
+  return list.reduce((valid, raw) => {
+    const name = String(raw).trim();
+    if (!name) return valid;
+    if (!/[a-záéíóúüñ]/i.test(name)) return valid; // sin letras => no es un ingrediente
+
+    const key = normalizeIngredientKey(name);
+    if (!key || seen.has(key)) return valid;
+
+    seen.add(key);
+    valid.push(name);
+    return valid;
+  }, []);
+}
+
 function normalizeMenu(menu) {
   return Object.fromEntries(Object.entries(menu).map(([category, items]) => [
     category,
     items.map(item => ({
       ...item,
       price: Number(item.price) || 0,
-      ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
+      // Se sanea también al cargar: así los ingredientes basura que ya
+      // quedaron guardados en localStorage se limpian solos.
+      ingredients: sanitizeIngredients(item.ingredients),
       desc: item.desc ?? "",
       isCustom: Boolean(item.isCustom) || !BASE_PRODUCT_IDS.has(item.id),
     })),
@@ -96,6 +125,7 @@ export default function App() {
   const [lastOrder, setLastOrder] = useState(null);
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   const categories = Object.keys(menu);
 
@@ -134,7 +164,7 @@ export default function App() {
         name: product.name,
         price: product.price,
         desc: product.desc,
-        ingredients: product.ingredients,
+        ingredients: sanitizeIngredients(product.ingredients),
         isCustom: true,
       };
 
@@ -148,17 +178,20 @@ export default function App() {
     setProductModal(null);
   }
 
-  function deleteProduct(product) {
-    if (!window.confirm(`¿Eliminar "${product.name}" del menú?`)) return;
+  function confirmDeleteProduct() {
+    if (!productToDelete) return;
+
+    const { id } = productToDelete;
     // Se elimina por id en todas las categorías en lugar de asumir que el
     // producto está en `activeCat`: si la categoría activa cambia entre el
     // clic y la confirmación, el borrado fallaba en silencio.
     setMenu(prev => Object.fromEntries(
       Object.entries(prev).map(([category, items]) => [
         category,
-        items.filter(item => item.id !== product.id),
+        items.filter(item => item.id !== id),
       ])
     ));
+    setProductToDelete(null);
   }
 
   function handleGenerate() {
@@ -193,7 +226,7 @@ export default function App() {
                 onAdd={addToCart}
                 onAddProduct={() => setProductModal({ product: null, category: activeCat })}
                 onEditProduct={product => setProductModal({ product, category: activeCat })}
-                onDeleteProduct={deleteProduct}
+                onDeleteProduct={product => setProductToDelete(product)}
               />
             </div>
 
@@ -229,6 +262,16 @@ export default function App() {
           product={productModal.product}
           onClose={() => setProductModal(null)}
           onSave={saveProduct}
+        />
+      )}
+
+      {productToDelete && (
+        <ConfirmDialog
+          title={`¿Eliminar "${productToDelete.name}"?`}
+          message="El producto se quitará del menú. Esta acción no se puede deshacer."
+          confirmLabel="Eliminar producto"
+          onConfirm={confirmDeleteProduct}
+          onCancel={() => setProductToDelete(null)}
         />
       )}
     </>

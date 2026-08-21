@@ -8,6 +8,15 @@ const EMPTY_FORM = {
   desc: "",
 };
 
+/**
+ * Un ingrediente es un nombre, no un número: "4" o "55" no son insumos.
+ * Se exige al menos una letra para que no entren valores basura al panel
+ * de cocina.
+ */
+function isValidIngredient(value) {
+  return /[a-záéíóúüñ]/i.test(value);
+}
+
 function productToForm(product, category) {
   if (!product) {
     return { ...EMPTY_FORM, category };
@@ -58,6 +67,17 @@ export default function ProductModal({ categories, activeCategory, product, onCl
     }
     if (!form.category) {
       setError("Selecciona una categoría.");
+      return;
+    }
+
+    const invalidIngredients = ingredients.filter(value => !isValidIngredient(value));
+    if (invalidIngredients.length > 0) {
+      const listado = invalidIngredients.map(value => `"${value}"`).join(", ");
+      setError(
+        invalidIngredients.length === 1
+          ? `${listado} no es un ingrediente válido. Escribe el nombre del insumo, no un número.`
+          : `${listado} no son ingredientes válidos. Escribe el nombre de cada insumo, no números.`
+      );
       return;
     }
 

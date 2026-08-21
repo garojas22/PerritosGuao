@@ -1,0 +1,76 @@
+    /* ============================================================
+    Diálogo de confirmación (ConfirmDialog)
+    Pegar al final del archivo de estilos principal.
+    Usa solo variables que ya existen en el proyecto.
+    ============================================================ */
+
+    .confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(58, 42, 28, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+    }
+
+    .confirm-dialog {
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 12px 32px rgba(74, 46, 28, 0.18);
+    }
+
+    .confirm-dialog h3 {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 18px;
+    margin: 0 0 8px;
+    color: var(--ink);
+    }
+
+    .confirm-dialog p {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+    }
+
+    .confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    }
+
+    .confirm-btn-cancel,
+    .confirm-btn-danger {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 10px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    border: 1.5px solid var(--line);
+    }
+
+    .confirm-btn-cancel {
+    background: var(--cream);
+    color: var(--ink);
+    }
+
+    .confirm-btn-cancel:hover {
+    background: var(--paper);
+    }
+
+    .confirm-btn-danger {
+    background: var(--rust);
+    border-color: var(--rust);
+    color: #fff;
+    }
+
+    .confirm-btn-danger:hover {
+    filter: brightness(0.94);
+    }
