@@ -58,15 +58,28 @@ function buildIngredientAvailability(menu) {
   return availability;
 }
 
+/**
+ * El menú vigente es la ÚNICA fuente de verdad sobre QUÉ ingredientes existen.
+ * Lo guardado (localStorage o estado previo) solo aporta el VALOR de cada uno
+ * (disponible / agotado), nunca claves nuevas.
+ *
+ * Esto evita el bug de ingredientes huérfanos: antes el merge era
+ * `{ ...buildIngredientAvailability(menu), ...guardado }`, y como lo guardado
+ * iba último, sobrescribía y conservaba para siempre claves de productos que
+ * ya habían sido eliminados. Nada podía borrarlas nunca.
+ */
+function syncIngredientAvailability(saved, menu) {
+  const fromMenu = buildIngredientAvailability(menu);
+  return Object.fromEntries(
+    Object.keys(fromMenu).map(key => [key, saved?.[key] ?? true])
+  );
+}
+
 function loadIngredientAvailability(menu) {
   try {
     const stored = localStorage.getItem(INGREDIENT_STOCK_KEY);
-    if (!stored) {
-      return buildIngredientAvailability(menu);
-    }
-
-    const parsed = JSON.parse(stored);
-    return { ...buildIngredientAvailability(menu), ...parsed };
+    const parsed = stored ? JSON.parse(stored) : null;
+    return syncIngredientAvailability(parsed, menu);
   } catch (error) {
     console.warn("No se pudo cargar el stock de cocina:", error);
     return buildIngredientAvailability(menu);
@@ -81,7 +94,7 @@ export default function App() {
   const [orderType, setOrderType] = useState("Local");
   const [payType, setPayType] = useState("Efectivo");
   const [lastOrder, setLastOrder] = useState(null);
-  const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(loadMenu()));
+  const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
 
   const categories = Object.keys(menu);
@@ -92,7 +105,10 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menu));
-    setIngredientAvailability(prev => ({ ...buildIngredientAvailability(menu), ...prev }));
+    // Al cambiar el menú, el stock se resincroniza: entran los ingredientes
+    // nuevos y salen los que ya no usa ningún producto, conservando el estado
+    // (disponible / agotado) de los que siguen vigentes.
+    setIngredientAvailability(prev => syncIngredientAvailability(prev, menu));
     if (!menu[activeCat]) setActiveCat(categories[0]);
   }, [menu]);
 
@@ -134,10 +150,15 @@ export default function App() {
 
   function deleteProduct(product) {
     if (!window.confirm(`¿Eliminar "${product.name}" del menú?`)) return;
-    setMenu(prev => ({
-      ...prev,
-      [activeCat]: prev[activeCat].filter(item => item.id !== product.id),
-    }));
+    // Se elimina por id en todas las categorías en lugar de asumir que el
+    // producto está en `activeCat`: si la categoría activa cambia entre el
+    // clic y la confirmación, el borrado fallaba en silencio.
+    setMenu(prev => Object.fromEntries(
+      Object.entries(prev).map(([category, items]) => [
+        category,
+        items.filter(item => item.id !== product.id),
+      ])
+    ));
   }
 
   function handleGenerate() {
