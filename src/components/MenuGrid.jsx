@@ -8,7 +8,6 @@ export default function MenuGrid({ items, onAdd, onAddProduct, onEditProduct }) 
             <span className="price">${item.price.toFixed(2)}</span>
           </div>
           <p>{item.desc}</p>
-          <div className="add-hint">+ Agregar al pedido</div>
           <div className="item-actions">
             <button type="button" className="product-action" onClick={event => { event.stopPropagation(); onEditProduct(item); }} aria-label={`Editar ${item.name}`}>
               <span aria-hidden="true">✎</span> Editar
