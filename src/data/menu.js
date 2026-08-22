@@ -1,7 +1,7 @@
 // Menú real del negocio. Este es el único archivo que se necesita
 // tocar si cambian productos, precios o modificadores.
 
-export const MENU_VERSION = 2;
+export const MENU_VERSION = 3;
 
 export const MENU = {
   "Perros calientes": [
