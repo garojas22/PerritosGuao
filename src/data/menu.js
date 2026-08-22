@@ -11,6 +11,13 @@ export const MENU = {
       ingredients: ["ensalada", "cebolla", "papas", "queso de año", "salsas"],
     },
     {
+      id: "pd",
+      name: "Perro del día",
+      price: 3.50,
+      desc: "Pan brioche, salchicha de pavo, ensalada rallada, cebolla, papas, queso de año y salsas.",
+      ingredients: ["ensalada", "cebolla", "papas", "queso de año", "salsas"],
+    },
+    {
       id: "ma",
       name: "Mr Amarillo",
       price: 4.00,
