@@ -1,6 +1,8 @@
 // Menú real del negocio. Este es el único archivo que se necesita
 // tocar si cambian productos, precios o modificadores.
 
+export const MENU_VERSION = 2;
+
 export const MENU = {
   "Perros calientes": [
     {
@@ -13,7 +15,7 @@ export const MENU = {
     {
       id: "pd",
       name: "Perro del día",
-      price: 3.50,
+      price: 2.50,
       desc: "Pan brioche, salchicha de pavo, ensalada rallada, cebolla, papas, queso de año y salsas.",
       ingredients: ["ensalada", "cebolla", "papas", "queso de año", "salsas"],
     },
@@ -66,11 +68,16 @@ export const MENU = {
     { id: "ex6", name: "Salchicha", price: 1.00, desc: "Salchicha adicional.", ingredients: [] },
   ],
   "Bebidas": [
-    { id: "b1", name: "Nestea (limón)", price: 1.50, desc: "Sabor de limón para servir en vaso o botella.", ingredients: ["limón"] },
-    { id: "b2", name: "Refresco de botella", price: 2.00, desc: "", ingredients: [] },
-    { id: "b3", name: "Refresco de lata", price: 1.50, desc: "", ingredients: [] },
-    { id: "b4", name: "Malta", price: 1.50, desc: "", ingredients: [] },
+    { id: "b1", name: "Malta", price: 0.80, desc: "", ingredients: [] },
+    { id: "b2", name: "Lata", price: 1.25, desc: "", ingredients: [] },
+    { id: "b3", name: "Gasificado pequeño", price: 1.25, desc: "", ingredients: [] },
+    { id: "b4", name: "Refresco 1Lt", price: 1.75, desc: "", ingredients: [] },
+    { id: "b5", name: "Refresco 1.25Lts", price: 2.25, desc: "", ingredients: [] },
+    { id: "b6", name: "Refresco 1.5Lts", price: 2.50, desc: "", ingredients: [] },
+    { id: "b7", name: "Refresco 2Lts", price: 3.50, desc: "", ingredients: [] },
+    { id: "b8", name: "Nestea", price: 2.00, desc: "", ingredients: [] },
+    { id: "b9", name: "Lipton", price: 2.50, desc: "", ingredients: [] },
   ],
 };
-// Nota: precios de Extras y Bebidas no venían en el menú original — son valores
+// Nota: precios de Extras no venían en el menú original — son valores
 // de referencia para el prototipo. Ajústalos con datos reales del negocio.

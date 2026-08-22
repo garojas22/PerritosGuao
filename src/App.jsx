@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MENU } from "./data/menu.js";
+import { MENU, MENU_VERSION } from "./data/menu.js";
 import { useOrders } from "./hooks/useOrders.js";
 import Header from "./components/Header.jsx";
 import CategoryTabs from "./components/CategoryTabs.jsx";
@@ -67,7 +67,15 @@ function normalizeMenu(menu) {
 function loadMenu() {
   try {
     const stored = localStorage.getItem(MENU_STORAGE_KEY);
-    return stored ? normalizeMenu(JSON.parse(stored)) : normalizeMenu(MENU);
+    if (!stored) return normalizeMenu(MENU);
+
+    const parsed = JSON.parse(stored);
+    // Formato viejo: el objeto de categorías se guardaba pelado, sin
+    // envoltorio { version, menu }. Se trata como version 0.
+    const version = typeof parsed?.version === "number" ? parsed.version : 0;
+    if (version < MENU_VERSION) return normalizeMenu(MENU);
+
+    return normalizeMenu(parsed.menu);
   } catch (error) {
     console.warn("No se pudo cargar el menú guardado:", error);
     return normalizeMenu(MENU);
@@ -135,7 +143,7 @@ export default function App() {
   }, [ingredientAvailability]);
 
   useEffect(() => {
-    localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menu));
+    localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify({ version: MENU_VERSION, menu }));
     // Al cambiar el menú, el stock se resincroniza: entran los ingredientes
     // nuevos y salen los que ya no usa ningún producto, conservando el estado
     // (disponible / agotado) de los que siguen vigentes.
