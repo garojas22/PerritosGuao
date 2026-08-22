@@ -37,3 +37,22 @@
   touch-action: manipulation;
 }
 .ticket-placeholder{text-align:center;color:var(--ink-soft);font-size:14px;padding:60px 20px;}
+
+/* Versión de texto plano para impresión térmica.
+   Oculta en pantalla; solo se muestra al imprimir. */
+.ticket-print-only{
+  display:none;
+  font-family:'JetBrains Mono','Courier New',monospace;
+  white-space:pre;
+  font-size:12px;
+  line-height:1.35;
+}
+
+@media print{
+  /* Al imprimir: ocultar el ticket visual (flexbox) y los botones,
+     mostrar solo el bloque de texto plano ya alineado con espacios reales. */
+  .ticket{display:none !important;}
+  .ticket-actions{display:none !important;}
+  .ticket-print-only{display:block !important;}
+  body{margin:0;padding:0;}
+}

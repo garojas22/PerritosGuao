@@ -150,7 +150,10 @@
 
 @media print{
   body *{visibility:hidden;}
-  #printArea, #printArea *{visibility:visible;}
-  #printArea{position:absolute;top:0;left:0;width:320px;}
+  /* #printArea (el ticket visual con flexbox) se mantiene oculto:
+     el bloque de texto plano .ticket-print-only es el que se imprime,
+     ver ticket.css */
+  .ticket-print-only, .ticket-print-only *{visibility:visible;}
+  .ticket-print-only{position:absolute;top:0;left:0;width:320px;}
   .ticket-actions, .ticket::after{display:none;}
 }

@@ -1,4 +1,5 @@
 import { useBcvRate } from '../hooks/useBcvRate';
+import { buildTicketText } from '../utils/ticketText';
 
 export default function Ticket({ order, onNewOrder }) {
   const bcvRate = useBcvRate();
@@ -16,6 +17,12 @@ export default function Ticket({ order, onNewOrder }) {
 
   return (
     <div className="ticket-wrap">
+      {/* Versión de solo texto, usada ÚNICAMENTE al imprimir.
+          Está oculta en pantalla (ver .ticket-print-only en ticket.css)
+          y evita que drivers "Generic / Text Only" pierdan el espaciado
+          que en pantalla se logra con flexbox. */}
+      <pre className="ticket-print-only">{buildTicketText(order, totalBs)}</pre>
+
       <div className="ticket" id="printArea">
         <div className="tcenter">
           <h3>PUNTO PEDIDO</h3>
