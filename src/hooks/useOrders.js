@@ -119,6 +119,7 @@ export function useOrders() {
       items: cart,
       total: cartTotal,
       totalBs,
+      bcvRate: rate, // se guarda la tasa usada, para poder auditar el cierre de caja
       stockWarnings: Array.from(stockWarnings),
       status: "Pendiente",
       time: new Date().toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" }),

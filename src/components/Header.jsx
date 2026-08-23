@@ -33,6 +33,9 @@ export default function Header({ view, setView, pendingCount }) {
         <button className={view === "board" ? "active" : ""} onClick={() => setView("board")}>
           Pedidos activos {pendingCount > 0 && `(${pendingCount})`}
         </button>
+        <button className={view === "cash" ? "active" : ""} onClick={() => setView("cash")}>
+          Cierre de caja
+        </button>
       </nav>
       <div className="clock">{clock}</div>
     </header>

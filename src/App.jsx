@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { MENU, MENU_VERSION } from "./data/menu.js";
 import { useOrders } from "./hooks/useOrders.js";
+import { useSales } from "./hooks/useSales.js";
 import Header from "./components/Header.jsx";
 import CategoryTabs from "./components/CategoryTabs.jsx";
 import MenuGrid from "./components/MenuGrid.jsx";
 import Cart from "./components/Cart.jsx";
 import Ticket from "./components/Ticket.jsx";
 import Board from "./components/Board.jsx";
+import CashClose from "./components/CashClose.jsx";
 import ProductModal from "./components/ProductModal.jsx";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
 
@@ -135,6 +137,7 @@ export default function App() {
   const [productModal, setProductModal] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
+  const [dayToClear, setDayToClear] = useState(null);
 
   const categories = Object.keys(menu);
 
@@ -156,6 +159,21 @@ export default function App() {
     addToCart, updateQty, removeLine, toggleMod,
     generateTicket, advanceStatus, removeOrder,
   } = useOrders();
+
+  const {
+    salesByDay, today, availableDays,
+    recordSale, removeSale, clearDay,
+  } = useSales();
+
+  /**
+   * Cobrar un pedido: queda asentado en el registro de ventas (persistido)
+   * y sale del tablero de pedidos activos. Es el único camino por el que
+   * un pedido entra al cierre de caja.
+   */
+  function handleChargeOrder(order) {
+    recordSale(order);
+    removeOrder(order.num);
+  }
 
   function toggleIngredientAvailability(ingredient) {
     const ingredientKey = normalizeIngredientKey(ingredient);
@@ -266,7 +284,22 @@ export default function App() {
         )}
 
         {view === "board" && (
-          <Board orders={orders} onAdvance={advanceStatus} onDelete={order => setOrderToDelete(order)} />
+          <Board
+            orders={orders}
+            onAdvance={advanceStatus}
+            onDelete={order => setOrderToDelete(order)}
+            onCharge={handleChargeOrder}
+          />
+        )}
+
+        {view === "cash" && (
+          <CashClose
+            salesByDay={salesByDay}
+            availableDays={availableDays}
+            today={today}
+            onRemoveSale={removeSale}
+            onClearDay={dateKey => setDayToClear(dateKey)}
+          />
         )}
       </main>
 
@@ -288,6 +321,16 @@ export default function App() {
           confirmLabel="Eliminar producto"
           onConfirm={confirmDeleteProduct}
           onCancel={() => setProductToDelete(null)}
+        />
+      )}
+
+      {dayToClear && (
+        <ConfirmDialog
+          title="¿Borrar el registro de este día?"
+          message="Se eliminarán todas las ventas cobradas de ese día. Exporta el Excel antes si necesitas conservarlas. Esta acción no se puede deshacer."
+          confirmLabel="Borrar registro"
+          onConfirm={() => { clearDay(dayToClear); setDayToClear(null); }}
+          onCancel={() => setDayToClear(null)}
         />
       )}
 

@@ -4,8 +4,9 @@ const COLUMNS = [
   { status: "Listo", label: "Listo", colClass: "col-listo" },
 ];
 
-function OrderCard({ order, onClick, onDelete }) {
+function OrderCard({ order, onClick, onDelete, onCharge }) {
   const totalBs = typeof order.totalBs === 'number' ? order.totalBs : null;
+  const isReady = order.status === "Listo";
 
   return (
     <div className="order-card" onClick={() => onClick(order.num)}>
@@ -34,16 +35,26 @@ function OrderCard({ order, onClick, onDelete }) {
           )}
         </div>
       </div>
+
+      {isReady && (
+        <button
+          type="button"
+          className="oc-charge"
+          onClick={event => { event.stopPropagation(); onCharge(order); }}
+        >
+          💵 Cobrar y cerrar
+        </button>
+      )}
     </div>
   );
 }
 
-export default function Board({ orders, onAdvance, onDelete }) {
+export default function Board({ orders, onAdvance, onDelete, onCharge }) {
   return (
     <>
       <div className="hint-bar">
         💡 Simulación: al generar un comprobante, el pedido entra aquí en "Pendiente".
-        Haz clic en una tarjeta para avanzar su estado.
+        Haz clic en una tarjeta para avanzar su estado. Al llegar a "Listo", cóbralo para que entre al cierre de caja.
       </div>
       <div className="board">
         {COLUMNS.map(col => {
@@ -55,7 +66,7 @@ export default function Board({ orders, onAdvance, onDelete }) {
                 {items.length === 0 ? (
                   <div className="board-empty">Sin pedidos</div>
                 ) : (
-                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} onDelete={onDelete} />)
+                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} onDelete={onDelete} onCharge={onCharge} />)
                 )}
               </div>
             </div>

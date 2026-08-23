@@ -36,3 +36,11 @@
   max-width:100%;
   object-fit:contain;
 }
+
+.oc-charge{
+  width:100%;margin-top:10px;padding:9px 12px;
+  background:var(--green);color:#fff;border:none;border-radius:9px;
+  font-family:'Baloo 2';font-weight:700;font-size:13.5px;cursor:pointer;
+  touch-action:manipulation;
+}
+.oc-charge:hover{filter:brightness(1.07);}
