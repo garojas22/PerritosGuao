@@ -72,8 +72,9 @@ export function buildTicketText(order, totalBs) {
 
   rows.push('');
   rows.push(center('¡Gracias por su pedido!'));
-  rows.push('');
-  rows.push('');
+  rows.push('.');
+  rows.push('.');
+  rows.push('.');
 
   return rows.join('\n');
 }
