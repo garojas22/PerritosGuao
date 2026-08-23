@@ -48,6 +48,10 @@
   line-height:1.35;
 }
 
+@page{
+  margin:0;
+}
+
 @media print{
   /* Al imprimir: ocultar el ticket visual (flexbox) y los botones,
      mostrar solo el bloque de texto plano ya alineado con espacios reales. */

@@ -29,6 +29,19 @@ function dashes(width = WIDTH) {
   return '-'.repeat(width);
 }
 
+// El driver "Generic / Text Only" de la POS-80 no maneja bien los
+// caracteres no-ASCII (acentos y ñ salen como símbolos raros). Se quitan
+// los diacríticos vía NFD + regex sobre el rango Unicode de combining
+// diacritical marks, sin tocar la cantidad de caracteres visibles, para
+// no romper el alineado de center()/line().
+function stripDiacritics(text) {
+  return String(text)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[¡¿]/g, '')
+    .replace(/»/g, '>');
+}
+
 export function buildTicketText(order, totalBs) {
   const rows = [];
 
@@ -75,6 +88,8 @@ export function buildTicketText(order, totalBs) {
   rows.push('.');
   rows.push('.');
   rows.push('.');
+  rows.push('.');
+  rows.push('.');
 
-  return rows.join('\n');
+  return stripDiacritics(rows.join('\n'));
 }
