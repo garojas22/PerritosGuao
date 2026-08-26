@@ -40,12 +40,23 @@
 
 /* Versión de texto plano para impresión térmica.
    Oculta en pantalla; solo se muestra al imprimir. */
+/* Versión de texto plano para impresión térmica.
+   Oculta en pantalla; solo se muestra al imprimir. */
 .ticket-print-only{
   display:none;
-  font-family:'JetBrains Mono','Courier New',monospace;
+  font-family:'Courier New',monospace;
   white-space:pre;
   font-size:12px;
   line-height:1.35;
+
+  /* La tickera es térmica: quema el papel según cuántos puntos activa
+     el cabezal. Una fuente más gruesa quema más área y sale más oscura.
+     Es lo más cercano a "subir densidad" que permite el driver, que no
+     expone ese ajuste ni por GUI ni por PowerShell. */
+  font-weight:700;
+  color:#000;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
 }
 
 @page{

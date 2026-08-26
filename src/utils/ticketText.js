@@ -88,8 +88,6 @@ export function buildTicketText(order, totalBs) {
   rows.push('.');
   rows.push('.');
   rows.push('.');
-  rows.push('.');
-  rows.push('.');
 
   return stripDiacritics(rows.join('\n'));
 }
