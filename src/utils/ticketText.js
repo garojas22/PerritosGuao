@@ -3,7 +3,7 @@
 // caracteres por línea en fuente normal (80mm). Si el ticket real sale
 // con saltos de línea raros (texto que se corta antes de tiempo),
 // baja este número; si sobra mucho espacio en blanco a la derecha, súbelo.
-const WIDTH = 42;
+const WIDTH = 32;
 
 function center(text, width = WIDTH) {
   text = String(text);
