@@ -40,14 +40,16 @@
 
 /* Versión de texto plano para impresión térmica.
    Oculta en pantalla; solo se muestra al imprimir. */
-/* Versión de texto plano para impresión térmica.
-   Oculta en pantalla; solo se muestra al imprimir. */
 .ticket-print-only{
   display:none;
   font-family:'Courier New',monospace;
   white-space:pre;
-  font-size:12px;
-  line-height:1.35;
+
+  /* 16px con WIDTH=32 en ticketText.js: la cocina lee de un vistazo,
+     con las manos ocupadas y a distancia de brazo. El ticket sale más
+     largo, pero se lee sin esfuerzo. Si cambias uno, revisa el otro. */
+  font-size:16px;
+  line-height:1.45;
 
   /* La tickera es térmica: quema el papel según cuántos puntos activa
      el cabezal. Una fuente más gruesa quema más área y sale más oscura.
@@ -68,6 +70,9 @@
      mostrar solo el bloque de texto plano ya alineado con espacios reales. */
   .ticket{display:none !important;}
   .ticket-actions{display:none !important;}
-  .ticket-print-only{display:block !important;}
-  body{margin:0;padding:0;}
+  .ticket-print-only{
+    display:block !important;}
+  body{
+    margin:0;
+    padding:0;}
 }
