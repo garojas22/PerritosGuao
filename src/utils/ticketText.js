@@ -52,6 +52,7 @@ export function buildTicketText(order, totalBs) {
   rows.push(line('Cliente:', order.customer));
   rows.push(line('Hora:', order.time));
   rows.push(`${order.type.toUpperCase()} / ${order.pay.toUpperCase()}`);
+  if (order.payRef) rows.push(line('Ref. pago:', order.payRef));
   rows.push(dashes());
 
   order.items.forEach((l) => {

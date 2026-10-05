@@ -27,7 +27,7 @@ function OrderCard({ order, onClick, onDelete, onCharge }) {
       <div className="oc-name">{order.customer}</div>
       <div className="oc-items">{order.items.map(l => `${l.qty}x ${l.name}`).join(", ")}</div>
       <div className="oc-foot">
-        <span>{order.type} · {order.pay}</span>
+        <span>{order.type} · {order.pay}{order.payRef ? ` · Ref. ${order.payRef}` : ''}</span>
         <div className="oc-total">
           <span>${order.total.toFixed(2)}</span>
           {totalBs !== null && (

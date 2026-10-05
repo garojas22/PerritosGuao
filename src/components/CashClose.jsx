@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
   summarizeSales,
-  downloadSalesCsv,
   formatDayLabel,
   formatUsd,
   formatBs,
   getBusinessDayKey,
 } from '../utils/salesReport';
+import { downloadSalesExcel } from '../utils/salesExcel';
 
 function StatCard({ label, value, sub, accent }) {
   return (
@@ -20,6 +20,7 @@ function StatCard({ label, value, sub, accent }) {
 
 export default function CashClose({ salesByDay, availableDays, today, onRemoveSale, onClearDay }) {
   const [selectedDay, setSelectedDay] = useState(today);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Si el día seleccionado ya no tiene ventas (se borró), se cae a hoy.
   const dayKey = salesByDay[selectedDay] ? selectedDay : today;
@@ -28,6 +29,18 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
   const isToday = dayKey === getBusinessDayKey();
 
   const dayOptions = availableDays.includes(today) ? availableDays : [today, ...availableDays];
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      await downloadSalesExcel(sales, dayKey);
+    } catch (error) {
+      console.error('No se pudo generar el Excel:', error);
+      window.alert('No se pudo generar el archivo de Excel. Intenta de nuevo.');
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return (
     <div className="cash-close">
@@ -54,11 +67,11 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
           )}
           <button
             type="button"
-            className="cc-btn cc-btn-primary"
-            onClick={() => downloadSalesCsv(sales, dayKey)}
-            disabled={sales.length === 0}
+            className="cc-btn cc-btn-excel"
+            onClick={handleExport}
+            disabled={sales.length === 0 || isExporting}
           >
-            ⬇ Exportar a Excel
+            {isExporting ? 'Generando…' : '⬇ Exportar a Excel'}
           </button>
         </div>
       </div>
@@ -167,7 +180,10 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
                       <td>{sale.closedTime}</td>
                       <td>{sale.customer}</td>
                       <td>{sale.type}</td>
-                      <td>{sale.pay}</td>
+                      <td>
+                        {sale.pay}
+                        {sale.payRef && <span className="cc-sub-bs">Ref. {sale.payRef}</span>}
+                      </td>
                       <td className="cc-products">
                         {(sale.items || []).map(item => (
                           <span key={item.uid ?? item.name} className="cc-product-line">

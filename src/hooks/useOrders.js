@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { nextOrderNumber } from "../utils/orderCounter.js";
 
 // STATUS_FLOW define a qué estado salta un pedido al hacer clic en su tarjeta.
 const STATUS_FLOW = { Pendiente: "Preparando", Preparando: "Listo", Listo: "Pendiente" };
@@ -33,7 +34,6 @@ function getIngredientKeyFromMod(mod = "") {
 export function useOrders() {
   const [cart, setCart] = useState([]); // [{ uid, id, name, price, qty, availMods, mods }]
   const [orders, setOrders] = useState([]);
-  const orderCounter = useRef(1);
 
   function addToCart(item) {
     const availableMods = Array.isArray(item.ingredients) && item.ingredients.length > 0
@@ -91,7 +91,7 @@ export function useOrders() {
     return null;
   }
 
-  function generateTicket({ customer, orderType, payType, ingredientAvailability = {} }) {
+  function generateTicket({ customer, orderType, payType, payRef = "", ingredientAvailability = {} }) {
     const trimmedCustomer = customer.trim();
     if (!trimmedCustomer) {
       return null;
@@ -112,10 +112,11 @@ export function useOrders() {
     });
 
     const order = {
-      num: String(orderCounter.current++).padStart(3, "0"),
+      num: nextOrderNumber(), // persistente: no se reinicia al refrescar (ver orderCounter.js)
       customer: trimmedCustomer,
       type: orderType,
       pay: payType,
+      payRef, // últimos 4 dígitos de la referencia; "" si no fue pago móvil
       items: cart,
       total: cartTotal,
       totalBs,

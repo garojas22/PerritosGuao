@@ -36,6 +36,7 @@ export default function Ticket({ order, onNewOrder }) {
         <div className="badge-row">
           <span className="badge">{order.type}</span>
           <span className="badge">{order.pay}</span>
+          {order.payRef && <span className="badge">Ref. {order.payRef}</span>}
         </div>
         <hr />
         {order.items.map(l => (

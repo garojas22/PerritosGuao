@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useBcvRate } from '../hooks/useBcvRate';
+import { PAY_MOBILE, PAY_REF_LENGTH, isMobilePay, sanitizePayRef, isValidPayRef } from '../utils/payment';
 
 function normalizeIngredientKey(value = "") {
   return value
@@ -70,17 +71,21 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
 
 export default function Cart({
   cart, cartTotal, onQty, onRemove, onToggleMod,
-  customer, setCustomer, orderType, setOrderType, payType, setPayType,
+  customer, setCustomer, orderType, setOrderType, payType, setPayType, payRef, setPayRef,
   ingredientAvailability, toggleIngredientAvailability,
   onGenerate,
 }) {
   const inputRef = useRef(null);
+  const payRefInputRef = useRef(null);
   const [showCustomerError, setShowCustomerError] = useState(false);
+  const [showPayRefError, setShowPayRefError] = useState(false);
   const [showEmptyCartError, setShowEmptyCartError] = useState(false);
   const [showKitchenSettings, setShowKitchenSettings] = useState(false);
   const bcvRate = useBcvRate();
   const totalBs = bcvRate !== null && bcvRate !== undefined ? cartTotal * bcvRate : null;
   const isCustomerValid = customer.trim().length > 0;
+  const needsPayRef = isMobilePay(payType);
+  const isPayRefValid = isValidPayRef(payRef);
 
   function handleGenerateClick() {
     if (cart.length === 0) {
@@ -96,9 +101,25 @@ export default function Cart({
       return;
     }
 
+    if (needsPayRef && !isPayRefValid) {
+      setShowPayRefError(true);
+      payRefInputRef.current?.focus();
+      return;
+    }
+
     setShowCustomerError(false);
+    setShowPayRefError(false);
     setShowEmptyCartError(false);
     onGenerate();
+  }
+
+  function handlePayRefChange(value) {
+    // Solo dígitos y máximo PAY_REF_LENGTH: no hace falta validar texto libre después.
+    const clean = sanitizePayRef(value);
+    setPayRef(clean);
+    if (showPayRefError && isValidPayRef(clean)) {
+      setShowPayRefError(false);
+    }
   }
 
   function handleCustomerChange(value) {
@@ -145,13 +166,37 @@ export default function Cart({
       <div className="field">
         <label>Forma de pago</label>
         <div className="segmented">
-          {["Efectivo", "Pago móvil", "Tarjeta"].map(opt => (
+          {["Efectivo", PAY_MOBILE, "Tarjeta"].map(opt => (
             <button key={opt} className={payType === opt ? "active" : ""} onClick={() => setPayType(opt)}>
               {opt}
             </button>
           ))}
         </div>
       </div>
+
+      {needsPayRef && (
+        <div className="field">
+          <label>Referencia (últimos {PAY_REF_LENGTH} dígitos)</label>
+          {/* type="text" a propósito: así toma exactamente el mismo estilo que
+              el campo Cliente (.field input[type=text]). inputMode="numeric"
+              abre el teclado numérico en celular y tablet. */}
+          <input
+            ref={payRefInputRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={PAY_REF_LENGTH}
+            value={payRef}
+            onChange={e => handlePayRefChange(e.target.value)}
+            placeholder="Ej. 1234"
+            aria-invalid={showPayRefError && !isPayRefValid}
+            className={showPayRefError && !isPayRefValid ? 'invalid' : ''}
+          />
+          {showPayRefError && !isPayRefValid && (
+            <div className="field-error">Escribe los {PAY_REF_LENGTH} últimos dígitos de la referencia.</div>
+          )}
+        </div>
+      )}
 
       <div className="kitchen-panel">
         <button type="button" className="kitchen-toggle" onClick={() => setShowKitchenSettings(open => !open)}>

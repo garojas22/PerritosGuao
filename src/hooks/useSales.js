@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getBusinessDayKey } from '../utils/salesReport';
 
-const SALES_STORAGE_KEY = 'perritos_guao_sales';
+export const SALES_STORAGE_KEY = 'perritos_guao_sales';
 
 /** Días de historial que se conservan. Más allá de eso se descartan solos
  *  para que localStorage no crezca sin límite. */

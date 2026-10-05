@@ -22,8 +22,9 @@
   touch-action:manipulation;
 }
 .cc-btn:disabled{opacity:.45;cursor:not-allowed;}
-.cc-btn-primary{background:var(--orange);border-color:var(--orange);color:#fff;}
-.cc-btn-primary:disabled{background:var(--paper);border-color:var(--line);color:var(--ink-soft);}
+.cc-btn-excel{background:#217346;border-color:#217346;color:#fff;}
+.cc-btn-excel:hover:not(:disabled){background:#185c37;border-color:#185c37;}
+.cc-btn-excel:disabled{background:var(--paper);border-color:var(--line);color:var(--ink-soft);}
 .cc-btn-danger{border-color:var(--rust);color:var(--rust);font-size:13px;padding:9px 14px;}
 
 .cc-empty{

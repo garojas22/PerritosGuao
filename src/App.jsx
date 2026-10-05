@@ -11,6 +11,7 @@ import Board from "./components/Board.jsx";
 import CashClose from "./components/CashClose.jsx";
 import ProductModal from "./components/ProductModal.jsx";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
+import { isMobilePay, isValidPayRef } from "./utils/payment.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
 const MENU_STORAGE_KEY = "perritos_guao_menu";
@@ -132,6 +133,7 @@ export default function App() {
   const [customer, setCustomer] = useState("");
   const [orderType, setOrderType] = useState("Local");
   const [payType, setPayType] = useState("Efectivo");
+  const [payRef, setPayRef] = useState("");
   const [lastOrder, setLastOrder] = useState(null);
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
@@ -234,13 +236,29 @@ export default function App() {
       return;
     }
 
-    const order = generateTicket({ customer: trimmedCustomer, orderType, payType, ingredientAvailability });
+    // Con pago móvil la referencia es obligatoria. Cart ya avisa al cajero;
+    // esta guarda evita que un pedido sin referencia entre por otro camino.
+    const mobilePay = isMobilePay(payType);
+    if (mobilePay && !isValidPayRef(payRef)) {
+      return;
+    }
+
+    const order = generateTicket({
+      customer: trimmedCustomer,
+      orderType,
+      payType,
+      // Si el pago no es móvil se descarta cualquier referencia que haya
+      // quedado escrita antes de cambiar de método.
+      payRef: mobilePay ? payRef : "",
+      ingredientAvailability,
+    });
     if (!order) {
       return;
     }
 
     setLastOrder(order);
     setCustomer("");
+    setPayRef("");
     setView("ticket");
   }
 
@@ -272,6 +290,7 @@ export default function App() {
               customer={customer} setCustomer={setCustomer}
               orderType={orderType} setOrderType={setOrderType}
               payType={payType} setPayType={setPayType}
+              payRef={payRef} setPayRef={setPayRef}
               ingredientAvailability={ingredientAvailability}
               toggleIngredientAvailability={toggleIngredientAvailability}
               onGenerate={handleGenerate}
