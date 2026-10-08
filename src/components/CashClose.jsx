@@ -178,7 +178,16 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
                     <tr key={sale.saleId}>
                       <td className="cc-strong">#{sale.num}</td>
                       <td>{sale.closedTime}</td>
-                      <td>{sale.customer}</td>
+                      <td>
+                        {sale.customer}
+                        {sale.revision > 0 && (
+                          <span className="cc-sub-bs">
+                            Corregido{sale.revision > 1 ? ` ×${sale.revision}` : ''}
+                            {Number.isFinite(Number(sale.edits?.[0]?.prevTotal)) &&
+                              ` · total original ${formatUsd(sale.edits[0].prevTotal)}`}
+                          </span>
+                        )}
+                      </td>
                       <td>{sale.type}</td>
                       <td>
                         {sale.pay}

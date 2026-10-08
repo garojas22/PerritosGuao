@@ -1,4 +1,4 @@
-import { summarizeSales, formatDayLabel } from './salesReport';
+import { summarizeSales, formatDayLabel, formatUsd } from './salesReport';
 
 /**
  * Exportación del cierre de caja a un Excel real (.xlsx) con formato.
@@ -97,14 +97,15 @@ sheet.columns = [
 { key: 'usd', width: 14 },
 { key: 'bs', width: 20 },
 { key: 'rate', width: 12 },
+{ key: 'fixes', width: 28 },
 ];
 
-writeTitle(sheet, 'M', 'CIERRE DE CAJA', formatDayLabel(dateKey));
+writeTitle(sheet, 'N', 'CIERRE DE CAJA', formatDayLabel(dateKey));
 
 const headerRow = sheet.getRow(4);
 headerRow.values = [
 'N° pedido', 'Hora pedido', 'Hora cobro', 'Cliente', 'Tipo', 'Método de pago',
-'Ref. pago móvil', 'Productos', 'Modificadores', 'Unidades', 'Total USD', 'Total Bs', 'Tasa BCV',
+'Ref. pago móvil', 'Productos', 'Modificadores', 'Unidades', 'Total USD', 'Total Bs', 'Tasa BCV', 'Correcciones',
 ];
 styleHeaderRow(headerRow);
 
@@ -132,6 +133,10 @@ const row = sheet.addRow([
     numberOrNull(sale.total),
     numberOrNull(sale.totalBs),
     numberOrNull(sale.bcvRate),
+    // Si el pedido se corrigió después de generarse, queda a la vista del administrador.
+    sale.revision > 0
+    ? `${sale.revision} ${sale.revision === 1 ? 'vez' : 'veces'} · total original ${formatUsd(sale.edits?.[0]?.prevTotal)}`
+    : '',
 ]);
 
 styleBodyRow(row, index);
@@ -150,6 +155,7 @@ row.alignment = { vertical: 'middle' };
     row.getCell(key).alignment = { vertical: 'middle', wrapText: true };
 });
 row.getCell('customer').alignment = { vertical: 'middle', wrapText: true };
+row.getCell('fixes').alignment = { vertical: 'middle', wrapText: true };
 row.getCell('num').font = { bold: true };
 row.getCell('usd').numFmt = FMT_USD;
 row.getCell('bs').numFmt = FMT_BS;
@@ -161,7 +167,7 @@ if (sales.length === 0) return sheet;
 
 const first = 5;
 const last = 4 + sales.length;
-sheet.autoFilter = `A4:M${last}`;
+sheet.autoFilter = `A4:N${last}`;
 
 // Fila de total con fórmulas: si alguien edita un monto en Excel, el total se actualiza.
 const summary = summarizeSales(sales);
@@ -175,12 +181,12 @@ if (summary.hasBsData) {
 totalRow.getCell('bs').value = { formula: `SUM(L${first}:L${last})`, result: summary.totalBs };
 }
 totalRow.height = 26;
-for (let col = 1; col <= 13; col += 1) {
+for (let col = 1; col <= 14; col += 1) {
 const cell = totalRow.getCell(col);
 cell.font = { bold: true, size: 12 };
 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8DC' } };
 cell.border = { ...BORDERS, top: { style: 'medium', color: { argb: EXCEL_GREEN } } };
-if (col >= 10) cell.alignment = { vertical: 'middle', horizontal: 'center' };
+if (col >= 10 && col <= 13) cell.alignment = { vertical: 'middle', horizontal: 'center' };
 }
 totalRow.getCell('usd').numFmt = FMT_USD;
 totalRow.getCell('bs').numFmt = FMT_BS;

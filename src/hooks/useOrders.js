@@ -91,7 +91,25 @@ export function useOrders() {
     return null;
   }
 
-  function generateTicket({ customer, orderType, payType, payRef = "", ingredientAvailability = {} }) {
+  /** Carga un pedido existente en el carrito para poder corregirlo. */
+  function loadCartFromOrder(order) {
+    setCart(order.items.map(line => ({ ...line, mods: [...line.mods] })));
+  }
+
+  function clearCart() {
+    setCart([]);
+  }
+
+  /**
+   * Genera un pedido nuevo o, si se pasa replaceNum, CORRIGE uno existente.
+   *
+   * Corregir conserva el mismo número, la hora original y el estado, y reemplaza
+   * el pedido en su sitio. No se crea un número nuevo ni se borra nada: así la
+   * numeración no deja huecos y el pedido original nunca desaparece sin dejar
+   * rastro. Cada corrección guarda en `edits` cómo era antes, para que el
+   * administrador pueda verlo en el cierre de caja.
+   */
+  function generateTicket({ customer, orderType, payType, payRef = "", ingredientAvailability = {}, replaceNum = null }) {
     const trimmedCustomer = customer.trim();
     if (!trimmedCustomer) {
       return null;
@@ -111,8 +129,15 @@ export function useOrders() {
       });
     });
 
+    // Solo se puede corregir un pedido que sigue activo y que aún no está listo.
+    const previous = replaceNum
+      ? orders.find(o => o.num === replaceNum && o.status !== "Listo")
+      : null;
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+
     const order = {
-      num: nextOrderNumber(), // persistente: no se reinicia al refrescar (ver orderCounter.js)
+      num: previous ? previous.num : nextOrderNumber(), // persistente: no se reinicia al refrescar (ver orderCounter.js)
       customer: trimmedCustomer,
       type: orderType,
       pay: payType,
@@ -122,10 +147,30 @@ export function useOrders() {
       totalBs,
       bcvRate: rate, // se guarda la tasa usada, para poder auditar el cierre de caja
       stockWarnings: Array.from(stockWarnings),
-      status: "Pendiente",
-      time: new Date().toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" }),
+      status: previous ? previous.status : "Pendiente",
+      time: previous ? previous.time : timeLabel,
+      revision: previous ? (previous.revision || 0) + 1 : 0,
+      edits: previous
+        ? [
+            ...(previous.edits || []),
+            {
+              at: now.toISOString(),
+              time: timeLabel,
+              prevTotal: previous.total,
+              prevPay: previous.pay,
+              prevItems: previous.items.map(line =>
+                `${line.qty}x ${line.name}${line.mods.length ? ` (${line.mods.join(", ")})` : ""}`
+              ),
+            },
+          ]
+        : [],
     };
-    setOrders(prev => [order, ...prev]);
+
+    if (previous) {
+      setOrders(prev => prev.map(o => (o.num === previous.num ? order : o)));
+    } else {
+      setOrders(prev => [order, ...prev]);
+    }
     setCart([]);
     return order;
   }
@@ -138,5 +183,5 @@ export function useOrders() {
     setOrders(prev => prev.filter(o => o.num !== num));
   }
 
-  return { cart, orders, cartTotal, addToCart, updateQty, removeLine, toggleMod, generateTicket, advanceStatus, removeOrder };
+  return { cart, orders, cartTotal, addToCart, updateQty, removeLine, toggleMod, loadCartFromOrder, clearCart, generateTicket, advanceStatus, removeOrder };
 }

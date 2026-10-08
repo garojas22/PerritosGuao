@@ -73,7 +73,7 @@ export default function Cart({
   cart, cartTotal, onQty, onRemove, onToggleMod,
   customer, setCustomer, orderType, setOrderType, payType, setPayType, payRef, setPayRef,
   ingredientAvailability, toggleIngredientAvailability,
-  onGenerate,
+  onGenerate, editingOrder = null, onCancelEdit,
 }) {
   const inputRef = useRef(null);
   const payRefInputRef = useRef(null);
@@ -134,6 +134,13 @@ export default function Cart({
   return (
     <aside className="cart">
       <h2>Pedido actual</h2>
+
+      {editingOrder && (
+        <div className="edit-banner">
+          <span>Corrigiendo el pedido <strong>#{editingOrder.num}</strong></span>
+          <button type="button" onClick={onCancelEdit}>Cancelar corrección</button>
+        </div>
+      )}
 
       <div className="field">
         <label>Cliente</label>
@@ -260,7 +267,7 @@ export default function Cart({
       )}
 
       <button className="btn-primary" onClick={handleGenerateClick}>
-        Generar comprobante →
+        {editingOrder ? 'Actualizar comprobante →' : 'Generar comprobante →'}
       </button>
     </aside>
   );

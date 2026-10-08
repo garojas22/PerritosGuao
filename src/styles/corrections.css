@@ -1,0 +1,29 @@
+/* ============================================================
+Corrección de pedidos activos
+============================================================ */
+
+/* Aviso en el carrito mientras se corrige un pedido. */
+.edit-banner{
+display:flex;align-items:center;justify-content:space-between;gap:10px;
+margin:0 0 14px;padding:9px 12px;border-radius:10px;
+background:rgba(217,154,43,.14);border:1px solid rgba(217,154,43,.4);
+color:var(--brown);font-size:12px;font-weight:600;line-height:1.35;
+}
+.edit-banner strong{font-weight:800;}
+.edit-banner button{
+flex-shrink:0;background:none;border:none;padding:2px 0;cursor:pointer;
+font-family:'Inter';font-size:11.5px;font-weight:700;color:var(--rust);
+}
+.edit-banner button:hover{text-decoration:underline;}
+
+/* Botón y marca en la tarjeta del tablero. */
+.oc-edit{
+margin-top:8px;padding:5px 0;background:none;border:none;cursor:pointer;
+font-family:'Inter';font-size:11.5px;font-weight:700;color:var(--ink-soft);
+}
+.oc-edit:hover{color:var(--orange-deep);text-decoration:underline;}
+.oc-corrected{
+display:inline-block;margin-top:6px;padding:2px 7px;border-radius:5px;
+border:1px solid rgba(217,154,43,.5);background:rgba(217,154,43,.12);
+color:var(--brown);font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+}

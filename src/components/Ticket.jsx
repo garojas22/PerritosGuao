@@ -1,7 +1,7 @@
 import { useBcvRate } from '../hooks/useBcvRate';
 import { buildTicketText } from '../utils/ticketText';
 
-export default function Ticket({ order, onNewOrder }) {
+export default function Ticket({ order, onNewOrder, onEdit }) {
   const bcvRate = useBcvRate();
   const totalBs = bcvRate !== null && bcvRate !== undefined && order ? order.total * bcvRate : null;
 
@@ -37,6 +37,7 @@ export default function Ticket({ order, onNewOrder }) {
           <span className="badge">{order.type}</span>
           <span className="badge">{order.pay}</span>
           {order.payRef && <span className="badge">Ref. {order.payRef}</span>}
+          {order.revision > 0 && <span className="badge">Corregido</span>}
         </div>
         <hr />
         {order.items.map(l => (
@@ -75,6 +76,8 @@ export default function Ticket({ order, onNewOrder }) {
       </div>
       <div className="ticket-actions">
         <button className="btn-secondary" onClick={() => window.print()}>🖨️ Imprimir comprobante</button>
+        {/* Solo aparece mientras el pedido siga activo y no esté listo. */}
+        {onEdit && <button className="btn-secondary" onClick={onEdit}>✎ Corregir pedido</button>}
         <button className="btn-secondary" onClick={onNewOrder}>← Nuevo pedido</button>
       </div>
     </div>

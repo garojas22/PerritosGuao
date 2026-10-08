@@ -47,6 +47,11 @@ export function buildTicketText(order, totalBs) {
 
   rows.push(center('PUNTO PEDIDO'));
   rows.push(center(`Comanda de cocina #${order.num}`));
+  if (order.revision > 0) {
+    // La cocina ya recibió una versión anterior: este aviso le dice que la descarte.
+    rows.push(center('*** CORREGIDO ***'));
+    rows.push(center('Reemplaza el ticket anterior'));
+  }
   rows.push(dashes());
 
   rows.push(line('Cliente:', order.customer));

@@ -4,7 +4,7 @@ const COLUMNS = [
   { status: "Listo", label: "Listo", colClass: "col-listo" },
 ];
 
-function OrderCard({ order, onClick, onDelete, onCharge, canDelete }) {
+function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
   const totalBs = typeof order.totalBs === 'number' ? order.totalBs : null;
   const isReady = order.status === "Listo";
 
@@ -29,6 +29,7 @@ function OrderCard({ order, onClick, onDelete, onCharge, canDelete }) {
       </div>
       <div className="oc-name">{order.customer}</div>
       <div className="oc-items">{order.items.map(l => `${l.qty}x ${l.name}`).join(", ")}</div>
+      {order.revision > 0 && <div className="oc-corrected">Corregido</div>}
       <div className="oc-foot">
         <span>{order.type} · {order.pay}{order.payRef ? ` · Ref. ${order.payRef}` : ''}</span>
         <div className="oc-total">
@@ -38,6 +39,17 @@ function OrderCard({ order, onClick, onDelete, onCharge, canDelete }) {
           )}
         </div>
       </div>
+
+      {/* Un pedido listo ya se cocinó: solo se puede cobrar, no corregir. */}
+      {!isReady && (
+        <button
+          type="button"
+          className="oc-edit"
+          onClick={event => { event.stopPropagation(); onEdit(order); }}
+        >
+          ✎ Corregir
+        </button>
+      )}
 
       {isReady && (
         <button
@@ -52,7 +64,7 @@ function OrderCard({ order, onClick, onDelete, onCharge, canDelete }) {
   );
 }
 
-export default function Board({ orders, onAdvance, onDelete, onCharge, canDelete = false }) {
+export default function Board({ orders, onAdvance, onDelete, onCharge, onEdit, canDelete = false }) {
   return (
     <>
       <div className="hint-bar">
@@ -69,7 +81,7 @@ export default function Board({ orders, onAdvance, onDelete, onCharge, canDelete
                 {items.length === 0 ? (
                   <div className="board-empty">Sin pedidos</div>
                 ) : (
-                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} onDelete={onDelete} onCharge={onCharge} canDelete={canDelete} />)
+                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} onDelete={onDelete} onCharge={onCharge} onEdit={onEdit} canDelete={canDelete} />)
                 )}
               </div>
             </div>

@@ -143,6 +143,8 @@ export default function App() {
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [dayToClear, setDayToClear] = useState(null);
   const [showAdminDialog, setShowAdminDialog] = useState(false);
+  const [editingNum, setEditingNum] = useState(null); // número del pedido que se está corrigiendo
+  const [pendingEdit, setPendingEdit] = useState(null); // pedido a corregir, a la espera de confirmar
 
   const categories = Object.keys(menu);
 
@@ -183,7 +185,7 @@ export default function App() {
 
   const {
     cart, orders, cartTotal,
-    addToCart, updateQty, removeLine, toggleMod,
+    addToCart, updateQty, removeLine, toggleMod, loadCartFromOrder, clearCart,
     generateTicket, advanceStatus, removeOrder,
   } = useOrders();
 
@@ -200,6 +202,45 @@ export default function App() {
   function handleChargeOrder(order) {
     recordSale(order);
     removeOrder(order.num);
+  }
+
+  // Pedido que se está corrigiendo. Se deriva de `orders` en vez de guardarlo
+  // aparte: si el pedido desaparece o pasa a "Listo" mientras se corrige,
+  // el aviso se apaga solo y lo que quedó en el carrito se trata como pedido nuevo.
+  const editingOrder = editingNum
+    ? orders.find(o => o.num === editingNum && o.status !== "Listo") ?? null
+    : null;
+
+  /** Vuelve a cargar un pedido activo en la pantalla de pedido para corregirlo. */
+  function applyEdit(order) {
+    loadCartFromOrder(order);
+    setCustomer(order.customer);
+    setOrderType(order.type);
+    setPayType(order.pay);
+    setPayRef(order.payRef || "");
+    setEditingNum(order.num);
+    setPendingEdit(null);
+    setView("order");
+  }
+
+  function startEditOrder(order) {
+    if (!order || order.status === "Listo") return;
+    // Si ya hay otro pedido a medio armar, se pide confirmación antes de reemplazarlo.
+    if (cart.length > 0 && editingNum !== order.num) {
+      setPendingEdit(order);
+      return;
+    }
+    applyEdit(order);
+  }
+
+  /** Cancela la corrección: el pedido original sigue intacto en el tablero. */
+  function cancelEdit() {
+    clearCart();
+    setEditingNum(null);
+    setCustomer("");
+    setOrderType("Local");
+    setPayType("Efectivo");
+    setPayRef("");
   }
 
   function toggleIngredientAvailability(ingredient) {
@@ -277,18 +318,25 @@ export default function App() {
       // quedado escrita antes de cambiar de método.
       payRef: mobilePay ? payRef : "",
       ingredientAvailability,
+      replaceNum: editingOrder ? editingOrder.num : null,
     });
     if (!order) {
       return;
     }
 
     setLastOrder(order);
+    setEditingNum(null);
     setCustomer("");
     setPayRef("");
     setView("ticket");
   }
 
   const pendingCount = orders.filter(o => o.status !== "Listo").length;
+
+  // El botón "Corregir" del comprobante solo se ofrece si ese pedido sigue activo y no está listo.
+  const lastOrderLive = lastOrder
+    ? orders.find(o => o.num === lastOrder.num && o.status !== "Listo") ?? null
+    : null;
 
   return (
     <>
@@ -327,12 +375,18 @@ export default function App() {
               ingredientAvailability={ingredientAvailability}
               toggleIngredientAvailability={toggleIngredientAvailability}
               onGenerate={handleGenerate}
+              editingOrder={editingOrder}
+              onCancelEdit={cancelEdit}
             />
           </div>
         )}
 
         {view === "ticket" && (
-          <Ticket order={lastOrder} onNewOrder={() => setView("order")} />
+          <Ticket
+            order={lastOrder}
+            onNewOrder={() => setView("order")}
+            onEdit={lastOrderLive ? () => startEditOrder(lastOrderLive) : undefined}
+          />
         )}
 
         {view === "board" && (
@@ -341,6 +395,7 @@ export default function App() {
             onAdvance={advanceStatus}
             onDelete={order => setOrderToDelete(order)}
             onCharge={handleChargeOrder}
+            onEdit={startEditOrder}
             canDelete={isAdmin}
           />
         )}
@@ -373,6 +428,16 @@ export default function App() {
           onClose={() => setProductModal(null)}
           onSave={saveProduct}
           onDeleteProduct={product => setProductToDelete(product)}
+        />
+      )}
+
+      {pendingEdit && (
+        <ConfirmDialog
+          title={`¿Corregir el pedido #${pendingEdit.num}?`}
+          message="Tienes un pedido a medio armar en pantalla. Si continúas, se reemplazará por el pedido que vas a corregir."
+          confirmLabel="Continuar"
+          onConfirm={() => applyEdit(pendingEdit)}
+          onCancel={() => setPendingEdit(null)}
         />
       )}
 
