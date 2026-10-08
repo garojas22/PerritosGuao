@@ -4,7 +4,7 @@ const COLUMNS = [
   { status: "Listo", label: "Listo", colClass: "col-listo" },
 ];
 
-function OrderCard({ order, onClick, onDelete, onCharge }) {
+function OrderCard({ order, onClick, onDelete, onCharge, canDelete }) {
   const totalBs = typeof order.totalBs === 'number' ? order.totalBs : null;
   const isReady = order.status === "Listo";
 
@@ -15,14 +15,17 @@ function OrderCard({ order, onClick, onDelete, onCharge }) {
           <span>#{order.num}</span>
           <span>{order.time}</span>
         </div>
-        <button
-          type="button"
-          className="order-delete"
-          onClick={event => { event.stopPropagation(); onDelete(order); }}
-          aria-label={`Eliminar pedido #${order.num}`}
-        >
-          ✕
-        </button>
+        {/* Eliminar un pedido activo borra su rastro, por eso es solo del administrador. */}
+        {canDelete && (
+          <button
+            type="button"
+            className="order-delete"
+            onClick={event => { event.stopPropagation(); onDelete(order); }}
+            aria-label={`Eliminar pedido #${order.num}`}
+          >
+            ✕
+          </button>
+        )}
       </div>
       <div className="oc-name">{order.customer}</div>
       <div className="oc-items">{order.items.map(l => `${l.qty}x ${l.name}`).join(", ")}</div>
@@ -49,7 +52,7 @@ function OrderCard({ order, onClick, onDelete, onCharge }) {
   );
 }
 
-export default function Board({ orders, onAdvance, onDelete, onCharge }) {
+export default function Board({ orders, onAdvance, onDelete, onCharge, canDelete = false }) {
   return (
     <>
       <div className="hint-bar">
@@ -66,7 +69,7 @@ export default function Board({ orders, onAdvance, onDelete, onCharge }) {
                 {items.length === 0 ? (
                   <div className="board-empty">Sin pedidos</div>
                 ) : (
-                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} onDelete={onDelete} onCharge={onCharge} />)
+                  items.map(o => <OrderCard key={o.num} order={o} onClick={onAdvance} onDelete={onDelete} onCharge={onCharge} canDelete={canDelete} />)
                 )}
               </div>
             </div>

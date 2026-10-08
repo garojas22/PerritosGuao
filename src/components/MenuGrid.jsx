@@ -1,4 +1,4 @@
-export default function MenuGrid({ items, onAdd, onAddProduct, onEditProduct }) {
+export default function MenuGrid({ items, isAdmin = false, onAdd, onAddProduct, onEditProduct }) {
   return (
     <div className="menu-grid">
       {items.map(item => (
@@ -8,17 +8,22 @@ export default function MenuGrid({ items, onAdd, onAddProduct, onEditProduct }) 
             <span className="price">${item.price.toFixed(2)}</span>
           </div>
           <p>{item.desc}</p>
-          <div className="item-actions">
-            <button type="button" className="product-action" onClick={event => { event.stopPropagation(); onEditProduct(item); }} aria-label={`Editar ${item.name}`}>
-              <span aria-hidden="true">✎</span> Editar
-            </button>
-          </div>
+          {/* Editar productos (precios incluidos) es solo del administrador. */}
+          {isAdmin && (
+            <div className="item-actions">
+              <button type="button" className="product-action" onClick={event => { event.stopPropagation(); onEditProduct(item); }} aria-label={`Editar ${item.name}`}>
+                <span aria-hidden="true">✎</span> Editar
+              </button>
+            </div>
+          )}
         </div>
       ))}
-      <button type="button" className="add-product-card" onClick={onAddProduct}>
-        <span className="add-product-plus">+</span>
-        <span>Agregar producto</span>
-      </button>
+      {isAdmin && (
+        <button type="button" className="add-product-card" onClick={onAddProduct}>
+          <span className="add-product-plus">+</span>
+          <span>Agregar producto</span>
+        </button>
+      )}
     </div>
   );
 }

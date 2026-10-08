@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MENU, MENU_VERSION } from "./data/menu.js";
 import { useOrders } from "./hooks/useOrders.js";
 import { useSales } from "./hooks/useSales.js";
+import { useRole } from "./hooks/useRole.js";
 import Header from "./components/Header.jsx";
 import CategoryTabs from "./components/CategoryTabs.jsx";
 import MenuGrid from "./components/MenuGrid.jsx";
@@ -11,6 +12,7 @@ import Board from "./components/Board.jsx";
 import CashClose from "./components/CashClose.jsx";
 import ProductModal from "./components/ProductModal.jsx";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
+import AdminLoginDialog from "./components/AdminLoginDialog.jsx";
 import { isMobilePay, isValidPayRef } from "./utils/payment.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
@@ -140,6 +142,7 @@ export default function App() {
   const [productToDelete, setProductToDelete] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [dayToClear, setDayToClear] = useState(null);
+  const [showAdminDialog, setShowAdminDialog] = useState(false);
 
   const categories = Object.keys(menu);
 
@@ -155,6 +158,28 @@ export default function App() {
     setIngredientAvailability(prev => syncIngredientAvailability(prev, menu));
     if (!menu[activeCat]) setActiveCat(categories[0]);
   }, [menu]);
+
+  // Rol actual: trabajador (por defecto) o administrador (con PIN). Ver useRole.js.
+  const { isAdmin, hasPin, tryUnlock, setupPin, lock } = useRole();
+
+  // Al salir del modo admin (manual o por inactividad) se cierra todo lo que
+  // fuera exclusivo de admin, para que no quede nada abierto a la vista.
+  useEffect(() => {
+    if (isAdmin) return;
+    setProductModal(null);
+    setProductToDelete(null);
+    setOrderToDelete(null);
+    setDayToClear(null);
+    setView(current => (current === "cash" ? "order" : current));
+  }, [isAdmin]);
+
+  function handleAdminClick() {
+    if (isAdmin) {
+      lock();
+    } else {
+      setShowAdminDialog(true);
+    }
+  }
 
   const {
     cart, orders, cartTotal,
@@ -186,6 +211,7 @@ export default function App() {
   }
 
   function saveProduct(product) {
+    if (!isAdmin) return;
     setMenu(prev => {
       const next = { ...prev };
       const id = product.id || `product-${Date.now()}`;
@@ -209,7 +235,7 @@ export default function App() {
   }
 
   function confirmDeleteProduct() {
-    if (!productToDelete) return;
+    if (!isAdmin || !productToDelete) return;
 
     const { id } = productToDelete;
     // Se elimina por id en todas las categorías en lugar de asumir que el
@@ -225,7 +251,7 @@ export default function App() {
   }
 
   function confirmDeleteOrder() {
-    if (!orderToDelete) return;
+    if (!isAdmin || !orderToDelete) return;
     removeOrder(orderToDelete.num);
     setOrderToDelete(null);
   }
@@ -266,7 +292,13 @@ export default function App() {
 
   return (
     <>
-      <Header view={view === "ticket" ? "order" : view} setView={setView} pendingCount={pendingCount} />
+      <Header
+        view={view === "ticket" ? "order" : view}
+        setView={setView}
+        pendingCount={pendingCount}
+        isAdmin={isAdmin}
+        onAdminClick={handleAdminClick}
+      />
 
       <main>
         {view === "order" && (
@@ -275,6 +307,7 @@ export default function App() {
               <CategoryTabs categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} />
               <MenuGrid
                 items={menu[activeCat] || []}
+                isAdmin={isAdmin}
                 onAdd={addToCart}
                 onAddProduct={() => setProductModal({ product: null, category: activeCat })}
                 onEditProduct={product => setProductModal({ product, category: activeCat })}
@@ -308,10 +341,11 @@ export default function App() {
             onAdvance={advanceStatus}
             onDelete={order => setOrderToDelete(order)}
             onCharge={handleChargeOrder}
+            canDelete={isAdmin}
           />
         )}
 
-        {view === "cash" && (
+        {view === "cash" && isAdmin && (
           <CashClose
             salesByDay={salesByDay}
             availableDays={availableDays}
@@ -322,7 +356,16 @@ export default function App() {
         )}
       </main>
 
-      {productModal && (
+      {showAdminDialog && (
+        <AdminLoginDialog
+          hasPin={hasPin}
+          onUnlock={tryUnlock}
+          onSetup={setupPin}
+          onClose={() => setShowAdminDialog(false)}
+        />
+      )}
+
+      {productModal && isAdmin && (
         <ProductModal
           categories={categories}
           activeCategory={productModal.category}

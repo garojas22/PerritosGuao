@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import logo from "../assets/logo-perritos-guao.png";
 
-export default function Header({ view, setView, pendingCount }) {
+export default function Header({ view, setView, pendingCount, isAdmin, onAdminClick }) {
   const [clock, setClock] = useState("");
 
   useEffect(() => {
@@ -33,11 +33,23 @@ export default function Header({ view, setView, pendingCount }) {
         <button className={view === "board" ? "active" : ""} onClick={() => setView("board")}>
           Pedidos activos {pendingCount > 0 && `(${pendingCount})`}
         </button>
-        <button className={view === "cash" ? "active" : ""} onClick={() => setView("cash")}>
-          Cierre de caja
-        </button>
+        {/* El cierre de caja es solo del administrador: el trabajador ni lo ve. */}
+        {isAdmin && (
+          <button className={view === "cash" ? "active" : ""} onClick={() => setView("cash")}>
+            Cierre de caja
+          </button>
+        )}
       </nav>
-      <div className="clock">{clock}</div>
+      <div className="header-right">
+        <div className="clock">{clock}</div>
+        <button
+          type="button"
+          className={`admin-chip ${isAdmin ? "is-admin" : ""}`}
+          onClick={onAdminClick}
+        >
+          {isAdmin ? "🔓 Modo admin · Salir" : "🔒 Acceso admin"}
+        </button>
+      </div>
     </header>
   );
 }
