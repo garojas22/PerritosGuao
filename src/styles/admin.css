@@ -2,38 +2,72 @@
 Modo trabajador / administrador
 ============================================================ */
 
-.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+/* ---------- Encabezado: reloj + botón de acceso ---------- */
 
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+
+/* El indicador es un punto de color en vez de un emoji: se ve igual en todos
+los dispositivos y mantiene la paleta del sistema. */
 .admin-chip{
-font-family:'Inter';font-weight:700;font-size:11.5px;
+display:inline-flex;align-items:center;gap:7px;
+font-family:'Inter';font-weight:600;font-size:11px;line-height:1;letter-spacing:.02em;
 padding:6px 12px;border-radius:999px;cursor:pointer;
 border:1.5px solid var(--line);background:var(--cream);color:var(--ink-soft);
+transition:background .15s ease,border-color .15s ease,color .15s ease;
 touch-action:manipulation;
+}
+.admin-chip::before{
+content:"";width:6px;height:6px;border-radius:50%;
+background:var(--ink-soft);flex-shrink:0;
 }
 .admin-chip:hover{color:var(--ink);border-color:var(--ink-soft);}
 .admin-chip.is-admin{background:var(--green);border-color:var(--green);color:#fff;}
+.admin-chip.is-admin::before{background:#fff;}
 .admin-chip.is-admin:hover{filter:brightness(.94);}
 
-/* El campo del PIN usa el mismo estilo que el campo Cliente (.field input[type=text]). */
-.admin-dialog .field{margin-bottom:14px;}
+/* ---------- Diálogo de PIN ---------- */
+
+.admin-dialog{max-width:340px;padding:22px 24px;}
+.admin-dialog h3{font-size:17px;margin:0 0 4px;}
+.admin-dialog p{font-size:13px;line-height:1.45;margin:0 0 18px;}
+
+.admin-dialog .field{margin-bottom:12px;}
 .admin-dialog .field label{
 font-size:11px;font-weight:700;color:var(--ink-soft);
 text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;
 }
+
+/* Misma forma que el campo Cliente (.field input[type=text]), un poco más compacto. */
 .admin-dialog .field input[type=password]{
-width:100%;padding:10px 14px;border-radius:99px;border:1.5px solid var(--line);
-font-family:'Inter';font-size:16px;background:var(--cream);letter-spacing:.2em;
+width:100%;padding:9px 16px;border-radius:99px;border:1.5px solid var(--line);
+font-family:'Inter';font-size:15px;background:var(--cream);color:var(--ink);
+outline:none;transition:border-color .15s ease,box-shadow .15s ease;
 }
-.admin-dialog .field-error{margin:0 0 14px;}
-.admin-dialog p{margin-bottom:16px;}
+/* El espaciado entre dígitos solo aplica cuando ya hay algo escrito;
+si se aplicara siempre, también estiraría el texto de ayuda (placeholder). */
+.admin-dialog .field input[type=password]:not(:placeholder-shown){letter-spacing:.3em;}
+.admin-dialog .field input[type=password]::placeholder{
+font-size:13px;letter-spacing:normal;color:var(--ink-soft);opacity:.7;
+}
+/* Foco naranja, igual que los campos del modal de productos. */
+.admin-dialog .field input[type=password]:focus{
+border-color:var(--orange);box-shadow:0 0 0 3px rgba(227,91,30,.12);
+}
+
+.admin-dialog .field-error{margin:2px 0 4px;}
+
+.admin-actions{gap:8px;margin-top:18px;}
+.admin-actions .confirm-btn-cancel,
+.admin-actions .admin-btn-submit{min-width:92px;padding:9px 16px;}
 .admin-actions .admin-btn-submit{
 font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;
-padding:10px 16px;border-radius:9px;cursor:pointer;
+border-radius:9px;cursor:pointer;
 border:1.5px solid var(--orange);background:var(--orange);color:#fff;
 }
-.admin-actions .admin-btn-submit:hover:not(:disabled){background:var(--orange-deep);}
+.admin-actions .admin-btn-submit:hover:not(:disabled){background:var(--orange-deep);border-color:var(--orange-deep);}
 .admin-actions .admin-btn-submit:disabled{opacity:.6;cursor:wait;}
 
 @media (max-width:600px){
 .header-right{align-items:center;width:100%;}
+.admin-dialog{padding:20px;}
 }

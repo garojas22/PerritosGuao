@@ -47,7 +47,7 @@ export default function Header({ view, setView, pendingCount, isAdmin, onAdminCl
           className={`admin-chip ${isAdmin ? "is-admin" : ""}`}
           onClick={onAdminClick}
         >
-          {isAdmin ? "🔓 Modo admin · Salir" : "🔒 Acceso admin"}
+          {isAdmin ? "Modo admin · Salir" : "Acceso admin"}
         </button>
       </div>
     </header>
