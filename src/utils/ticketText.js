@@ -1,3 +1,5 @@
+import { getLineParts } from './lineOptions';
+
 // Ancho de línea en caracteres para la impresora térmica.
 // La mayoría de las POS-80 con "Generic / Text Only" imprimen 42-48
 // caracteres por línea en fuente normal (80mm). Si el ticket real sale
@@ -64,6 +66,10 @@ export function buildTicketText(order, totalBs) {
     const left = `${l.qty}x ${l.name}`;
     const right = `$${(l.price * l.qty).toFixed(2)}`;
     rows.push(line(left, right));
+    // Tamaño, pan y tipo de carne: cada uno en su renglón para que quepa en 32 caracteres.
+    getLineParts(l).forEach((part) => {
+      rows.push(`  + ${part}`);
+    });
     l.mods.forEach((m) => {
       rows.push(`  » ${m}`);
     });

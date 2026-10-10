@@ -13,7 +13,9 @@ import CashClose from "./components/CashClose.jsx";
 import ProductModal from "./components/ProductModal.jsx";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
 import AdminLoginDialog from "./components/AdminLoginDialog.jsx";
-import { isMobilePay, isValidPayRef } from "./utils/payment.js";
+import ProductOptionsModal from "./components/ProductOptionsModal.jsx";
+import { needsPayRef, isValidPayRef } from "./utils/payment.js";
+import { needsOptions } from "./utils/lineOptions.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
 const MENU_STORAGE_KEY = "perritos_guao_menu";
@@ -60,6 +62,9 @@ function normalizeMenu(menu) {
     items.map(item => ({
       ...item,
       price: Number(item.price) || 0,
+      ...(Array.isArray(item.variants)
+        ? { variants: item.variants.map(variant => ({ ...variant, price: Number(variant.price) || 0 })) }
+        : {}),
       // Se sanea también al cargar: así los ingredientes basura que ya
       // quedaron guardados en localStorage se limpian solos.
       ingredients: sanitizeIngredients(item.ingredients),
@@ -67,6 +72,28 @@ function normalizeMenu(menu) {
       isCustom: Boolean(item.isCustom) || !BASE_PRODUCT_IDS.has(item.id),
     })),
   ]));
+}
+
+/**
+ * Cuando sube MENU_VERSION se recarga el menú del código, pero los productos
+ * que el administrador creó desde la app (isCustom) se conservan: si no, cada
+ * actualización del menú borraría lo que el dueño agregó a mano.
+ * Se lee la marca tal como se guardó, sin recalcularla: un producto del menú
+ * viejo que ya no existe en el nuevo no debe pasar por "propio".
+ */
+function keepCustomProducts(baseMenu, storedMenu) {
+  const merged = Object.fromEntries(Object.entries(baseMenu).map(([category, items]) => [category, [...items]]));
+  if (!storedMenu || typeof storedMenu !== "object") return merged;
+
+  Object.entries(storedMenu).forEach(([category, items]) => {
+    if (!Array.isArray(items)) return;
+    items
+      .filter(item => item?.isCustom === true)
+      .forEach(item => {
+        merged[category] = [...(merged[category] ?? []), item];
+      });
+  });
+  return merged;
 }
 
 function loadMenu() {
@@ -78,7 +105,9 @@ function loadMenu() {
     // Formato viejo: el objeto de categorías se guardaba pelado, sin
     // envoltorio { version, menu }. Se trata como version 0.
     const version = typeof parsed?.version === "number" ? parsed.version : 0;
-    if (version < MENU_VERSION) return normalizeMenu(MENU);
+    if (version < MENU_VERSION) {
+      return normalizeMenu(keepCustomProducts(MENU, version === 0 ? parsed : parsed?.menu));
+    }
 
     return normalizeMenu(parsed.menu);
   } catch (error) {
@@ -139,6 +168,7 @@ export default function App() {
   const [lastOrder, setLastOrder] = useState(null);
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
+  const [optionsProduct, setOptionsProduct] = useState(null); // producto con tamaños/elecciones por configurar
   const [productToDelete, setProductToDelete] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [dayToClear, setDayToClear] = useState(null);
@@ -243,6 +273,21 @@ export default function App() {
     setPayRef("");
   }
 
+  /** Tocar un producto: si hay que elegir tamaño o pan se abre la ventana; si no, entra directo. */
+  function handleAddProduct(item) {
+    if (needsOptions(item)) {
+      setOptionsProduct(item);
+    } else {
+      addToCart(item);
+    }
+  }
+
+  function confirmOptions(selection) {
+    if (!optionsProduct) return;
+    addToCart(optionsProduct, selection);
+    setOptionsProduct(null);
+  }
+
   function toggleIngredientAvailability(ingredient) {
     const ingredientKey = normalizeIngredientKey(ingredient);
     setIngredientAvailability(prev => ({
@@ -256,13 +301,18 @@ export default function App() {
     setMenu(prev => {
       const next = { ...prev };
       const id = product.id || `product-${Date.now()}`;
+      // Se parte del producto existente para no perder sus tamaños y elecciones
+      // (pan, carne) al guardar: el formulario solo edita nombre, precios y textos.
+      const existing = Object.values(prev).flat().find(candidate => candidate.id === product.id);
       const item = {
+        ...(existing ?? {}),
         id,
         name: product.name,
         price: product.price,
         desc: product.desc,
         ingredients: sanitizeIngredients(product.ingredients),
         isCustom: !BASE_PRODUCT_IDS.has(id),
+        ...(product.variants ? { variants: product.variants } : {}),
       };
 
       Object.keys(next).forEach(category => {
@@ -303,10 +353,10 @@ export default function App() {
       return;
     }
 
-    // Con pago móvil la referencia es obligatoria. Cart ya avisa al cajero;
-    // esta guarda evita que un pedido sin referencia entre por otro camino.
-    const mobilePay = isMobilePay(payType);
-    if (mobilePay && !isValidPayRef(payRef)) {
+    // Con pago móvil o tarjeta la referencia es obligatoria. Cart ya avisa al
+    // cajero; esta guarda evita que un pedido sin referencia entre por otro camino.
+    const refRequired = needsPayRef(payType);
+    if (refRequired && !isValidPayRef(payRef)) {
       return;
     }
 
@@ -314,9 +364,9 @@ export default function App() {
       customer: trimmedCustomer,
       orderType,
       payType,
-      // Si el pago no es móvil se descarta cualquier referencia que haya
-      // quedado escrita antes de cambiar de método.
-      payRef: mobilePay ? payRef : "",
+      // Si el pago no lleva referencia (efectivo) se descarta cualquiera que
+      // haya quedado escrita antes de cambiar de método.
+      payRef: refRequired ? payRef : "",
       ingredientAvailability,
       replaceNum: editingOrder ? editingOrder.num : null,
     });
@@ -356,7 +406,7 @@ export default function App() {
               <MenuGrid
                 items={menu[activeCat] || []}
                 isAdmin={isAdmin}
-                onAdd={addToCart}
+                onAdd={handleAddProduct}
                 onAddProduct={() => setProductModal({ product: null, category: activeCat })}
                 onEditProduct={product => setProductModal({ product, category: activeCat })}
               />
@@ -417,6 +467,14 @@ export default function App() {
           onUnlock={tryUnlock}
           onSetup={setupPin}
           onClose={() => setShowAdminDialog(false)}
+        />
+      )}
+
+      {optionsProduct && (
+        <ProductOptionsModal
+          product={optionsProduct}
+          onConfirm={confirmOptions}
+          onClose={() => setOptionsProduct(null)}
         />
       )}
 

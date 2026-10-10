@@ -26,6 +26,10 @@ function productToForm(product, category) {
     name: product.name,
     category,
     price: String(product.price),
+    // Productos con tamaños (1 carne / 2 carnes): un precio por cada tamaño.
+    variantPrices: Object.fromEntries(
+      (Array.isArray(product.variants) ? product.variants : []).map(variant => [variant.id, String(variant.price)])
+    ),
     ingredients: Array.isArray(product.ingredients) ? product.ingredients.join(", ") : "",
     desc: product.desc ?? "",
   };
@@ -33,6 +37,7 @@ function productToForm(product, category) {
 
 export default function ProductModal({ categories, activeCategory, product, onClose, onSave, onDeleteProduct }) {
   const [form, setForm] = useState(() => productToForm(product, activeCategory));
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -46,10 +51,16 @@ export default function ProductModal({ categories, activeCategory, product, onCl
     if (error) setError("");
   }
 
+  function updateVariantPrice(variantId, value) {
+    setForm(prev => ({ ...prev, variantPrices: { ...prev.variantPrices, [variantId]: value } }));
+    if (error) setError("");
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
     const name = form.name.trim();
-    const price = Number(form.price);
+    const variantPrices = variants.map(variant => Number(form.variantPrices[variant.id]));
+    const price = variants.length > 0 ? Math.min(...variantPrices) : Number(form.price);
     const ingredients = [...new Set(
       form.ingredients
         .split(",")
@@ -61,7 +72,8 @@ export default function ProductModal({ categories, activeCategory, product, onCl
       setError("Escribe el nombre del producto.");
       return;
     }
-    if (!Number.isFinite(price) || price < 0) {
+    const pricesToCheck = variants.length > 0 ? variantPrices : [price];
+    if (pricesToCheck.some(value => !Number.isFinite(value) || value < 0)) {
       setError("El precio debe ser un número válido.");
       return;
     }
@@ -86,6 +98,10 @@ export default function ProductModal({ categories, activeCategory, product, onCl
       name,
       category: form.category,
       price: Number(price.toFixed(2)),
+      // Con tamaños, cada uno conserva su etiqueta y unidades; solo cambia el precio.
+      variants: variants.length > 0
+        ? variants.map((variant, index) => ({ ...variant, price: Number(variantPrices[index].toFixed(2)) }))
+        : undefined,
       ingredients,
       desc: form.desc.trim() || ingredients.join(", "),
     });
@@ -119,10 +135,23 @@ export default function ProductModal({ categories, activeCategory, product, onCl
                 {categories.map(category => <option key={category} value={category}>{category}</option>)}
               </select>
             </label>
-            <label>
-              Precio USD
-              <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={updateField} placeholder="0.00" />
-            </label>
+            {variants.length === 0 && (
+              <label>
+                Precio USD
+                <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={updateField} placeholder="0.00" />
+              </label>
+            )}
+            {variants.map(variant => (
+              <label key={variant.id}>
+                Precio USD · {variant.label}
+                <input
+                  type="number" min="0" step="0.01"
+                  value={form.variantPrices[variant.id] ?? ""}
+                  onChange={event => updateVariantPrice(variant.id, event.target.value)}
+                  placeholder="0.00"
+                />
+              </label>
+            ))}
             <label className="modal-field-wide">
               Ingredientes
               <input name="ingredients" value={form.ingredients} onChange={updateField} placeholder="carne, queso, tocineta" />

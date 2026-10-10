@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { nextOrderNumber } from "../utils/orderCounter.js";
+import { describeLine, getDefaultSelection, resolveSelection } from "../utils/lineOptions.js";
 
 // STATUS_FLOW define a qué estado salta un pedido al hacer clic en su tarjeta.
 const STATUS_FLOW = { Pendiente: "Preparando", Preparando: "Listo", Listo: "Pendiente" };
@@ -35,7 +36,14 @@ export function useOrders() {
   const [cart, setCart] = useState([]); // [{ uid, id, name, price, qty, availMods, mods }]
   const [orders, setOrders] = useState([]);
 
-  function addToCart(item) {
+  /**
+   * Agrega un producto al carrito. Si tiene tamaños o elecciones (pan, carne),
+   * `selection` trae lo que se eligió; si no se pasa, se usan los valores por
+   * defecto. Todo lo elegido se guarda en la línea (precio, detalle e insumos
+   * que gasta) para que un cambio posterior del menú no altere el pedido.
+   */
+  function addToCart(item, selection = null) {
+    const resolved = resolveSelection(item, selection ?? getDefaultSelection(item));
     const availableMods = Array.isArray(item.ingredients) && item.ingredients.length > 0
       ? item.ingredients.map(ingredient => `Sin ${ingredient}`)
       : Array.isArray(item.mods) ? item.mods : [];
@@ -46,7 +54,10 @@ export function useOrders() {
         uid: Date.now() + Math.random(),
         id: item.id,
         name: item.name,
-        price: item.price,
+        price: resolved.price,
+        variantLabel: resolved.variantLabel,
+        optionLabels: resolved.optionLabels,
+        uses: resolved.uses, // insumos que gasta UNA unidad (para el inventario)
         qty: 1,
         ingredients: item.ingredients ?? [],
         availMods: availableMods,
@@ -158,9 +169,10 @@ export function useOrders() {
               time: timeLabel,
               prevTotal: previous.total,
               prevPay: previous.pay,
-              prevItems: previous.items.map(line =>
-                `${line.qty}x ${line.name}${line.mods.length ? ` (${line.mods.join(", ")})` : ""}`
-              ),
+              prevItems: previous.items.map(line => {
+                const detail = [describeLine(line), ...line.mods].filter(Boolean).join(", ");
+                return `${line.qty}x ${line.name}${detail ? ` (${detail})` : ""}`;
+              }),
             },
           ]
         : [],

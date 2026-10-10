@@ -1,3 +1,5 @@
+import { describeLine } from "../utils/lineOptions.js";
+
 const COLUMNS = [
   { status: "Pendiente", label: "Pendiente", colClass: "col-pend" },
   { status: "Preparando", label: "En preparación", colClass: "col-prep" },
@@ -28,7 +30,10 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
         )}
       </div>
       <div className="oc-name">{order.customer}</div>
-      <div className="oc-items">{order.items.map(l => `${l.qty}x ${l.name}`).join(", ")}</div>
+      <div className="oc-items">{order.items.map(l => {
+        const detail = describeLine(l);
+        return `${l.qty}x ${l.name}${detail ? ` (${detail})` : ""}`;
+      }).join(", ")}</div>
       {order.revision > 0 && <div className="oc-corrected">Corregido</div>}
       <div className="oc-foot">
         <span>{order.type} · {order.pay}{order.payRef ? ` · Ref. ${order.payRef}` : ''}</span>

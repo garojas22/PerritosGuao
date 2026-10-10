@@ -1,3 +1,5 @@
+import { getStartingPrice, hasVariants } from '../utils/lineOptions';
+
 export default function MenuGrid({ items, isAdmin = false, onAdd, onAddProduct, onEditProduct }) {
   return (
     <div className="menu-grid">
@@ -5,7 +7,10 @@ export default function MenuGrid({ items, isAdmin = false, onAdd, onAddProduct, 
         <div key={item.id} className="item-card" onClick={() => onAdd(item)} role="button" tabIndex="0">
           <div className="row-top">
             <h3>{item.name}</h3>
-            <span className="price">${item.price.toFixed(2)}</span>
+            <span className="price">
+              {hasVariants(item) && item.variants.length > 1 && <span className="price-from">desde</span>}
+              ${getStartingPrice(item).toFixed(2)}
+            </span>
           </div>
           <p>{item.desc}</p>
           {/* Editar productos (precios incluidos) es solo del administrador. */}

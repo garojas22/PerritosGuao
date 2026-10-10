@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useBcvRate } from '../hooks/useBcvRate';
-import { PAY_MOBILE, PAY_REF_LENGTH, isMobilePay, sanitizePayRef, isValidPayRef } from '../utils/payment';
+import { PAY_MOBILE, PAY_CARD, PAY_REF_LENGTH, needsPayRef, sanitizePayRef, isValidPayRef } from '../utils/payment';
+import { describeLine } from '../utils/lineOptions';
 
 function normalizeIngredientKey(value = "") {
   return value
@@ -24,6 +25,8 @@ const INGREDIENT_LABELS = {
   "queso de ano": "queso de año",
   "maiz": "maíz",
   "limon": "limón",
+  "salsa bk": "salsa BK",
+  "salsa x": "salsa X",
 };
 
 function getIngredientLabel(ingredient) {
@@ -37,6 +40,7 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
         <span className="name">{line.name}</span>
         <span className="price">${(line.price * line.qty).toFixed(2)}</span>
       </div>
+      {describeLine(line) && <div className="line-detail">{describeLine(line)}</div>}
       <div className="qty-ctrl">
         <button onClick={() => onQty(line.uid, -1)}>−</button>
         <span>{line.qty}</span>
@@ -84,7 +88,7 @@ export default function Cart({
   const bcvRate = useBcvRate();
   const totalBs = bcvRate !== null && bcvRate !== undefined ? cartTotal * bcvRate : null;
   const isCustomerValid = customer.trim().length > 0;
-  const needsPayRef = isMobilePay(payType);
+  const refRequired = needsPayRef(payType);
   const isPayRefValid = isValidPayRef(payRef);
 
   function handleGenerateClick() {
@@ -101,7 +105,7 @@ export default function Cart({
       return;
     }
 
-    if (needsPayRef && !isPayRefValid) {
+    if (refRequired && !isPayRefValid) {
       setShowPayRefError(true);
       payRefInputRef.current?.focus();
       return;
@@ -173,7 +177,7 @@ export default function Cart({
       <div className="field">
         <label>Forma de pago</label>
         <div className="segmented">
-          {["Efectivo", PAY_MOBILE, "Tarjeta"].map(opt => (
+          {["Efectivo", PAY_MOBILE, PAY_CARD].map(opt => (
             <button key={opt} className={payType === opt ? "active" : ""} onClick={() => setPayType(opt)}>
               {opt}
             </button>
@@ -181,7 +185,7 @@ export default function Cart({
         </div>
       </div>
 
-      {needsPayRef && (
+      {refRequired && (
         <div className="field">
           <label>Referencia (últimos {PAY_REF_LENGTH} dígitos)</label>
           {/* type="text" a propósito: así toma exactamente el mismo estilo que

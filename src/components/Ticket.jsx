@@ -1,5 +1,6 @@
 import { useBcvRate } from '../hooks/useBcvRate';
 import { buildTicketText } from '../utils/ticketText';
+import { getLineParts } from '../utils/lineOptions';
 
 export default function Ticket({ order, onNewOrder, onEdit }) {
   const bcvRate = useBcvRate();
@@ -46,6 +47,9 @@ export default function Ticket({ order, onNewOrder, onEdit }) {
               <span>{l.qty}x {l.name}</span>
               <span>${(l.price * l.qty).toFixed(2)}</span>
             </div>
+            {getLineParts(l).map(part => (
+              <div className="lopts" key={part}>+ {part}</div>
+            ))}
             {l.mods.length > 0 && (
               <div className="lmods">
                 {l.mods.map((m, i) => (
