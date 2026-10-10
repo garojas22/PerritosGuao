@@ -1,4 +1,5 @@
 import { summarizeSales, formatDayLabel, formatUsd } from './salesReport';
+import { getOrderPayments, isSplitPayment } from './payment';
 
 /**
  * Exportación del cierre de caja a un Excel real (.xlsx) con formato.
@@ -89,8 +90,8 @@ sheet.columns = [
 { key: 'closed', width: 12 },
 { key: 'customer', width: ORDER_COL_WIDTHS.customer },
 { key: 'type', width: 12 },
-{ key: 'pay', width: 16 },
-{ key: 'ref', width: 12 },
+{ key: 'pay', width: 24 },
+{ key: 'ref', width: 18 },
 { key: 'items', width: ORDER_COL_WIDTHS.items },
 { key: 'mods', width: ORDER_COL_WIDTHS.mods },
 { key: 'units', width: 10 },
@@ -105,7 +106,7 @@ writeTitle(sheet, 'N', 'CIERRE DE CAJA', formatDayLabel(dateKey));
 const headerRow = sheet.getRow(4);
 headerRow.values = [
 'N° pedido', 'Hora pedido', 'Hora cobro', 'Cliente', 'Tipo', 'Método de pago',
-'Ref. pago móvil', 'Productos', 'Modificadores', 'Unidades', 'Total USD', 'Total Bs', 'Tasa BCV', 'Correcciones',
+'Referencia', 'Productos', 'Modificadores', 'Unidades', 'Total USD', 'Total Bs', 'Tasa BCV', 'Correcciones',
 ];
 styleHeaderRow(headerRow);
 
@@ -117,6 +118,16 @@ const productLines = items.map(item => `${item.qty}x ${item.name}`);
 const modLines = items
     .filter(item => Array.isArray(item.mods) && item.mods.length > 0)
     .map(item => `${item.name}: ${item.mods.join(', ')}`);
+// Pago dividido: un método por línea con su monto ("Efectivo $2.00"); la
+// referencia va con el nombre de su método para poder cuadrarla con el banco.
+const payments = getOrderPayments(sale);
+const split = isSplitPayment(sale);
+const payLines = split
+? payments.map(part => `${part.method} ${formatUsd(part.amount)}`)
+: [sale.pay || ''];
+const refLines = split
+? payments.filter(part => part.ref).map(part => `${part.method}: ${part.ref}`)
+: (sale.payRef ? [String(sale.payRef)] : []); // TEXTO a propósito, ver cabecera
 const units = items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
 
 const row = sheet.addRow([
@@ -125,8 +136,8 @@ const row = sheet.addRow([
     sale.closedTime || '',
     sale.customer || '',
     sale.type || '',
-    sale.pay || '',
-    sale.payRef ? String(sale.payRef) : '', // TEXTO a propósito, ver cabecera
+    payLines.join('\n'),
+    refLines.join('\n'),
     productLines.join('\n'),
     modLines.join('\n'),
     units,
@@ -145,16 +156,21 @@ const visualLines = Math.max(
     wrappedLineCount(productLines, ORDER_COL_WIDTHS.items),
     wrappedLineCount(modLines, ORDER_COL_WIDTHS.mods),
     wrappedLineCount([sale.customer || ''], ORDER_COL_WIDTHS.customer),
+    payLines.length,
+    refLines.length,
 );
 row.height = Math.max(22, visualLines * 16 + 6);
 row.alignment = { vertical: 'middle' };
-['num', 'time', 'closed', 'type', 'pay', 'ref', 'units'].forEach(key => {
+['num', 'time', 'closed', 'type', 'units'].forEach(key => {
     row.getCell(key).alignment = { vertical: 'middle', horizontal: 'center' };
 });
 ['items', 'mods'].forEach(key => {
     row.getCell(key).alignment = { vertical: 'middle', wrapText: true };
 });
 row.getCell('customer').alignment = { vertical: 'middle', wrapText: true };
+['pay', 'ref'].forEach(key => {
+row.getCell(key).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+});
 row.getCell('fixes').alignment = { vertical: 'middle', wrapText: true };
 row.getCell('num').font = { bold: true };
 row.getCell('usd').numFmt = FMT_USD;
@@ -272,10 +288,61 @@ summary.products.map(product => [product.name, product.qty, product.totalUsd]),
 return sheet;
 }
 
+/* ---------- Hoja 3: inventario ---------- */
+
+function buildInventorySheet(workbook, inventory, dateKey) {
+const sheet = workbook.addWorksheet('Inventario', {
+views: [{ state: 'frozen', ySplit: 4 }],
+pageSetup: { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+});
+sheet.columns = [
+{ key: 'group', width: 14 },
+{ key: 'name', width: 28 },
+{ key: 'carry', width: 16 },
+{ key: 'entered', width: 14 },
+{ key: 'available', width: 14 },
+{ key: 'sold', width: 12 },
+{ key: 'remaining', width: 12 },
+];
+
+writeTitle(sheet, 'G', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
+
+const headerRow = sheet.getRow(4);
+headerRow.values = ['Grupo', 'Insumo', 'Sobrante de ayer', 'Ingresó hoy', 'Disponible', 'Vendido', 'Quedan'];
+styleHeaderRow(headerRow);
+
+let index = 0;
+inventory.groups.forEach(({ group, rows }) => {
+rows.forEach(item => {
+const rowNumber = 5 + index;
+const tracked = item.available !== null;
+const row = sheet.addRow([
+group,
+item.name,
+item.carry,
+item.entered,
+// Fórmulas: si alguien corrige un número en Excel, el resto se recalcula.
+tracked ? { formula: `N(C${rowNumber})+N(D${rowNumber})`, result: item.available } : null,
+item.sold,
+tracked ? { formula: `E${rowNumber}-F${rowNumber}`, result: item.remaining } : null,
+]);
+styleBodyRow(row, index);
+for (let col = 3; col <= 7; col += 1) {
+row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
+}
+row.getCell('name').font = { bold: true };
+if (item.status === 'out') row.getCell('remaining').font = { bold: true, color: { argb: 'FFC1502E' } };
+index += 1;
+});
+});
+
+return sheet;
+}
+
 /* ---------- API pública ---------- */
 
 /** Arma el libro de Excel del día. Exportada aparte de la descarga para poder probarla. */
-export async function buildSalesWorkbook(sales = [], dateKey) {
+export async function buildSalesWorkbook(sales = [], dateKey, inventory = null) {
 const { default: ExcelJS } = await import('exceljs');
 const workbook = new ExcelJS.Workbook();
 workbook.creator = 'Punto Pedido';
@@ -283,12 +350,14 @@ workbook.created = new Date();
 
 buildOrdersSheet(workbook, sales, dateKey);
 buildSummarySheet(workbook, sales, dateKey);
+// Solo se agrega la hoja de inventario si ese día se ingresó algún insumo.
+if (inventory?.hasStock) buildInventorySheet(workbook, inventory, dateKey);
 return workbook;
 }
 
 /** Genera el .xlsx y dispara la descarga en el navegador. */
-export async function downloadSalesExcel(sales, dateKey) {
-const workbook = await buildSalesWorkbook(sales, dateKey);
+export async function downloadSalesExcel(sales, dateKey, inventory = null) {
+const workbook = await buildSalesWorkbook(sales, dateKey, inventory);
 const buffer = await workbook.xlsx.writeBuffer();
 const blob = new Blob([buffer], {
 type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

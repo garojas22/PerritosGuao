@@ -1,4 +1,5 @@
 import { getLineParts } from './lineOptions';
+import { getOrderPayments, isSplitPayment } from './payment';
 
 // Ancho de línea en caracteres para la impresora térmica.
 // La mayoría de las POS-80 con "Generic / Text Only" imprimen 42-48
@@ -58,8 +59,18 @@ export function buildTicketText(order, totalBs) {
 
   rows.push(line('Cliente:', order.customer));
   rows.push(line('Hora:', order.time));
-  rows.push(`${order.type.toUpperCase()} / ${order.pay.toUpperCase()}`);
-  if (order.payRef) rows.push(line('Ref. pago:', order.payRef));
+  if (isSplitPayment(order)) {
+    // Pago dividido: un renglón por método, con su monto y su referencia.
+    rows.push(order.type.toUpperCase());
+    rows.push('PAGO DIVIDIDO:');
+    getOrderPayments(order).forEach((part) => {
+      rows.push(line(`  ${part.method}`, `$${Number(part.amount).toFixed(2)}`));
+      if (part.ref) rows.push(`    Ref. ${part.ref}`);
+    });
+  } else {
+    rows.push(`${order.type.toUpperCase()} / ${order.pay.toUpperCase()}`);
+    if (order.payRef) rows.push(line('Ref. pago:', order.payRef));
+  }
   rows.push(dashes());
 
   order.items.forEach((l) => {

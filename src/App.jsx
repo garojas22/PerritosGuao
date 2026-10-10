@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MENU, MENU_VERSION } from "./data/menu.js";
 import { useOrders } from "./hooks/useOrders.js";
 import { useSales } from "./hooks/useSales.js";
+import { useInventory } from "./hooks/useInventory.js";
 import { useRole } from "./hooks/useRole.js";
 import Header from "./components/Header.jsx";
 import CategoryTabs from "./components/CategoryTabs.jsx";
@@ -14,7 +15,10 @@ import ProductModal from "./components/ProductModal.jsx";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
 import AdminLoginDialog from "./components/AdminLoginDialog.jsx";
 import ProductOptionsModal from "./components/ProductOptionsModal.jsx";
-import { needsPayRef, isValidPayRef } from "./utils/payment.js";
+import {
+  needsPayRef, isValidPayRef, getOrderPayments, validateSplit,
+  partsToPayments, paymentsToParts, roundMoney,
+} from "./utils/payment.js";
 import { needsOptions } from "./utils/lineOptions.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
@@ -165,6 +169,8 @@ export default function App() {
   const [orderType, setOrderType] = useState("Local");
   const [payType, setPayType] = useState("Efectivo");
   const [payRef, setPayRef] = useState("");
+  const [splitPay, setSplitPay] = useState(false); // pago repartido entre varios métodos
+  const [payParts, setPayParts] = useState([]); // filas del pago dividido (ver Cart.jsx)
   const [lastOrder, setLastOrder] = useState(null);
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
@@ -224,6 +230,9 @@ export default function App() {
     recordSale, removeSale, clearDay,
   } = useSales();
 
+  // Insumos que ingresaron cada día; lo vendido sale de las ventas cobradas.
+  const { stockByDay, setStockEntry, clearStockDay } = useInventory();
+
   /**
    * Cobrar un pedido: queda asentado en el registro de ventas (persistido)
    * y sale del tablero de pedidos activos. Es el único camino por el que
@@ -246,8 +255,18 @@ export default function App() {
     loadCartFromOrder(order);
     setCustomer(order.customer);
     setOrderType(order.type);
-    setPayType(order.pay);
-    setPayRef(order.payRef || "");
+    const payments = getOrderPayments(order);
+    if (payments.length > 1) {
+      setSplitPay(true);
+      setPayParts(paymentsToParts(payments));
+      setPayType(payments[0].method);
+      setPayRef("");
+    } else {
+      setSplitPay(false);
+      setPayParts([]);
+      setPayType(payments[0]?.method ?? order.pay);
+      setPayRef(payments[0]?.ref ?? order.payRef ?? "");
+    }
     setEditingNum(order.num);
     setPendingEdit(null);
     setView("order");
@@ -271,6 +290,8 @@ export default function App() {
     setOrderType("Local");
     setPayType("Efectivo");
     setPayRef("");
+    setSplitPay(false);
+    setPayParts([]);
   }
 
   /** Tocar un producto: si hay que elegir tamaño o pan se abre la ventana; si no, entra directo. */
@@ -355,18 +376,27 @@ export default function App() {
 
     // Con pago móvil o tarjeta la referencia es obligatoria. Cart ya avisa al
     // cajero; esta guarda evita que un pedido sin referencia entre por otro camino.
-    const refRequired = needsPayRef(payType);
-    if (refRequired && !isValidPayRef(payRef)) {
-      return;
+    let payments;
+    if (splitPay) {
+      // Pago dividido: los montos deben sumar exactamente el total del pedido.
+      if (validateSplit(payParts, cartTotal)) {
+        return;
+      }
+      payments = partsToPayments(payParts);
+    } else {
+      const refRequired = needsPayRef(payType);
+      if (refRequired && !isValidPayRef(payRef)) {
+        return;
+      }
+      // Si el pago no lleva referencia (efectivo) se descarta cualquiera que
+      // haya quedado escrita antes de cambiar de método.
+      payments = [{ method: payType, amount: roundMoney(cartTotal), ref: refRequired ? payRef : "" }];
     }
 
     const order = generateTicket({
       customer: trimmedCustomer,
       orderType,
-      payType,
-      // Si el pago no lleva referencia (efectivo) se descarta cualquiera que
-      // haya quedado escrita antes de cambiar de método.
-      payRef: refRequired ? payRef : "",
+      payments,
       ingredientAvailability,
       replaceNum: editingOrder ? editingOrder.num : null,
     });
@@ -378,6 +408,8 @@ export default function App() {
     setEditingNum(null);
     setCustomer("");
     setPayRef("");
+    setSplitPay(false);
+    setPayParts([]);
     setView("ticket");
   }
 
@@ -422,6 +454,8 @@ export default function App() {
               orderType={orderType} setOrderType={setOrderType}
               payType={payType} setPayType={setPayType}
               payRef={payRef} setPayRef={setPayRef}
+              splitPay={splitPay} setSplitPay={setSplitPay}
+              payParts={payParts} setPayParts={setPayParts}
               ingredientAvailability={ingredientAvailability}
               toggleIngredientAvailability={toggleIngredientAvailability}
               onGenerate={handleGenerate}
@@ -455,6 +489,9 @@ export default function App() {
             salesByDay={salesByDay}
             availableDays={availableDays}
             today={today}
+            stockByDay={stockByDay}
+            onSetStock={setStockEntry}
+            onClearStock={clearStockDay}
             onRemoveSale={removeSale}
             onClearDay={dateKey => setDayToClear(dateKey)}
           />

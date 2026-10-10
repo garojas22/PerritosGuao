@@ -1,0 +1,86 @@
+/* ============================================================
+   Pago dividido: un pedido pagado con varios métodos
+   (ej. $2 en efectivo + $8 en pago móvil)
+   ============================================================ */
+
+/* Enlace para activar / desactivar el pago dividido, debajo de los métodos. */
+.split-toggle{
+  display:block;margin:8px 0 0;padding:4px 0;background:none;border:none;cursor:pointer;
+  font-family:'Inter';font-size:12px;font-weight:700;color:var(--orange-deep);text-align:left;
+  touch-action:manipulation;
+}
+.split-toggle:hover{text-decoration:underline;}
+
+.split-pay{
+  display:flex;flex-direction:column;gap:10px;margin-bottom:14px;
+  padding:12px;border-radius:12px;background:var(--cream);border:1.5px solid var(--line);
+}
+.split-row{
+  display:flex;flex-direction:column;gap:6px;
+  padding-bottom:10px;border-bottom:1px dashed var(--line);
+}
+.split-row:last-of-type{border-bottom:none;padding-bottom:0;}
+.split-row-main{display:flex;align-items:center;gap:8px;}
+
+.split-method{
+  flex:1;min-width:0;padding:10px 10px;border-radius:9px;border:1.5px solid var(--line);
+  background:var(--paper);color:var(--ink);font-family:'Inter';font-size:13px;font-weight:600;cursor:pointer;
+}
+
+.split-amount{
+  display:flex;align-items:center;gap:4px;width:112px;flex-shrink:0;
+  padding:0 10px;border-radius:9px;border:1.5px solid var(--line);background:var(--paper);
+}
+.split-amount span{font-family:'JetBrains Mono';font-size:13px;color:var(--ink-soft);font-weight:700;}
+.split-amount input{
+  width:100%;min-width:0;padding:10px 0;border:none;outline:none;background:transparent;
+  font-family:'JetBrains Mono';font-size:16px;font-weight:700;color:var(--ink);
+}
+.split-amount:focus-within{border-color:var(--orange);}
+
+.split-ref{
+  width:100%;padding:9px 12px;border-radius:99px;border:1.5px solid var(--line);
+  background:var(--paper);font-family:'Inter';font-size:16px;
+}
+.split-amount.invalid,
+.split-ref.invalid{
+  border-color:rgba(193,80,46,.8);background:rgba(193,80,46,.04);
+  box-shadow:0 0 0 3px rgba(193,80,46,.08);
+}
+
+.split-remove{
+  flex-shrink:0;width:30px;height:30px;border-radius:8px;border:none;background:none;cursor:pointer;
+  color:var(--ink-soft);font-size:14px;line-height:1;
+}
+.split-remove:hover{background:rgba(193,80,46,.12);color:var(--rust);}
+
+.split-row-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.split-row-foot:empty{display:none;}
+.split-bs{font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink-soft);font-weight:600;}
+.split-fill,
+.split-add{
+  background:none;border:none;padding:2px 0;cursor:pointer;
+  font-family:'Inter';font-size:11.5px;font-weight:700;color:var(--ink-soft);touch-action:manipulation;
+}
+.split-fill{margin-left:auto;}
+.split-add{align-self:flex-start;}
+.split-fill:hover,
+.split-add:hover{color:var(--orange-deep);text-decoration:underline;}
+
+/* Estado: falta / cubierto / se pasa. */
+.split-status{
+  padding:8px 10px;border-radius:10px;text-align:center;
+  background:rgba(217,154,43,.14);border:1px solid rgba(217,154,43,.4);
+  color:var(--brown);font-size:12px;font-weight:800;
+}
+.split-status.ok{background:rgba(94,140,90,.14);border-color:rgba(94,140,90,.4);color:var(--green);}
+.split-status.over{background:rgba(193,80,46,.08);border-color:rgba(193,80,46,.25);color:var(--rust);}
+.split-pay .field-error{margin-top:0;}
+
+/* En el cierre de caja: pago dividido dentro de la tabla de detalle. */
+.cc-split-tag{
+  display:inline-block;margin-bottom:3px;padding:1px 7px;border-radius:5px;
+  border:1px solid rgba(217,154,43,.5);background:rgba(217,154,43,.12);
+  color:var(--brown);font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+}
+.cc-pay-part{display:block;font-size:12.5px;margin-top:2px;}

@@ -3,9 +3,11 @@
 @import './menu.css';
 @import './products.css';
 @import './cart.css';
+@import './split-payment.css';
 @import './ticket.css';
 @import './board.css';
 @import './cash-close.css';
+@import './inventory.css';
 @import './confirm-dialog.css';
 @import './admin.css';
 @import './corrections.css';

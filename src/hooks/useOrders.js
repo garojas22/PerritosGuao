@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { nextOrderNumber } from "../utils/orderCounter.js";
 import { describeLine, getDefaultSelection, resolveSelection } from "../utils/lineOptions.js";
+import { buildPayLabel, buildPayRefText } from "../utils/payment.js";
 
 // STATUS_FLOW define a qué estado salta un pedido al hacer clic en su tarjeta.
 const STATUS_FLOW = { Pendiente: "Preparando", Preparando: "Listo", Listo: "Pendiente" };
@@ -120,9 +121,9 @@ export function useOrders() {
    * rastro. Cada corrección guarda en `edits` cómo era antes, para que el
    * administrador pueda verlo en el cierre de caja.
    */
-  function generateTicket({ customer, orderType, payType, payRef = "", ingredientAvailability = {}, replaceNum = null }) {
+  function generateTicket({ customer, orderType, payments, ingredientAvailability = {}, replaceNum = null }) {
     const trimmedCustomer = customer.trim();
-    if (!trimmedCustomer) {
+    if (!trimmedCustomer || !Array.isArray(payments) || payments.length === 0) {
       return null;
     }
 
@@ -151,8 +152,13 @@ export function useOrders() {
       num: previous ? previous.num : nextOrderNumber(), // persistente: no se reinicia al refrescar (ver orderCounter.js)
       customer: trimmedCustomer,
       type: orderType,
-      pay: payType,
-      payRef, // últimos 4 dígitos de la referencia; "" si no fue pago móvil
+      // `payments` es el detalle real: [{ method, amount (USD), ref }]. Uno solo
+      // si se pagó con un método, varios si el pago fue dividido (ver payment.js).
+      // `pay` y `payRef` son el resumen en texto que ya leían el tablero, el
+      // comprobante y el Excel: "Efectivo + Pago móvil" y las referencias.
+      payments,
+      pay: buildPayLabel(payments),
+      payRef: buildPayRefText(payments),
       items: cart,
       total: cartTotal,
       totalBs,
@@ -169,6 +175,7 @@ export function useOrders() {
               time: timeLabel,
               prevTotal: previous.total,
               prevPay: previous.pay,
+              prevPayments: previous.payments ?? null,
               prevItems: previous.items.map(line => {
                 const detail = [describeLine(line), ...line.mods].filter(Boolean).join(", ");
                 return `${line.qty}x ${line.name}${detail ? ` (${detail})` : ""}`;

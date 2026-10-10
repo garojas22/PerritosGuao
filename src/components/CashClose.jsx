@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   summarizeSales,
   formatDayLabel,
@@ -7,6 +7,8 @@ import {
   getBusinessDayKey,
 } from '../utils/salesReport';
 import { downloadSalesExcel } from '../utils/salesExcel';
+import { summarizeInventory } from '../utils/inventoryReport';
+import { PAY_MOBILE, getOrderPayments, isSplitPayment, paymentBs } from '../utils/payment';
 
 function StatCard({ label, value, sub, accent }) {
   return (
@@ -18,7 +20,44 @@ function StatCard({ label, value, sub, accent }) {
   );
 }
 
-export default function CashClose({ salesByDay, availableDays, today, onRemoveSale, onClearDay }) {
+/**
+ * Campo numérico del inventario. Guarda lo escrito mientras se teclea, para
+ * poder escribir un "-" (ajuste negativo por merma) sin que el campo se borre.
+ */
+function StockInput({ value, onCommit, label }) {
+  const [draft, setDraft] = useState(value ?? '');
+
+  useEffect(() => {
+    setDraft(value ?? '');
+  }, [value]);
+
+  function handleChange(event) {
+    const text = event.target.value;
+    if (!/^-?\d{0,6}$/.test(text)) return; // solo enteros, con "-" opcional
+    setDraft(text);
+    if (text === '') onCommit(null);
+    else if (text !== '-') onCommit(Number(text));
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      className="inv-input"
+      value={draft}
+      onChange={handleChange}
+      placeholder="0"
+      aria-label={label}
+    />
+  );
+}
+
+const INV_STATUS_LABEL = { out: 'Agotado', low: 'Poco' };
+
+export default function CashClose({
+  salesByDay, availableDays, today, stockByDay = {}, onSetStock, onClearStock, onRemoveSale, onClearDay,
+}) {
   const [selectedDay, setSelectedDay] = useState(today);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -27,13 +66,15 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
   const sales = salesByDay[dayKey] || [];
   const summary = summarizeSales(sales);
   const isToday = dayKey === getBusinessDayKey();
+  const inventory = summarizeInventory({ dayKey, sales, stockByDay, salesByDay });
+  const hasEntries = Object.keys(stockByDay[dayKey] || {}).length > 0;
 
   const dayOptions = availableDays.includes(today) ? availableDays : [today, ...availableDays];
 
   async function handleExport() {
     setIsExporting(true);
     try {
-      await downloadSalesExcel(sales, dayKey);
+      await downloadSalesExcel(sales, dayKey, inventory);
     } catch (error) {
       console.error('No se pudo generar el Excel:', error);
       window.alert('No se pudo generar el archivo de Excel. Intenta de nuevo.');
@@ -41,6 +82,75 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
       setIsExporting(false);
     }
   }
+
+  const inventoryPanel = (
+    <section className="cc-panel cc-panel-wide">
+      <div className="inv-head">
+        <div>
+          <h3>Inventario del día</h3>
+          <p className="cc-panel-hint">
+            Escribe cuántas unidades ingresaron hoy de cada insumo. Lo vendido se descuenta solo de los pedidos cobrados.
+          </p>
+        </div>
+        {hasEntries && (
+          <button type="button" className="cc-btn cc-btn-danger" onClick={() => onClearStock(dayKey)}>
+            Limpiar ingresos del día
+          </button>
+        )}
+      </div>
+
+      {inventory.salesWithoutDetail > 0 && (
+        <div className="inv-note">
+          {inventory.salesWithoutDetail === 1
+            ? '1 venta de este día se cobró antes de activar el inventario y no descuenta insumos.'
+            : `${inventory.salesWithoutDetail} ventas de este día se cobraron antes de activar el inventario y no descuentan insumos.`}
+        </div>
+      )}
+
+      <div className="cc-table-scroll">
+        <table className="cc-table inv-table">
+          <thead>
+            <tr>
+              <th>Insumo</th>
+              <th className="cc-num">Sobrante de ayer</th>
+              <th className="cc-num">Ingresó hoy</th>
+              <th className="cc-num">Disponible</th>
+              <th className="cc-num">Vendido</th>
+              <th className="cc-num">Quedan</th>
+            </tr>
+          </thead>
+          {inventory.groups.map(({ group, rows }) => (
+            <tbody key={group}>
+              <tr className="inv-group"><td colSpan={6}>{group}</td></tr>
+              {rows.map(row => (
+                <tr key={row.id}>
+                  <td className="cc-strong">{row.name}</td>
+                  <td className="cc-num inv-muted">{row.carry !== null ? row.carry : '—'}</td>
+                  <td className="cc-num">
+                    <StockInput
+                      value={row.entered}
+                      onCommit={value => onSetStock(dayKey, row.id, value)}
+                      label={`Ingresó hoy: ${row.name}`}
+                    />
+                  </td>
+                  <td className="cc-num">{row.available !== null ? row.available : '—'}</td>
+                  <td className="cc-num">{row.sold}</td>
+                  <td className="cc-num">
+                    {row.remaining !== null ? (
+                      <span className={`inv-remaining ${row.status ? `inv-${row.status}` : ''}`}>
+                        {row.remaining}
+                        {row.status && <em>{INV_STATUS_LABEL[row.status]}</em>}
+                      </span>
+                    ) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </section>
+  );
 
   return (
     <div className="cash-close">
@@ -69,7 +179,7 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
             type="button"
             className="cc-btn cc-btn-excel"
             onClick={handleExport}
-            disabled={sales.length === 0 || isExporting}
+            disabled={(sales.length === 0 && !inventory.hasStock) || isExporting}
           >
             {isExporting ? 'Generando…' : '⬇ Exportar a Excel'}
           </button>
@@ -77,10 +187,13 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
       </div>
 
       {sales.length === 0 ? (
+        <>
         <div className="cc-empty">
           Todavía no hay ventas cobradas en este día.
           <span>Los pedidos entran aquí cuando los cobras desde "Pedidos activos".</span>
         </div>
+        {inventoryPanel}
+        </>
       ) : (
         <>
           <div className="cc-stats">
@@ -98,10 +211,13 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
           <div className="cc-grid">
             <section className="cc-panel">
               <h3>Por método de pago</h3>
-              <p className="cc-panel-hint">Usa esto para cuadrar el efectivo en caja.</p>
+              <p className="cc-panel-hint">
+                Usa esto para cuadrar el efectivo en caja.
+                {summary.splitCount > 0 && ` ${summary.splitCount} ${summary.splitCount === 1 ? 'pedido se pagó' : 'pedidos se pagaron'} con más de un método: cada uno suma solo su parte.`}
+              </p>
               <table className="cc-mini-table">
                 <thead>
-                  <tr><th>Método</th><th>Pedidos</th><th>Total</th></tr>
+                  <tr><th>Método</th><th>Pagos</th><th>Total</th></tr>
                 </thead>
                 <tbody>
                   {Object.entries(summary.byPayment).map(([method, data]) => (
@@ -157,6 +273,8 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
             </section>
           </div>
 
+          {inventoryPanel}
+
           <section className="cc-panel cc-panel-wide">
             <h3>Detalle de pedidos</h3>
             <div className="cc-table-scroll">
@@ -190,8 +308,25 @@ export default function CashClose({ salesByDay, availableDays, today, onRemoveSa
                       </td>
                       <td>{sale.type}</td>
                       <td>
-                        {sale.pay}
-                        {sale.payRef && <span className="cc-sub-bs">Ref. {sale.payRef}</span>}
+                        {isSplitPayment(sale) ? (
+                          <>
+                            <span className="cc-split-tag">Pago dividido</span>
+                            {getOrderPayments(sale).map(part => (
+                              <span key={part.method} className="cc-pay-part">
+                                {part.method} · {formatUsd(part.amount)}
+                                {paymentBs(sale, part) !== null && part.method === PAY_MOBILE && (
+                                  <span className="cc-sub-bs">{formatBs(paymentBs(sale, part))}</span>
+                                )}
+                                {part.ref && <span className="cc-sub-bs">Ref. {part.ref}</span>}
+                              </span>
+                            ))}
+                          </>
+                        ) : (
+                          <>
+                            {sale.pay}
+                            {sale.payRef && <span className="cc-sub-bs">Ref. {sale.payRef}</span>}
+                          </>
+                        )}
                       </td>
                       <td className="cc-products">
                         {(sale.items || []).map(item => (

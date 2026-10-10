@@ -1,6 +1,7 @@
 import { useBcvRate } from '../hooks/useBcvRate';
 import { buildTicketText } from '../utils/ticketText';
 import { getLineParts } from '../utils/lineOptions';
+import { getOrderPayments, isSplitPayment } from '../utils/payment';
 
 export default function Ticket({ order, onNewOrder, onEdit }) {
   const bcvRate = useBcvRate();
@@ -36,8 +37,18 @@ export default function Ticket({ order, onNewOrder, onEdit }) {
         </div>
         <div className="badge-row">
           <span className="badge">{order.type}</span>
-          <span className="badge">{order.pay}</span>
-          {order.payRef && <span className="badge">Ref. {order.payRef}</span>}
+          {isSplitPayment(order)
+            ? getOrderPayments(order).map(part => (
+                <span className="badge" key={part.method}>
+                  {part.method} ${Number(part.amount).toFixed(2)}{part.ref ? ` · Ref. ${part.ref}` : ''}
+                </span>
+              ))
+            : (
+              <>
+                <span className="badge">{order.pay}</span>
+                {order.payRef && <span className="badge">Ref. {order.payRef}</span>}
+              </>
+            )}
           {order.revision > 0 && <span className="badge">Corregido</span>}
         </div>
         <hr />

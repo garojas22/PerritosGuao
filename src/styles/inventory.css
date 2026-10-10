@@ -1,0 +1,54 @@
+/* ============================================================
+   Inventario en el cierre de caja
+   (se apoya en .cc-panel, .cc-table y .cc-btn de cash-close.css)
+   ============================================================ */
+
+.inv-head{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:12px;flex-wrap:wrap;margin-bottom:4px;
+}
+.inv-head .cc-panel-hint{max-width:560px;}
+
+.inv-note{
+  margin:0 0 12px;padding:8px 12px;border-radius:10px;
+  background:rgba(217,154,43,.14);border:1px solid rgba(217,154,43,.4);
+  color:var(--brown);font-size:12px;font-weight:600;line-height:1.4;
+}
+
+.inv-table{min-width:560px;}
+.inv-table td{vertical-align:middle;padding-top:7px;padding-bottom:7px;}
+.inv-table td.cc-num,
+.inv-table th.cc-num{padding-right:14px;}
+.inv-table th.cc-num:last-child,
+.inv-table td.cc-num:last-child{padding-right:0;}
+
+/* Fila de grupo: Panes, Proteínas... */
+.inv-group td{
+  padding:14px 0 6px;border-bottom:1.5px solid var(--line);
+  font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--brown);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.inv-muted{color:var(--ink-soft);}
+
+/* Campo "Ingresó hoy": mismo aspecto que los demás campos de la app. */
+.inv-input{
+  width:84px;padding:7px 10px;border-radius:99px;border:1.5px solid var(--line);
+  background:var(--cream);color:var(--ink);text-align:right;
+  font-family:'JetBrains Mono';font-size:14px;font-weight:600;
+}
+.inv-input:focus{outline:none;border-color:var(--orange);background:var(--paper);}
+
+/* Cuántos quedan, con su aviso de color. */
+.inv-remaining{font-family:'Baloo 2';font-size:15px;font-weight:700;color:var(--ink);}
+.inv-remaining em{
+  margin-left:7px;padding:1px 7px;border-radius:5px;font-style:normal;
+  font-family:'Inter';font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+}
+.inv-remaining.inv-low{color:var(--brown);}
+.inv-remaining.inv-low em{background:rgba(217,154,43,.18);border:1px solid rgba(217,154,43,.5);}
+.inv-remaining.inv-out{color:var(--rust);}
+.inv-remaining.inv-out em{background:rgba(193,80,46,.1);border:1px solid rgba(193,80,46,.35);}
+
+@media (max-width:720px){
+  .inv-head .cc-btn{width:100%;}
+}

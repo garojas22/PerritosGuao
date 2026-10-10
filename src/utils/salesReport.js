@@ -1,3 +1,5 @@
+import { getOrderPayments, paymentBs } from './payment';
+
 /**
  * Cálculos del cierre de caja.
  *
@@ -66,6 +68,7 @@ export function summarizeSales(sales = []) {
     hasBsData: false,
     averageTicket: 0,
     byPayment: {},
+    splitCount: 0, // pedidos pagados con más de un método
     byType: {},
     products: [],
     itemsSold: 0,
@@ -82,13 +85,23 @@ export function summarizeSales(sales = []) {
       summary.hasBsData = true;
     }
 
-    const pay = sale.pay || 'Sin especificar';
-    if (!summary.byPayment[pay]) summary.byPayment[pay] = { count: 0, totalUsd: 0, totalBs: 0 };
-    summary.byPayment[pay].count += 1;
-    summary.byPayment[pay].totalUsd += total;
-    if (Number.isFinite(Number(sale.totalBs))) {
-      summary.byPayment[pay].totalBs += Number(sale.totalBs);
+    // Un pedido puede pagarse con varios métodos: cada uno suma SU parte del
+    // total, así el efectivo de la caja cuadra aunque el pedido sea mixto.
+    const payments = getOrderPayments(sale);
+    if (payments.length > 1) summary.splitCount += 1;
+
+    if (payments.length === 0) {
+      payments.push({ method: 'Sin especificar', amount: total });
     }
+
+    payments.forEach(payment => {
+      const method = payment.method || 'Sin especificar';
+      if (!summary.byPayment[method]) summary.byPayment[method] = { count: 0, totalUsd: 0, totalBs: 0 };
+      summary.byPayment[method].count += 1;
+      summary.byPayment[method].totalUsd += Number(payment.amount) || 0;
+      const partBs = paymentBs(sale, payment);
+      if (partBs !== null) summary.byPayment[method].totalBs += partBs;
+    });
 
     const type = sale.type || 'Sin especificar';
     if (!summary.byType[type]) summary.byType[type] = { count: 0, totalUsd: 0 };
