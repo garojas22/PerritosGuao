@@ -11,10 +11,11 @@
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 4;
+export const MENU_VERSION = 5;
 
-const BURGER_BREADS = ["pan-brioche", "pan-brioche-promo", "pan-batata", "pan-pretzel"];
-const BURGER_MEATS = ["carne-normal", "carne-promo"];
+const BURGER_BREADS = ["pan-brioche", "pan-batata", "pan-pretzel"];
+// Una sola carne: no se le pregunta a nadie, pero igual se descuenta del inventario.
+const BURGER_MEATS = ["carne-normal"];
 
 /** Elecciones de una hamburguesa: pan y carne (la cantidad de carne depende del tamaño). */
 const burgerChoices = (breads = BURGER_BREADS, meatQty = "variant") => [
@@ -70,7 +71,7 @@ export const MENU = {
       price: 5.50,
       desc: "Pan brioche, carne, facilista y ketchup.",
       ingredients: ["facilista", "ketchup"],
-      choices: burgerChoices(["pan-brioche", "pan-brioche-promo"], 1),
+      choices: burgerChoices(["pan-brioche"], 1),
     },
     {
       id: "hc",
@@ -88,11 +89,11 @@ export const MENU = {
       id: "hb",
       name: "La Cheese Bacon",
       price: 7.99,
-      desc: "Lechuga, tomate, pepinillos y salsa BK. Con 1 carne lleva 2 facilista; con 2 carnes, 4.",
+      desc: "Lechuga, tomate, pepinillos y salsa BK.",
       ingredients: ["lechuga", "tomate", "pepinillos", "salsa bk"],
       variants: [
-        { id: "1", label: "1 carne (2 facilista)", price: 7.99, units: 1 },
-        { id: "2", label: "2 carnes (4 facilista)", price: 9.99, units: 2 },
+        { id: "1", label: "1 carne", price: 7.99, units: 1 },
+        { id: "2", label: "2 carnes", price: 9.99, units: 2 },
       ],
       choices: burgerChoices(),
     },

@@ -7,12 +7,10 @@
  */
 export const INVENTORY_ITEMS = [
 { id: 'pan-brioche', name: 'Pan brioche normal', group: 'Panes' },
-{ id: 'pan-brioche-promo', name: 'Pan brioche de promo', group: 'Panes' },
 { id: 'pan-batata', name: 'Pan de batata', group: 'Panes' },
 { id: 'pan-pretzel', name: 'Pan de pretzel', group: 'Panes' },
 { id: 'pan-perro', name: 'Pan de perro', group: 'Panes' },
 { id: 'carne-normal', name: 'Carne normal 125 g', group: 'Proteínas' },
-{ id: 'carne-promo', name: 'Carne promo', group: 'Proteínas' },
 { id: 'salchicha-winner', name: 'Salchicha Winner', group: 'Proteínas' },
 { id: 'salchicha-pavo', name: 'Salchicha de pavo', group: 'Proteínas' },
 { id: 'salchicha-polaca', name: 'Salchicha polaca', group: 'Proteínas' },
