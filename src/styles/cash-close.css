@@ -90,8 +90,8 @@
 .cc-strong{font-weight:700;}
 .cc-sub-bs{display:block;font-size:11px;color:var(--ink-soft);font-weight:600;}
 
-.cc-products{display:flex;flex-direction:column;gap:2px;min-width:180px;}
-.cc-product-line{font-size:12.5px;}
+.cc-products{min-width:180px;}
+.cc-product-line{display:block;font-size:12.5px;}
 .cc-product-line em{color:var(--rust);font-style:normal;font-size:11.5px;}
 
 .cc-remove{
