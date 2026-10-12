@@ -60,8 +60,8 @@ const chosen = choice.options.includes(selection?.choices?.[choice.id])
     : choice.options[0];
 const qty = choice.qty === 'variant' ? (variant?.units ?? 1) : (choice.qty ?? 1);
 
-uses.push({ item: chosen, qty });
-if (choice.options.length > 1) optionLabels.push(getInventoryName(chosen));
+if (choice.trackInventory !== false) uses.push({ item: chosen, qty });
+if (choice.options.length > 1 || choice.showSelected) optionLabels.push(getInventoryName(chosen));
 });
 
 return {

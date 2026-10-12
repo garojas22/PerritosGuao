@@ -42,7 +42,7 @@ return text.length === PAY_REF_LENGTH && /^\d+$/.test(text);
 export const PAY_CASH = 'Efectivo';
 export const PAY_METHODS = [PAY_CASH, PAY_MOBILE, PAY_CARD];
 
-/** Tope de métodos distintos en un mismo pedido (uno por método). */
+/** Tope de partes de pago en un mismo pedido. Un método puede repetirse. */
 export const MAX_SPLIT_PARTS = PAY_METHODS.length;
 
 export function roundMoney(value) {
@@ -96,9 +96,6 @@ return roundMoney(total - paid);
  */
 export function validateSplit(parts, total) {
 if (parts.length < 2) return 'Agrega al menos dos métodos de pago.';
-
-const methods = parts.map(part => part.method);
-if (new Set(methods).size !== methods.length) return 'No repitas el mismo método de pago.';
 
 if (parts.some(part => parseAmount(part.amount) <= 0)) return 'Escribe el monto de cada método de pago.';
 

@@ -79,7 +79,8 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
 
 export default function Cart({
   cart, cartTotal, onQty, onRemove, onToggleMod,
-  customer, setCustomer, orderType, setOrderType, payType, setPayType, payRef, setPayRef,
+  customer, setCustomer, orderType, setOrderType, deliveryFee, setDeliveryFee,
+  payType, setPayType, payRef, setPayRef,
   splitPay, setSplitPay, payParts, setPayParts,
   ingredientAvailability, toggleIngredientAvailability,
   onGenerate, editingOrder = null, onCancelEdit,
@@ -92,14 +93,18 @@ export default function Cart({
   const [showSplitError, setShowSplitError] = useState(false);
   const [showKitchenSettings, setShowKitchenSettings] = useState(false);
   const bcvRate = useBcvRate();
-  const totalBs = bcvRate !== null && bcvRate !== undefined ? cartTotal * bcvRate : null;
+  const chargedDeliveryFee = orderType === "Delivery"
+    ? roundMoney(Math.max(0, Number(deliveryFee) || 0))
+    : 0;
+  const orderTotal = cartTotal + chargedDeliveryFee;
+  const totalBs = bcvRate !== null && bcvRate !== undefined ? orderTotal * bcvRate : null;
   const isCustomerValid = customer.trim().length > 0;
   const refRequired = needsPayRef(payType);
   const isPayRefValid = isValidPayRef(payRef);
 
   // Pago dividido: lo que falta (+) o sobra (−) para igualar el total del pedido.
-  const splitRemaining = getSplitRemaining(payParts, cartTotal);
-  const splitError = splitPay ? validateSplit(payParts, cartTotal) : null;
+  const splitRemaining = getSplitRemaining(payParts, orderTotal);
+  const splitError = splitPay ? validateSplit(payParts, orderTotal) : null;
 
   function handleGenerateClick() {
     if (cart.length === 0) {
@@ -178,7 +183,7 @@ export default function Cart({
       const next = parts.map(part => (part.id === id ? { ...part, amount: clean } : part));
       // Con dos métodos, al escribir el primero el segundo se completa solo con el resto.
       if (next.length === 2 && next[0].id === id) {
-        const rest = roundMoney(cartTotal - parseAmount(clean));
+        const rest = roundMoney(orderTotal - parseAmount(clean));
         next[1] = { ...next[1], amount: parseAmount(clean) > 0 && rest > 0 ? rest.toFixed(2) : '' };
       }
       return next;
@@ -192,7 +197,7 @@ export default function Cart({
   function fillRemainder(id) {
     setPayParts(parts => parts.map(part => {
       if (part.id !== id) return part;
-      const rest = roundMoney(cartTotal - parts.reduce((sum, other) => (
+      const rest = roundMoney(orderTotal - parts.reduce((sum, other) => (
         other.id === id ? sum : sum + parseAmount(other.amount)
       ), 0));
       return { ...part, amount: rest > 0 ? rest.toFixed(2) : '' };
@@ -201,7 +206,7 @@ export default function Cart({
 
   function addPart() {
     if (payParts.length >= MAX_SPLIT_PARTS) return;
-    const rest = getSplitRemaining(payParts, cartTotal);
+    const rest = getSplitRemaining(payParts, orderTotal);
     setPayParts([...payParts, createPayPart(nextFreeMethod(payParts), rest > 0 ? rest.toFixed(2) : '')]);
   }
 
@@ -251,12 +256,31 @@ export default function Cart({
         <label>Tipo de pedido</label>
         <div className="segmented">
           {["Local", "Delivery"].map(opt => (
-            <button key={opt} className={orderType === opt ? "active" : ""} onClick={() => setOrderType(opt)}>
+            <button key={opt} className={orderType === opt ? "active" : ""} onClick={() => {
+              setOrderType(opt);
+              if (opt === "Local") setDeliveryFee("0");
+            }}>
               {opt}
             </button>
           ))}
         </div>
       </div>
+
+      {orderType === "Delivery" && (
+        <div className="field">
+          <label htmlFor="delivery-fee">Cargo de delivery · USD</label>
+          <input
+            id="delivery-fee"
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            value={deliveryFee}
+            onChange={event => setDeliveryFee(event.target.value)}
+            aria-label="Cargo de delivery en dólares"
+          />
+        </div>
+      )}
 
       <div className="field">
         <label>Forma de pago</label>
@@ -296,7 +320,6 @@ export default function Cart({
                       <option
                         key={method}
                         value={method}
-                        disabled={method !== part.method && payParts.some(other => other.method === method)}
                       >
                         {method}
                       </option>
@@ -338,7 +361,7 @@ export default function Cart({
                     value={part.ref}
                     onChange={e => handlePartRefChange(part.id, e.target.value)}
                     placeholder={`Referencia (últimos ${PAY_REF_LENGTH} dígitos)`}
-                    aria-label={`Referencia de ${part.method}`}
+                    aria-label={`Referencia del pago ${index + 1} · ${part.method}`}
                   />
                 )}
 
@@ -359,14 +382,14 @@ export default function Cart({
           })}
 
           {payParts.length < MAX_SPLIT_PARTS && (
-            <button type="button" className="split-add" onClick={addPart}>+ Agregar otro método</button>
+            <button type="button" className="split-add" onClick={addPart}>+ Agregar otro pago</button>
           )}
 
-          <div className={`split-status ${splitRemaining === 0 && cartTotal > 0 ? 'ok' : splitRemaining < 0 ? 'over' : ''}`}>
-            {cartTotal === 0 && 'Agrega productos para repartir el pago.'}
-            {cartTotal > 0 && splitRemaining === 0 && '✓ El pago cubre el total'}
-            {cartTotal > 0 && splitRemaining > 0 && `Faltan $${splitRemaining.toFixed(2)}`}
-            {cartTotal > 0 && splitRemaining < 0 && `Se pasa por $${Math.abs(splitRemaining).toFixed(2)}`}
+          <div className={`split-status ${splitRemaining === 0 && orderTotal > 0 ? 'ok' : splitRemaining < 0 ? 'over' : ''}`}>
+            {orderTotal === 0 && 'Agrega productos para repartir el pago.'}
+            {orderTotal > 0 && splitRemaining === 0 && '✓ El pago cubre el total'}
+            {orderTotal > 0 && splitRemaining > 0 && `Faltan $${splitRemaining.toFixed(2)}`}
+            {orderTotal > 0 && splitRemaining < 0 && `Se pasa por $${Math.abs(splitRemaining).toFixed(2)}`}
           </div>
 
           {showSplitError && splitError && <div className="field-error">{splitError}</div>}
@@ -438,9 +461,21 @@ export default function Cart({
 
       <div className="total-row">
         <div className="total-summary">
+          {orderType === "Delivery" && (
+            <>
+              <div className="total-line">
+                <span className="total-label">Productos</span>
+                <span>${cartTotal.toFixed(2)}</span>
+              </div>
+              <div className="total-line">
+                <span className="total-label">Delivery</span>
+                <span>${chargedDeliveryFee.toFixed(2)}</span>
+              </div>
+            </>
+          )}
           <div className="total-line">
             <span className="total-label">Total USD</span>
-            <span className="amount">${cartTotal.toFixed(2)}</span>
+            <span className="amount">${orderTotal.toFixed(2)}</span>
           </div>
 
           {totalBs !== null && (

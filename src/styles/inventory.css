@@ -15,12 +15,14 @@
   color:var(--brown);font-size:12px;font-weight:600;line-height:1.4;
 }
 
-.inv-table{min-width:560px;}
+.inv-table{min-width:820px;table-layout:fixed;}
 .inv-table td{vertical-align:middle;padding-top:7px;padding-bottom:7px;}
-.inv-table td.cc-num,
-.inv-table th.cc-num{padding-right:14px;}
-.inv-table th.cc-num:last-child,
-.inv-table td.cc-num:last-child{padding-right:0;}
+.inv-table th:first-child,
+.inv-table td:first-child{width:22%;}
+.inv-table th:not(:first-child),
+.inv-table td:not(:first-child){width:15.6%;}
+.inv-table th.cc-num,
+.inv-table td.cc-num{text-align:center;padding-right:0;}
 
 /* Fila de grupo: Panes, Proteínas... */
 .inv-group td{
@@ -32,8 +34,8 @@
 
 /* Campo "Ingresó hoy": mismo aspecto que los demás campos de la app. */
 .inv-input{
-  width:84px;padding:7px 10px;border-radius:99px;border:1.5px solid var(--line);
-  background:var(--cream);color:var(--ink);text-align:right;
+  width:78px;padding:7px 10px;border-radius:99px;border:1.5px solid var(--line);
+  background:var(--cream);color:var(--ink);text-align:center;
   font-family:'JetBrains Mono';font-size:14px;font-weight:600;
 }
 .inv-input:focus{outline:none;border-color:var(--orange);background:var(--paper);}
@@ -54,11 +56,8 @@
 }
 
 /* Sobrante de ayer: editable, con marca cuando se corrigió a mano. */
-.inv-carry{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;}
-.inv-input-carry{background:var(--paper);}
-.inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
+.inv-carry{position:relative;display:flex;align-items:center;justify-content:center;width:78px;margin:0 auto;}
 .inv-reset{
-  width:24px;height:24px;border-radius:50%;border:none;background:none;cursor:pointer;
+  position:absolute;left:calc(100% + 1px);width:24px;height:24px;border:none;background:none;cursor:pointer;
   color:var(--ink-soft);font-size:15px;line-height:1;touch-action:manipulation;
 }
-.inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}

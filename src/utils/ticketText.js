@@ -86,6 +86,10 @@ export function buildTicketText(order, totalBs) {
     });
   });
 
+  if (order.deliveryFee > 0) {
+    rows.push(line('Cargo de delivery', `$${order.deliveryFee.toFixed(2)}`));
+  }
+
   if (order.stockWarnings && order.stockWarnings.length > 0) {
     rows.push(dashes());
     rows.push('*** INSUMOS AGOTADOS ***');

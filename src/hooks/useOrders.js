@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { nextOrderNumber } from "../utils/orderCounter.js";
 import { describeLine, getDefaultSelection, resolveSelection } from "../utils/lineOptions.js";
-import { buildPayLabel, buildPayRefText } from "../utils/payment.js";
+import { buildPayLabel, buildPayRefText, roundMoney } from "../utils/payment.js";
 
 // STATUS_FLOW define a qué estado salta un pedido al hacer clic en su tarjeta.
 const STATUS_FLOW = { Pendiente: "Preparando", Preparando: "Listo", Listo: "Pendiente" };
@@ -121,14 +121,18 @@ export function useOrders() {
    * rastro. Cada corrección guarda en `edits` cómo era antes, para que el
    * administrador pueda verlo en el cierre de caja.
    */
-  function generateTicket({ customer, orderType, payments, ingredientAvailability = {}, replaceNum = null }) {
+  function generateTicket({ customer, orderType, deliveryFee = 0, payments, ingredientAvailability = {}, replaceNum = null }) {
     const trimmedCustomer = customer.trim();
     if (!trimmedCustomer || !Array.isArray(payments) || payments.length === 0) {
       return null;
     }
 
     const rate = getStoredBcvRate();
-    const totalBs = rate !== null ? cartTotal * rate : null;
+    const chargedDeliveryFee = orderType === "Delivery"
+      ? roundMoney(Math.max(0, Number(deliveryFee) || 0))
+      : 0;
+    const total = cartTotal + chargedDeliveryFee;
+    const totalBs = rate !== null ? total * rate : null;
     const stockWarnings = new Set();
 
     cart.forEach(item => {
@@ -152,6 +156,7 @@ export function useOrders() {
       num: previous ? previous.num : nextOrderNumber(), // persistente: no se reinicia al refrescar (ver orderCounter.js)
       customer: trimmedCustomer,
       type: orderType,
+      deliveryFee: chargedDeliveryFee,
       // `payments` es el detalle real: [{ method, amount (USD), ref }]. Uno solo
       // si se pagó con un método, varios si el pago fue dividido (ver payment.js).
       // `pay` y `payRef` son el resumen en texto que ya leían el tablero, el
@@ -160,7 +165,7 @@ export function useOrders() {
       pay: buildPayLabel(payments),
       payRef: buildPayRefText(payments),
       items: cart,
-      total: cartTotal,
+      total,
       totalBs,
       bcvRate: rate, // se guarda la tasa usada, para poder auditar el cierre de caja
       stockWarnings: Array.from(stockWarnings),

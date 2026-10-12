@@ -9,6 +9,7 @@ import {
 import { downloadSalesExcel } from '../utils/salesExcel';
 import { summarizeInventory } from '../utils/inventoryReport';
 import { PAY_MOBILE, getOrderPayments, isSplitPayment, paymentBs } from '../utils/payment';
+import { describeLine } from '../utils/lineOptions';
 
 function StatCard({ label, value, sub, accent }) {
   return (
@@ -74,7 +75,12 @@ export default function CashClose({
 
   // Si el día seleccionado ya no existe (se borró), se cae a hoy.
   const dayKey = dayOptions.includes(selectedDay) ? selectedDay : today;
-  const sales = salesByDay[dayKey] || [];
+  const sales = [...(salesByDay[dayKey] || [])].sort((a, b) => {
+    const first = Date.parse(a.closedAt);
+    const second = Date.parse(b.closedAt);
+    if (!Number.isFinite(first) || !Number.isFinite(second)) return 0;
+    return first - second;
+  });
   const summary = summarizeSales(sales);
   const isToday = dayKey === getBusinessDayKey();
   const inventory = summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay });
@@ -344,8 +350,8 @@ export default function CashClose({
                         {isSplitPayment(sale) ? (
                           <>
                             <span className="cc-split-tag">Pago dividido</span>
-                            {getOrderPayments(sale).map(part => (
-                              <span key={part.method} className="cc-pay-part">
+                            {getOrderPayments(sale).map((part, index) => (
+                              <span key={`${part.method}-${index}`} className="cc-pay-part">
                                 {part.method} · {formatUsd(part.amount)}
                                 {paymentBs(sale, part) !== null && part.method === PAY_MOBILE && (
                                   <span className="cc-sub-bs">{formatBs(paymentBs(sale, part))}</span>
@@ -362,17 +368,21 @@ export default function CashClose({
                         )}
                       </td>
                       <td className="cc-products">
-                        {(sale.items || []).map(item => (
-                          <span key={item.uid ?? item.name} className="cc-product-line">
-                            {item.qty}x {item.name}
-                            {Array.isArray(item.mods) && item.mods.length > 0 && (
-                              <em> ({item.mods.join(', ')})</em>
-                            )}
-                          </span>
-                        ))}
+                        {(sale.items || []).map(item => {
+                          const details = [describeLine(item), ...(item.mods || [])].filter(Boolean);
+                          return (
+                            <span key={item.uid ?? item.name} className="cc-product-line">
+                              {item.qty}x {item.name}
+                              {details.length > 0 && <em> ({details.join(', ')})</em>}
+                            </span>
+                          );
+                        })}
                       </td>
                       <td className="cc-num cc-strong">
                         {formatUsd(sale.total)}
+                        {sale.deliveryFee > 0 && (
+                          <span className="cc-sub-bs">Incluye delivery {formatUsd(sale.deliveryFee)}</span>
+                        )}
                         {Number.isFinite(Number(sale.totalBs)) && (
                           <span className="cc-sub-bs">{formatBs(sale.totalBs)}</span>
                         )}
