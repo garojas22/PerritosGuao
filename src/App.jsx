@@ -167,6 +167,7 @@ export default function App() {
   const [activeCat, setActiveCat] = useState(Object.keys(MENU)[0]);
   const [customer, setCustomer] = useState("");
   const [orderType, setOrderType] = useState("Local");
+  const [deliveryFee, setDeliveryFee] = useState("0");
   const [payType, setPayType] = useState("Efectivo");
   const [payRef, setPayRef] = useState("");
   const [splitPay, setSplitPay] = useState(false); // pago repartido entre varios métodos
@@ -255,6 +256,7 @@ export default function App() {
     loadCartFromOrder(order);
     setCustomer(order.customer);
     setOrderType(order.type);
+    setDeliveryFee(String(Number(order.deliveryFee) || 0));
     const payments = getOrderPayments(order);
     if (payments.length > 1) {
       setSplitPay(true);
@@ -288,6 +290,7 @@ export default function App() {
     setEditingNum(null);
     setCustomer("");
     setOrderType("Local");
+    setDeliveryFee("0");
     setPayType("Efectivo");
     setPayRef("");
     setSplitPay(false);
@@ -373,13 +376,16 @@ export default function App() {
     if (!trimmedCustomer) {
       return;
     }
+    const orderTotal = cartTotal + (orderType === "Delivery"
+      ? roundMoney(Math.max(0, Number(deliveryFee) || 0))
+      : 0);
 
     // Con pago móvil o tarjeta la referencia es obligatoria. Cart ya avisa al
     // cajero; esta guarda evita que un pedido sin referencia entre por otro camino.
     let payments;
     if (splitPay) {
       // Pago dividido: los montos deben sumar exactamente el total del pedido.
-      if (validateSplit(payParts, cartTotal)) {
+      if (validateSplit(payParts, orderTotal)) {
         return;
       }
       payments = partsToPayments(payParts);
@@ -390,12 +396,13 @@ export default function App() {
       }
       // Si el pago no lleva referencia (efectivo) se descarta cualquiera que
       // haya quedado escrita antes de cambiar de método.
-      payments = [{ method: payType, amount: roundMoney(cartTotal), ref: refRequired ? payRef : "" }];
+      payments = [{ method: payType, amount: roundMoney(orderTotal), ref: refRequired ? payRef : "" }];
     }
 
     const order = generateTicket({
       customer: trimmedCustomer,
       orderType,
+      deliveryFee,
       payments,
       ingredientAvailability,
       replaceNum: editingOrder ? editingOrder.num : null,
@@ -410,6 +417,7 @@ export default function App() {
     setPayRef("");
     setSplitPay(false);
     setPayParts([]);
+    setDeliveryFee("0");
     setView("ticket");
   }
 
@@ -452,6 +460,7 @@ export default function App() {
               onToggleMod={toggleMod}
               customer={customer} setCustomer={setCustomer}
               orderType={orderType} setOrderType={setOrderType}
+              deliveryFee={deliveryFee} setDeliveryFee={setDeliveryFee}
               payType={payType} setPayType={setPayType}
               payRef={payRef} setPayRef={setPayRef}
               splitPay={splitPay} setSplitPay={setSplitPay}

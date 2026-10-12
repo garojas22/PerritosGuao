@@ -4,14 +4,13 @@
 // Un producto puede tener, además de nombre y precio:
 //  - variants: tamaños con precio propio (ej. "1 carne" / "2 carnes").
 //    `units` es cuántas unidades de proteína lleva ese tamaño.
-//  - choices: elecciones sin precio que consumen inventario (pan, tipo de
-//    carne). `options` son ids de data/inventory.js. Si hay una sola opción
-//    no se le pregunta a nadie, pero igual se descuenta del inventario.
-//    `qty` es cuántas unidades gasta, o "variant" para tomar `units` del tamaño.
+//  - choices: elecciones sin precio (pan, carne, marca). `options` son ids
+//    de data/inventory.js si consumen inventario; `trackInventory: false`
+//    sirve para elecciones informativas. `qty` indica cuánto se descuenta.
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 5;
+export const MENU_VERSION = 6;
 
 const BURGER_BREADS = ["pan-brioche", "pan-batata", "pan-pretzel"];
 // Una sola carne: no se le pregunta a nadie, pero igual se descuenta del inventario.
@@ -27,6 +26,9 @@ const burgerChoices = (breads = BURGER_BREADS, meatQty = "variant") => [
 const hotDogChoices = (sausages) => [
   { id: "pan", label: "Pan", options: ["pan-perro"], qty: 1 },
   { id: "proteina", label: "Salchicha", options: sausages, qty: 1 },
+];
+const drinkBrands = (brands) => [
+  { id: "marca", label: "Marca", options: brands, trackInventory: false, showSelected: true },
 ];
 
 export const MENU = {
@@ -119,15 +121,33 @@ export const MENU = {
   ],
   "Bebidas": [
     { id: "b1", name: "Malta retornable", price: 0.80, desc: "", ingredients: [] },
-    { id: "b2", name: "Refresco de lata", price: 1.25, desc: "", ingredients: [] },
-    { id: "b3", name: "Refresco de botella", price: 1.25, desc: "", ingredients: [] },
-    { id: "b4", name: "Refresco de 1 Lt", price: 1.75, desc: "", ingredients: [] },
-    { id: "b5", name: "Refresco de 1.25 Lt", price: 2.25, desc: "", ingredients: [] },
-    { id: "b6", name: "Refresco de 1.5 Lt", price: 2.50, desc: "", ingredients: [] },
-    { id: "b7", name: "Refresco de 2 Lt", price: 3.50, desc: "", ingredients: [] },
+    {
+      id: "b2", name: "Refresco de lata", price: 1.25, desc: "", ingredients: [],
+      choices: drinkBrands(["Frescolita", "Chinotto", "Fanta", "Coca-Cola"]),
+    },
+    {
+      id: "b3", name: "Refresco de botella", price: 1.25, desc: "", ingredients: [],
+      choices: drinkBrands(["Nevada", "Chinotto", "Coca-Cola", "Frescolita", "Hit"]),
+    },
+    {
+      id: "b4", name: "Refresco de 1 Lt", price: 1.75, desc: "", ingredients: [],
+      choices: drinkBrands(["Coca-Cola"]),
+    },
+    {
+      id: "b5", name: "Refresco de 1.25 Lt", price: 2.25, desc: "", ingredients: [],
+      choices: drinkBrands(["Coca-Cola", "Frescolita"]),
+    },
+    {
+      id: "b6", name: "Refresco de 1.5 Lt", price: 2.50, desc: "", ingredients: [],
+      choices: drinkBrands(["Fanta", "Coca-Cola"]),
+    },
+    {
+      id: "b7", name: "Refresco de 2 Lt", price: 3.50, desc: "", ingredients: [],
+      choices: drinkBrands(["Pepsi", "Golden", "7up"]),
+    },
     { id: "b8", name: "Nestea (limón y durazno)", price: 2.00, desc: "", ingredients: [] },
+    { id: "b9", name: "Agua mineral pequeña", price: 1.00, desc: "", ingredients: [] },
   ],
 };
 // Nota: el menú impreso no trae precios de Extras ni de Bebidas; se conservaron
-// los que ya tenía el sistema. "Agua mineral pequeña" está en el menú impreso
-// pero no se agregó porque falta su precio: se agrega desde el modo admin.
+// los que ya tenía el sistema.

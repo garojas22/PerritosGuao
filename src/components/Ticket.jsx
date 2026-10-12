@@ -38,8 +38,8 @@ export default function Ticket({ order, onNewOrder, onEdit }) {
         <div className="badge-row">
           <span className="badge">{order.type}</span>
           {isSplitPayment(order)
-            ? getOrderPayments(order).map(part => (
-                <span className="badge" key={part.method}>
+            ? getOrderPayments(order).map((part, index) => (
+                <span className="badge" key={`${part.method}-${index}`}>
                   {part.method} ${Number(part.amount).toFixed(2)}{part.ref ? ` · Ref. ${part.ref}` : ''}
                 </span>
               ))
@@ -70,6 +70,14 @@ export default function Ticket({ order, onNewOrder, onEdit }) {
             )}
           </div>
         ))}
+        {order.deliveryFee > 0 && (
+          <div className="litem">
+            <div className="lhead">
+              <span>Cargo de delivery</span>
+              <span>${order.deliveryFee.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
         {order.stockWarnings && order.stockWarnings.length > 0 && (
           <div className="stock-warning-box">
             <div className="stock-warning-label">*** INSUMOS AGOTADOS ***</div>

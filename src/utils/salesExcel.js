@@ -1,5 +1,6 @@
 import { summarizeSales, formatDayLabel, formatUsd } from './salesReport';
 import { getOrderPayments, isSplitPayment } from './payment';
+import { describeLine } from './lineOptions';
 
 /**
  * Exportación del cierre de caja a un Excel real (.xlsx) con formato.
@@ -90,6 +91,7 @@ sheet.columns = [
 { key: 'closed', width: 12 },
 { key: 'customer', width: ORDER_COL_WIDTHS.customer },
 { key: 'type', width: 12 },
+{ key: 'delivery', width: 13 },
 { key: 'pay', width: 24 },
 { key: 'ref', width: 18 },
 { key: 'items', width: ORDER_COL_WIDTHS.items },
@@ -101,11 +103,11 @@ sheet.columns = [
 { key: 'fixes', width: 28 },
 ];
 
-writeTitle(sheet, 'N', 'CIERRE DE CAJA', formatDayLabel(dateKey));
+writeTitle(sheet, 'O', 'CIERRE DE CAJA', formatDayLabel(dateKey));
 
 const headerRow = sheet.getRow(4);
 headerRow.values = [
-'N° pedido', 'Hora pedido', 'Hora cobro', 'Cliente', 'Tipo', 'Método de pago',
+'N° pedido', 'Hora pedido', 'Hora cobro', 'Cliente', 'Tipo', 'Delivery USD', 'Método de pago',
 'Referencia', 'Productos', 'Modificadores', 'Unidades', 'Total USD', 'Total Bs', 'Tasa BCV', 'Correcciones',
 ];
 styleHeaderRow(headerRow);
@@ -114,7 +116,10 @@ sales.forEach((sale, index) => {
 const items = sale.items || [];
 // Un producto por línea dentro de la celda: se lee mucho mejor que
 // separarlos con " | " en una sola línea larga.
-const productLines = items.map(item => `${item.qty}x ${item.name}`);
+const productLines = items.map(item => {
+const detail = describeLine(item);
+return `${item.qty}x ${item.name}${detail ? ` (${detail})` : ''}`;
+});
 const modLines = items
     .filter(item => Array.isArray(item.mods) && item.mods.length > 0)
     .map(item => `${item.name}: ${item.mods.join(', ')}`);
@@ -136,6 +141,7 @@ const row = sheet.addRow([
     sale.closedTime || '',
     sale.customer || '',
     sale.type || '',
+    Number(sale.deliveryFee) > 0 ? numberOrNull(sale.deliveryFee) : null,
     payLines.join('\n'),
     refLines.join('\n'),
     productLines.join('\n'),
@@ -174,6 +180,7 @@ row.getCell(key).alignment = { vertical: 'middle', horizontal: 'center', wrapTex
 row.getCell('fixes').alignment = { vertical: 'middle', wrapText: true };
 row.getCell('num').font = { bold: true };
 row.getCell('usd').numFmt = FMT_USD;
+row.getCell('delivery').numFmt = FMT_USD;
 row.getCell('bs').numFmt = FMT_BS;
 row.getCell('rate').numFmt = FMT_RATE;
 row.getCell('usd').font = { bold: true };
@@ -183,26 +190,26 @@ if (sales.length === 0) return sheet;
 
 const first = 5;
 const last = 4 + sales.length;
-sheet.autoFilter = `A4:N${last}`;
+sheet.autoFilter = `A4:O${last}`;
 
 // Fila de total con fórmulas: si alguien edita un monto en Excel, el total se actualiza.
 const summary = summarizeSales(sales);
 const totalRow = sheet.addRow([]);
-sheet.mergeCells(`A${totalRow.number}:I${totalRow.number}`);
+sheet.mergeCells(`A${totalRow.number}:J${totalRow.number}`);
 totalRow.getCell(1).value = 'TOTAL DEL DÍA';
 totalRow.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
-totalRow.getCell('units').value = { formula: `SUM(J${first}:J${last})`, result: summary.itemsSold };
-totalRow.getCell('usd').value = { formula: `SUM(K${first}:K${last})`, result: summary.totalUsd };
+totalRow.getCell('units').value = { formula: `SUM(K${first}:K${last})`, result: summary.itemsSold };
+totalRow.getCell('usd').value = { formula: `SUM(L${first}:L${last})`, result: summary.totalUsd };
 if (summary.hasBsData) {
-totalRow.getCell('bs').value = { formula: `SUM(L${first}:L${last})`, result: summary.totalBs };
+totalRow.getCell('bs').value = { formula: `SUM(M${first}:M${last})`, result: summary.totalBs };
 }
 totalRow.height = 26;
-for (let col = 1; col <= 14; col += 1) {
+for (let col = 1; col <= 15; col += 1) {
 const cell = totalRow.getCell(col);
 cell.font = { bold: true, size: 12 };
 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E8DC' } };
 cell.border = { ...BORDERS, top: { style: 'medium', color: { argb: EXCEL_GREEN } } };
-if (col >= 10 && col <= 13) cell.alignment = { vertical: 'middle', horizontal: 'center' };
+if (col >= 11 && col <= 14) cell.alignment = { vertical: 'middle', horizontal: 'center' };
 }
 totalRow.getCell('usd').numFmt = FMT_USD;
 totalRow.getCell('bs').numFmt = FMT_BS;
