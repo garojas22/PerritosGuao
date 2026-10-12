@@ -52,3 +52,13 @@
 @media (max-width:720px){
   .inv-head .cc-btn{width:100%;}
 }
+
+/* Sobrante de ayer: editable, con marca cuando se corrigió a mano. */
+.inv-carry{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;}
+.inv-input-carry{background:var(--paper);}
+.inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
+.inv-reset{
+  width:24px;height:24px;border-radius:50%;border:none;background:none;cursor:pointer;
+  color:var(--ink-soft);font-size:15px;line-height:1;touch-action:manipulation;
+}
+.inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}

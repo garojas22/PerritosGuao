@@ -11,7 +11,9 @@ import { INVENTORY_ITEMS, getInventoryName } from '../data/inventory';
  *   Disponible = Sobrante de ayer + Ingresó hoy
  *   Quedan     = Disponible − Vendido
  * El "sobrante de ayer" se arrastra solo desde el primer día en que se
- * ingresó ese insumo.
+ * ingresó ese insumo. Si el conteo real no coincide, se puede corregir el
+ * sobrante con que empieza un día (`startByDay`): esa cifra reemplaza a la
+ * calculada y es la que se arrastra a los días siguientes.
  */
 
 /** Total vendido por insumo en una lista de ventas: { "pan-brioche": 12, ... }. */
@@ -39,14 +41,19 @@ function countSalesWithoutUses(sales = []) {
  * Sobrante con que cada insumo llega a `dayKey` (al cierre del día anterior).
  * Un insumo que nunca se ingresó no aparece en el resultado: no hay cifra que arrastrar.
  */
-export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}) {
-  const days = [...new Set([...Object.keys(stockByDay), ...Object.keys(salesByDay)])]
+export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDay = {}) {
+  const days = [...new Set([...Object.keys(stockByDay), ...Object.keys(salesByDay), ...Object.keys(startByDay)])]
     .filter(day => day < dayKey)
     .sort();
 
   const balance = {};
 
   days.forEach(day => {
+    // Conteo real de ese día: reemplaza lo que venía arrastrando el cálculo.
+    Object.entries(startByDay[day] || {}).forEach(([id, qty]) => {
+      balance[id] = Number(qty) || 0;
+    });
+
     Object.entries(stockByDay[day] || {}).forEach(([id, qty]) => {
       balance[id] = (balance[id] ?? 0) + (Number(qty) || 0);
     });
@@ -69,10 +76,11 @@ const LOW_STOCK_RATIO = 0.15;
  * sold, remaining y status ('out' | 'low' | null). Los valores son `null`
  * mientras no se haya ingresado nada de ese insumo.
  */
-export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesByDay = {} }) {
+export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesByDay = {}, startByDay = {} }) {
   const usage = countUsage(sales);
-  const carry = getCarryOver(dayKey, stockByDay, salesByDay);
+  const carry = getCarryOver(dayKey, stockByDay, salesByDay, startByDay);
   const entered = stockByDay[dayKey] || {};
+  const fixedStart = startByDay[dayKey] || {};
 
   // Un insumo que ya no está en la lista pero sí se vendió no debe desaparecer del reporte.
   const knownIds = new Set(INVENTORY_ITEMS.map(item => item.id));
@@ -87,7 +95,11 @@ export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesB
   [...INVENTORY_ITEMS, ...extraItems].forEach(item => {
     const sold = usage[item.id] || 0;
     const ingreso = Number.isFinite(entered[item.id]) ? entered[item.id] : null;
-    const previous = Number.isFinite(carry[item.id]) ? carry[item.id] : null;
+    const adjusted = Number.isFinite(fixedStart[item.id]);
+    // Si ese día se corrigió el sobrante, esa cifra manda sobre la calculada.
+    const previous = adjusted
+      ? fixedStart[item.id]
+      : (Number.isFinite(carry[item.id]) ? carry[item.id] : null);
     const tracked = ingreso !== null || previous !== null;
 
     const available = tracked ? (previous ?? 0) + (ingreso ?? 0) : null;
@@ -107,6 +119,7 @@ export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesB
       id: item.id,
       name: item.name,
       carry: previous,
+      carryAdjusted: adjusted,
       entered: ingreso,
       available,
       sold,

@@ -24,7 +24,7 @@ function StatCard({ label, value, sub, accent }) {
  * Campo numérico del inventario. Guarda lo escrito mientras se teclea, para
  * poder escribir un "-" (ajuste negativo por merma) sin que el campo se borre.
  */
-function StockInput({ value, onCommit, label }) {
+function StockInput({ value, onCommit, label, className = 'inv-input' }) {
   const [draft, setDraft] = useState(value ?? '');
 
   useEffect(() => {
@@ -44,9 +44,10 @@ function StockInput({ value, onCommit, label }) {
       type="text"
       inputMode="numeric"
       autoComplete="off"
-      className="inv-input"
+      className={className}
       value={draft}
       onChange={handleChange}
+      onBlur={() => setDraft(value ?? '')}
       placeholder="0"
       aria-label={label}
     />
@@ -56,20 +57,30 @@ function StockInput({ value, onCommit, label }) {
 const INV_STATUS_LABEL = { out: 'Agotado', low: 'Poco' };
 
 export default function CashClose({
-  salesByDay, availableDays, today, stockByDay = {}, onSetStock, onClearStock, onRemoveSale, onClearDay,
+  salesByDay, availableDays, today, stockByDay = {}, startByDay = {},
+  onSetStock, onSetStart, onClearStock, onRemoveSale, onClearDay,
 }) {
   const [selectedDay, setSelectedDay] = useState(today);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Si el día seleccionado ya no tiene ventas (se borró), se cae a hoy.
-  const dayKey = salesByDay[selectedDay] ? selectedDay : today;
+  // Se puede abrir cualquier día con ventas o con inventario cargado: así se
+  // corrige el inventario de un día pasado aunque ese día no haya vendido nada.
+  const dayOptions = [...new Set([
+    today,
+    ...availableDays,
+    ...Object.keys(stockByDay),
+    ...Object.keys(startByDay),
+  ])].sort((a, b) => b.localeCompare(a));
+
+  // Si el día seleccionado ya no existe (se borró), se cae a hoy.
+  const dayKey = dayOptions.includes(selectedDay) ? selectedDay : today;
   const sales = salesByDay[dayKey] || [];
   const summary = summarizeSales(sales);
   const isToday = dayKey === getBusinessDayKey();
-  const inventory = summarizeInventory({ dayKey, sales, stockByDay, salesByDay });
-  const hasEntries = Object.keys(stockByDay[dayKey] || {}).length > 0;
+  const inventory = summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay });
+  const hasEntries = Object.keys(stockByDay[dayKey] || {}).length > 0
+    || Object.keys(startByDay[dayKey] || {}).length > 0;
 
-  const dayOptions = availableDays.includes(today) ? availableDays : [today, ...availableDays];
 
   async function handleExport() {
     setIsExporting(true);
@@ -89,12 +100,14 @@ export default function CashClose({
         <div>
           <h3>Inventario del día</h3>
           <p className="cc-panel-hint">
-            Escribe cuántas unidades ingresaron hoy de cada insumo. Lo vendido se descuenta solo de los pedidos cobrados.
+            Escribe cuántas unidades ingresaron de cada insumo. Lo vendido se descuenta solo de los pedidos cobrados.
+            Si te equivocaste, corrige el número: en "Ingresó" lo de este día, en "Sobrante de ayer" el conteo real con que empezó el día.
+            Para corregir otro día, elígelo arriba.
           </p>
         </div>
         {hasEntries && (
           <button type="button" className="cc-btn cc-btn-danger" onClick={() => onClearStock(dayKey)}>
-            Limpiar ingresos del día
+            Limpiar inventario del día
           </button>
         )}
       </div>
@@ -113,7 +126,7 @@ export default function CashClose({
             <tr>
               <th>Insumo</th>
               <th className="cc-num">Sobrante de ayer</th>
-              <th className="cc-num">Ingresó hoy</th>
+              <th className="cc-num">Ingresó</th>
               <th className="cc-num">Disponible</th>
               <th className="cc-num">Vendido</th>
               <th className="cc-num">Quedan</th>
@@ -125,12 +138,32 @@ export default function CashClose({
               {rows.map(row => (
                 <tr key={row.id}>
                   <td className="cc-strong">{row.name}</td>
-                  <td className="cc-num inv-muted">{row.carry !== null ? row.carry : '—'}</td>
+                  <td className="cc-num">
+                    <span className="inv-carry">
+                      <StockInput
+                        className={`inv-input inv-input-carry ${row.carryAdjusted ? 'inv-adjusted' : ''}`}
+                        value={row.carry}
+                        onCommit={value => value !== null && onSetStart(dayKey, row.id, value)}
+                        label={`Sobrante de ayer: ${row.name}`}
+                      />
+                      {row.carryAdjusted && (
+                        <button
+                          type="button"
+                          className="inv-reset"
+                          onClick={() => onSetStart(dayKey, row.id, null)}
+                          title="Volver al cálculo automático"
+                          aria-label={`Volver al cálculo automático: ${row.name}`}
+                        >
+                          ↺
+                        </button>
+                      )}
+                    </span>
+                  </td>
                   <td className="cc-num">
                     <StockInput
                       value={row.entered}
                       onCommit={value => onSetStock(dayKey, row.id, value)}
-                      label={`Ingresó hoy: ${row.name}`}
+                      label={`Ingresó: ${row.name}`}
                     />
                   </td>
                   <td className="cc-num">{row.available !== null ? row.available : '—'}</td>

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { getBusinessDayKey } from '../utils/salesReport';
 
 export const INVENTORY_STORAGE_KEY = 'perritos_guao_inventory';
+export const INVENTORY_START_KEY = 'perritos_guao_inventory_start';
 
 /** Mismos días de historial que el registro de ventas (ver useSales.js). */
 const RETENTION_DAYS = 90;
 
-function loadStock() {
+function loadStock(storageKey) {
   try {
-    const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return {};
 
     const parsed = JSON.parse(raw);
@@ -31,6 +32,21 @@ function loadStock() {
   }
 }
 
+/** Cambia (o borra, con null) un insumo dentro de un mapa { día: { insumo: número } }. */
+function withEntry(map, dateKey, itemId, value) {
+  const day = { ...(map[dateKey] || {}) };
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+    delete day[itemId];
+  } else {
+    day[itemId] = Number(value);
+  }
+
+  const next = { ...map };
+  if (Object.keys(day).length === 0) delete next[dateKey];
+  else next[dateKey] = day;
+  return next;
+}
+
 /**
  * Entradas de inventario por día: cuántas unidades de cada insumo ingresaron
  * (o se ajustaron, con número negativo) ese día. { "2026-10-10": { "pan-brioche": 300 } }
@@ -39,7 +55,10 @@ function loadStock() {
  * anular un cobro devuelve solo los insumos al inventario.
  */
 export function useInventory() {
-  const [stockByDay, setStockByDay] = useState(loadStock);
+  const [stockByDay, setStockByDay] = useState(() => loadStock(INVENTORY_STORAGE_KEY));
+  // Correcciones del sobrante con que empieza cada día (conteo real que
+  // reemplaza lo que arrastraba el cálculo). { "2026-10-10": { "pan-brioche": 9 } }
+  const [startByDay, setStartByDay] = useState(() => loadStock(INVENTORY_START_KEY));
 
   useEffect(() => {
     try {
@@ -49,31 +68,29 @@ export function useInventory() {
     }
   }, [stockByDay]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(INVENTORY_START_KEY, JSON.stringify(startByDay));
+    } catch (error) {
+      console.warn('No se pudo guardar el inventario:', error);
+    }
+  }, [startByDay]);
+
   /** Guarda lo ingresado de un insumo en un día. `null` borra la entrada. */
   function setStockEntry(dateKey, itemId, value) {
-    setStockByDay(prev => {
-      const day = { ...(prev[dateKey] || {}) };
-      if (value === null || value === undefined || !Number.isFinite(Number(value))) {
-        delete day[itemId];
-      } else {
-        day[itemId] = Number(value);
-      }
-
-      const next = { ...prev };
-      if (Object.keys(day).length === 0) delete next[dateKey];
-      else next[dateKey] = day;
-      return next;
-    });
+    setStockByDay(prev => withEntry(prev, dateKey, itemId, value));
   }
 
-  /** Borra todo lo ingresado en un día. */
+  /** Corrige el sobrante con que empieza un día. `null` vuelve al cálculo automático. */
+  function setStartEntry(dateKey, itemId, value) {
+    setStartByDay(prev => withEntry(prev, dateKey, itemId, value));
+  }
+
+  /** Borra todo lo ingresado y corregido en un día. */
   function clearStockDay(dateKey) {
-    setStockByDay(prev => {
-      const next = { ...prev };
-      delete next[dateKey];
-      return next;
-    });
+    setStockByDay(prev => withEntry({ ...prev, [dateKey]: {} }, dateKey, '', null));
+    setStartByDay(prev => withEntry({ ...prev, [dateKey]: {} }, dateKey, '', null));
   }
 
-  return { stockByDay, setStockEntry, clearStockDay };
+  return { stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay };
 }

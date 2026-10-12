@@ -231,7 +231,7 @@ export default function App() {
   } = useSales();
 
   // Insumos que ingresaron cada día; lo vendido sale de las ventas cobradas.
-  const { stockByDay, setStockEntry, clearStockDay } = useInventory();
+  const { stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay } = useInventory();
 
   /**
    * Cobrar un pedido: queda asentado en el registro de ventas (persistido)
@@ -490,7 +490,9 @@ export default function App() {
             availableDays={availableDays}
             today={today}
             stockByDay={stockByDay}
+            startByDay={startByDay}
             onSetStock={setStockEntry}
+            onSetStart={setStartEntry}
             onClearStock={clearStockDay}
             onRemoveSale={removeSale}
             onClearDay={dateKey => setDayToClear(dateKey)}
