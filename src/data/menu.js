@@ -10,7 +10,7 @@
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 6;
+export const MENU_VERSION = 7;
 
 const BURGER_BREADS = ["pan-brioche", "pan-batata", "pan-pretzel"];
 // Una sola carne: no se le pregunta a nadie, pero igual se descuenta del inventario.
@@ -29,6 +29,9 @@ const hotDogChoices = (sausages) => [
 ];
 const drinkBrands = (brands) => [
   { id: "marca", label: "Marca", options: brands, trackInventory: false, showSelected: true },
+];
+const drinkFlavors = (flavors) => [
+  { id: "sabor", label: "Sabor", options: flavors, trackInventory: false, showSelected: true },
 ];
 
 export const MENU = {
@@ -145,7 +148,10 @@ export const MENU = {
       id: "b7", name: "Refresco de 2 Lt", price: 3.50, desc: "", ingredients: [],
       choices: drinkBrands(["Pepsi", "Golden", "7up"]),
     },
-    { id: "b8", name: "Nestea (limón y durazno)", price: 2.00, desc: "", ingredients: [] },
+    {
+      id: "b8", name: "Nestea", price: 2.00, desc: "", ingredients: [],
+      choices: drinkFlavors(["Limón", "Durazno"]),
+    },
     { id: "b9", name: "Agua mineral pequeña", price: 1.00, desc: "", ingredients: [] },
   ],
 };
