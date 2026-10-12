@@ -26,7 +26,13 @@
 /* Detalle de la línea en el carrito, el comprobante y la tarjeta del tablero. */
 .cart-line .line-detail{font-size:11px;color:var(--ink-soft);margin:2px 0 6px;line-height:1.35;}
 .ticket .litem .lopts{font-size:10.5px;color:var(--ink-soft);padding-left:10px;font-weight:600;}
-.item-card .price-from{font-size:9px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;margin-right:3px;}
+/* Precio con "desde" (productos con tamaños): ambos van dentro de la píldora naranja,
+   así que el "desde" va en blanco, pequeño y alineado con la base del precio. */
+.item-card .price:has(.price-from){display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;}
+.item-card .price-from{
+  font-family:'Inter';font-size:9px;font-weight:700;color:#fff;
+  text-transform:uppercase;letter-spacing:.6px;line-height:1;
+}
 
 @media (max-width:600px){
   .opt-choices{grid-template-columns:1fr;}
