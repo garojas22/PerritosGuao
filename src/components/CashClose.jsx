@@ -75,12 +75,11 @@ export default function CashClose({
 
   // Si el día seleccionado ya no existe (se borró), se cae a hoy.
   const dayKey = dayOptions.includes(selectedDay) ? selectedDay : today;
-  const sales = [...(salesByDay[dayKey] || [])].sort((a, b) => {
-    const first = Date.parse(a.closedAt);
-    const second = Date.parse(b.closedAt);
-    if (!Number.isFinite(first) || !Number.isFinite(second)) return 0;
-    return first - second;
-  });
+  // El número se asigna al crear el pedido; la hora de cobro puede ser posterior
+  // y distinta para cada pedido, así que no representa el orden cronológico.
+  const sales = [...(salesByDay[dayKey] || [])].sort(
+    (a, b) => Number(a.num) - Number(b.num)
+  );
   const summary = summarizeSales(sales);
   const isToday = dayKey === getBusinessDayKey();
   const inventory = summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay });
