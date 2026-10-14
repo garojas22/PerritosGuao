@@ -1,6 +1,6 @@
 import { getStartingPrice, hasValidComboPrice, hasVariants } from '../utils/lineOptions';
 
-export default function MenuGrid({ items, isAdmin = false, onAdd, onAddProduct, onEditProduct }) {
+export default function MenuGrid({ items, isAdmin = false, addProductLabel = 'Agregar producto', onAdd, onAddProduct, onEditProduct }) {
   return (
     <div className="menu-grid">
       {items.filter(item => !item.hidden).map(item => {
@@ -36,7 +36,7 @@ export default function MenuGrid({ items, isAdmin = false, onAdd, onAddProduct, 
       {isAdmin && (
         <button type="button" className="add-product-card" onClick={onAddProduct}>
           <span className="add-product-plus">+</span>
-          <span>Agregar producto</span>
+          <span>{addProductLabel}</span>
         </button>
       )}
     </div>

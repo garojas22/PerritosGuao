@@ -2,49 +2,26 @@ import { useEffect, useState } from 'react';
 import { getInventoryName, getInventoryNote } from '../data/inventory';
 import {
 askableChoices,
+getComboPartProduct,
 getDefaultSelection,
 hasVariants,
 resolveSelection,
 } from '../utils/lineOptions';
 
-/**
- * Ventana que aparece al tocar un producto con tamaños (1 carne / 2 carnes)
- * o con elecciones (tipo de pan, tipo de carne). Arranca con lo más común ya
- * marcado, así el cajero solo toca lo que cambia y confirma.
- */
-export default function ProductOptionsModal({ product, onConfirm, onClose }) {
-const [selection, setSelection] = useState(() => getDefaultSelection(product));
-
-useEffect(() => {
-function handleKey(event) {
-    if (event.key === 'Escape') onClose();
-}
-window.addEventListener('keydown', handleKey);
-return () => window.removeEventListener('keydown', handleKey);
-}, [onClose]);
-
+function SelectionFields({ product, selection, onChange, showVariantPrice = true }) {
 const choices = askableChoices(product);
 const resolved = resolveSelection(product, selection);
 
 function pickVariant(variantId) {
-setSelection(prev => ({ ...prev, variantId }));
+onChange({ ...selection, variantId });
 }
 
 function pickChoice(choiceId, itemId) {
-setSelection(prev => ({ ...prev, choices: { ...prev.choices, [choiceId]: itemId } }));
+onChange({ ...selection, choices: { ...selection.choices, [choiceId]: itemId } });
 }
 
 return (
-<div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
-    <section className="product-modal options-modal" role="dialog" aria-modal="true" aria-labelledby="options-title">
-    <div className="modal-heading">
-        <div>
-        <span className="modal-kicker">Armar pedido</span>
-        <h2 id="options-title">{product.name}</h2>
-        </div>
-        <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar ventana">×</button>
-    </div>
-
+    <>
     {hasVariants(product) && product.variants.length > 1 && (
         <div className="opt-group">
         <div className="opt-label">Tamaño</div>
@@ -57,7 +34,7 @@ return (
                 onClick={() => pickVariant(variant.id)}
             >
                 <span>{variant.label}</span>
-                <strong>${Number(variant.price).toFixed(2)}</strong>
+                {showVariantPrice && <strong>${Number(variant.price).toFixed(2)}</strong>}
             </button>
             ))}
         </div>
@@ -84,11 +61,69 @@ return (
         </div>
         </div>
     ))}
+    </>
+);
+}
+
+export default function ProductOptionsModal({ product, productsById = {}, onConfirm, onClose }) {
+const [selection, setSelection] = useState(() => product.isCombo
+    ? product.parts.map(part => {
+        const partProduct = getComboPartProduct(productsById[part.ref], part);
+        return getDefaultSelection(partProduct);
+    })
+    : getDefaultSelection(product));
+
+useEffect(() => {
+setSelection(product.isCombo
+    ? product.parts.map(part => getDefaultSelection(getComboPartProduct(productsById[part.ref], part)))
+    : getDefaultSelection(product));
+}, [product, productsById]);
+
+useEffect(() => {
+function handleKey(event) {
+    if (event.key === 'Escape') onClose();
+}
+window.addEventListener('keydown', handleKey);
+return () => window.removeEventListener('keydown', handleKey);
+}, [onClose]);
+
+const resolved = product.isCombo
+    ? null
+    : resolveSelection(product, selection);
+
+return (
+<div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
+    <section className="product-modal options-modal" role="dialog" aria-modal="true" aria-labelledby="options-title">
+    <div className="modal-heading">
+        <div>
+        <span className="modal-kicker">Armar pedido</span>
+        <h2 id="options-title">{product.name}</h2>
+        </div>
+        <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar ventana">×</button>
+    </div>
+
+    {product.isCombo ? product.parts.map((part, index) => {
+        const partProduct = getComboPartProduct(productsById[part.ref], part);
+        if (!partProduct) return null;
+        return (
+            <section className="combo-option-part" key={`${part.ref}-${index}`}>
+                <h3>{part.label || partProduct.name}</h3>
+                <SelectionFields
+                    product={partProduct}
+                    selection={selection[index]}
+                    onChange={next => setSelection(current => current.map((value, partIndex) => partIndex === index ? next : value))}
+                    showVariantPrice={false}
+                />
+            </section>
+        );
+    }) : (
+        <SelectionFields product={product} selection={selection} onChange={setSelection} />
+    )}
 
     <div className="modal-actions">
         <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
         <button type="button" className="btn-primary" onClick={() => onConfirm(selection)}>
-        Agregar · ${resolved.price.toFixed(2)}
+        Agregar · ${Number(product.isCombo ? product.price : resolved.price).toFixed(2)}
         </button>
     </div>
     </section>

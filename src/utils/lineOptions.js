@@ -48,6 +48,27 @@ choices: Object.fromEntries(getChoices(product).map(choice => [choice.id, choice
 };
 }
 
+export function getComboPartProduct(product, part) {
+if (!product) return null;
+const variants = Array.isArray(part.variantIds) && part.variantIds.length > 0
+    ? product.variants?.filter(variant => part.variantIds.includes(variant.id))
+    : product.variants;
+const choices = getChoices(product).map(choice => {
+    const options = part.choiceOptions?.[choice.id];
+    return Array.isArray(options)
+        ? { ...choice, options: options.length > 0 ? options : choice.options, showSelected: true }
+        : choice;
+});
+return { ...product, variants, choices, showVariantLabel: Array.isArray(part.variantIds) };
+}
+
+export function comboNeedsOptions(combo, productsById) {
+return (combo.parts || []).some(part => {
+    const product = getComboPartProduct(productsById[part.ref], part);
+    return product && needsOptions(product);
+});
+}
+
 /**
  * Convierte una selección en los datos que lleva la línea del pedido:
  * - price: precio unitario del tamaño elegido
@@ -74,19 +95,19 @@ if (choice.options.length > 1 || choice.showSelected) optionLabels.push(getInven
 
 return {
 price: variant ? Number(variant.price) || 0 : Number(product.price) || 0,
-variantLabel: variants.length > 1 && variant ? variant.label : '',
+variantLabel: (variants.length > 1 || product.showVariantLabel) && variant ? variant.label : '',
 optionLabels,
 uses,
 };
 }
 
 /** Resuelve las partes configuradas de una oferta usando sus productos base. */
-export function resolveComboParts(combo, productsById) {
+export function resolveComboParts(combo, productsById, selections = []) {
 return (combo.parts || []).map((part, index) => {
-    const product = productsById[part.ref];
+    const product = getComboPartProduct(productsById[part.ref], part);
     if (!product) throw new Error(`No se encontró el producto "${part.ref}" de la oferta "${combo.name}".`);
 
-    const resolved = resolveSelection(product, part.selection ?? getDefaultSelection(product));
+    const resolved = resolveSelection(product, selections[index] ?? part.selection ?? getDefaultSelection(product));
     const ingredients = Array.isArray(product.ingredients) ? product.ingredients : [];
     return {
         id: `${part.ref}-${index}`,

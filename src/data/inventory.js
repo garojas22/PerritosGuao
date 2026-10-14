@@ -6,8 +6,8 @@
  * con sumarlo aquí y usarlo en el menú.
  */
 export const INVENTORY_ITEMS = [
-{ id: 'pan-brioche', name: "Brioche Bertha's (normal)", group: 'Panes', note: 'Hamburguesas normales' },
-{ id: 'pan-brioche-promo', name: 'Brioche Crustissimo (promo)', group: 'Panes', note: 'Solo promociones' },
+{ id: 'pan-brioche', name: "Brioche Bertha's", group: 'Panes', note: 'Hamburguesas normales' },
+{ id: 'pan-brioche-promo', name: 'Brioche Crustissimo', group: 'Panes', note: 'Solo promociones' },
 { id: 'pan-batata', name: 'Pan de batata', group: 'Panes' },
 { id: 'pan-pretzel', name: 'Pan de pretzel', group: 'Panes' },
 { id: 'pan-perro', name: 'Pan de perro', group: 'Panes' },
