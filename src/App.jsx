@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MENU, MENU_VERSION } from "./data/menu.js";
 import { useOrders } from "./hooks/useOrders.js";
 import { useSales } from "./hooks/useSales.js";
@@ -15,11 +15,13 @@ import ProductModal from "./components/ProductModal.jsx";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
 import AdminLoginDialog from "./components/AdminLoginDialog.jsx";
 import ProductOptionsModal from "./components/ProductOptionsModal.jsx";
+import OfferTypeModal from "./components/OfferTypeModal.jsx";
+import ComboOfferModal from "./components/ComboOfferModal.jsx";
 import {
   needsPayRef, isValidPayRef, getOrderPayments, validateSplit,
   partsToPayments, paymentsToParts, roundMoney,
 } from "./utils/payment.js";
-import { getProductNameKey, hasValidComboPrice, needsOptions } from "./utils/lineOptions.js";
+import { comboNeedsOptions, getProductNameKey, hasValidComboPrice, needsOptions } from "./utils/lineOptions.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
 const MENU_STORAGE_KEY = "perritos_guao_menu";
@@ -176,6 +178,9 @@ export default function App() {
   const [lastOrder, setLastOrder] = useState(null);
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
+  const [showOfferTypeModal, setShowOfferTypeModal] = useState(false);
+  const [showComboOfferBuilder, setShowComboOfferBuilder] = useState(false);
+  const [comboOfferModal, setComboOfferModal] = useState(null);
   const [optionsProduct, setOptionsProduct] = useState(null); // producto con tamaños/elecciones por configurar
   const [productToDelete, setProductToDelete] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
@@ -185,6 +190,10 @@ export default function App() {
   const [pendingEdit, setPendingEdit] = useState(null); // pedido a corregir, a la espera de confirmar
 
   const categories = Object.keys(menu);
+  const productsById = useMemo(
+    () => Object.fromEntries(Object.values(menu).flat().map(product => [product.id, product])),
+    [menu],
+  );
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -216,6 +225,9 @@ export default function App() {
   useEffect(() => {
     if (isAdmin) return;
     setProductModal(null);
+    setShowOfferTypeModal(false);
+    setShowComboOfferBuilder(false);
+    setComboOfferModal(null);
     setProductToDelete(null);
     setOrderToDelete(null);
     setDayToClear(null);
@@ -310,8 +322,11 @@ export default function App() {
   /** Tocar un producto: si hay que elegir tamaño o pan se abre la ventana; si no, entra directo. */
   function handleAddProduct(item) {
     if (item.isCombo) {
-      const productsById = Object.fromEntries(Object.values(menu).flat().map(product => [product.id, product]));
-      addToCart(item, null, productsById);
+      if (comboNeedsOptions(item, productsById)) {
+        setOptionsProduct(item);
+      } else {
+        addToCart(item, null, productsById);
+      }
       return;
     }
     if (needsOptions(item)) {
@@ -323,8 +338,32 @@ export default function App() {
 
   function confirmOptions(selection) {
     if (!optionsProduct) return;
-    addToCart(optionsProduct, selection);
+    addToCart(optionsProduct, selection, productsById);
     setOptionsProduct(null);
+  }
+
+  function saveComboOffer(offer) {
+    if (!isAdmin) return;
+    setMenu(prev => {
+      const next = Object.fromEntries(Object.entries(prev).map(([category, items]) => [
+        category,
+        items.filter(item => item.id !== offer.id),
+      ]));
+      const existing = Object.values(prev).flat().find(item => item.id === offer.id);
+      next.Ofertas = [
+        ...(next.Ofertas || []),
+        {
+          ...existing,
+          ...offer,
+          id: offer.id || `offer-${Date.now()}`,
+          isCustom: !BASE_PRODUCT_IDS.has(offer.id),
+        },
+      ];
+      return next;
+    });
+    setActiveCat("Ofertas");
+    setShowComboOfferBuilder(false);
+    setComboOfferModal(null);
   }
 
   function toggleIngredientAvailability(ingredient) {
@@ -461,9 +500,14 @@ export default function App() {
               <MenuGrid
                 items={menu[activeCat] || []}
                 isAdmin={isAdmin}
+                addProductLabel={activeCat === "Ofertas" ? "Crear oferta" : "Agregar producto"}
                 onAdd={handleAddProduct}
-                onAddProduct={() => setProductModal({ product: null, category: activeCat })}
-                onEditProduct={product => setProductModal({ product, category: activeCat })}
+                onAddProduct={() => activeCat === "Ofertas"
+                  ? setShowOfferTypeModal(true)
+                  : setProductModal({ product: null, category: activeCat })}
+                onEditProduct={product => product.isCombo
+                  ? setComboOfferModal(product)
+                  : setProductModal({ product, category: activeCat })}
               />
             </div>
 
@@ -536,8 +580,50 @@ export default function App() {
       {optionsProduct && (
         <ProductOptionsModal
           product={optionsProduct}
+          productsById={productsById}
           onConfirm={confirmOptions}
           onClose={() => setOptionsProduct(null)}
+        />
+      )}
+
+      {showOfferTypeModal && isAdmin && (
+        <OfferTypeModal
+          onChooseProduct={() => {
+            setShowOfferTypeModal(false);
+            setProductModal({ product: null, category: "Ofertas" });
+          }}
+          onChooseCombo={() => {
+            setShowOfferTypeModal(false);
+            setShowComboOfferBuilder(true);
+          }}
+          onClose={() => setShowOfferTypeModal(false)}
+        />
+      )}
+
+      {showComboOfferBuilder && isAdmin && (
+        <ComboOfferModal
+          menu={menu}
+          onClose={() => setShowComboOfferBuilder(false)}
+          onSave={saveComboOffer}
+          onDelete={product => {
+            setShowComboOfferBuilder(false);
+            setComboOfferModal(null);
+            setProductToDelete(product);
+          }}
+        />
+      )}
+
+      {comboOfferModal && isAdmin && (
+        <ComboOfferModal
+          key={comboOfferModal.id}
+          menu={menu}
+          offer={comboOfferModal}
+          onClose={() => setComboOfferModal(null)}
+          onSave={saveComboOffer}
+          onDelete={product => {
+            setComboOfferModal(null);
+            setProductToDelete(product);
+          }}
         />
       )}
 

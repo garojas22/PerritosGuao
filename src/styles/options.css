@@ -23,6 +23,8 @@
 .opt-btn.on{border-color:var(--orange);background:rgba(227,91,30,.08);}
 .opt-btn.on strong{color:var(--orange-deep);}
 .options-modal .modal-actions{margin-top:8px;}
+.combo-option-part{padding:10px 0;border-bottom:1px solid var(--line);}
+.combo-option-part h3{margin:0 0 6px;font-size:13px;color:var(--brown);}
 
 /* Detalle de la línea en el carrito, el comprobante y la tarjeta del tablero. */
 .cart-line .line-detail{font-size:11px;color:var(--ink-soft);margin:2px 0 6px;line-height:1.35;}

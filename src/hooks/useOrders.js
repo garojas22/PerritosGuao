@@ -65,7 +65,7 @@ export function useOrders() {
    */
   function addToCart(item, selection = null, productsById = {}) {
     if (item.hidden || (item.isCombo && !hasValidComboPrice(item))) return false;
-    const parts = item.isCombo ? resolveComboParts(item, productsById) : null;
+    const parts = item.isCombo ? resolveComboParts(item, productsById, selection || []) : null;
     const resolved = item.isCombo ? null : resolveSelection(item, selection ?? getDefaultSelection(item));
     const availableMods = Array.isArray(item.ingredients) && item.ingredients.length > 0
       ? item.ingredients.map(ingredient => `Sin ${ingredient}`)

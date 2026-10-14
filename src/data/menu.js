@@ -10,13 +10,15 @@
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 8;
+export const MENU_VERSION = 9;
 
 // Precio confirmado por el dueño; mantenerlo aquí evita que el cajero pueda
 // modificar el precio de la oferta al armar un pedido.
 export const PRECIO_PROMO_2_HAMBURGUESAS = 10;
 
 const BURGER_BREADS = ["pan-brioche", "pan-batata", "pan-pretzel"];
+const BURGER_COMBO_BREADS = [...BURGER_BREADS, "pan-brioche-promo"];
+const BURGER_COMBO_MEATS = ["carne-normal", "carne-promo"];
 // Una sola carne: no se le pregunta a nadie, pero igual se descuenta del inventario.
 const BURGER_MEATS = ["carne-normal"];
 
@@ -28,7 +30,7 @@ const burgerChoices = (breads = BURGER_BREADS, meatQty = "variant", meats = BURG
 
 /** Elecciones de un perro caliente: pan de perro y la salchicha que corresponda. */
 const hotDogChoices = (sausages) => [
-  { id: "pan", label: "Pan", options: ["pan-perro"], qty: 1 },
+  { id: "pan-perro", label: "Pan", options: ["pan-perro"], qty: 1 },
   { id: "proteina", label: "Salchicha", options: sausages, qty: 1 },
 ];
 const drinkBrands = (brands) => [
@@ -37,6 +39,7 @@ const drinkBrands = (brands) => [
 const drinkFlavors = (flavors) => [
   { id: "sabor", label: "Sabor", options: flavors, trackInventory: false, showSelected: true },
 ];
+const OFFER_LITER_DRINKS = ["Golden Manzanita", "Golden Naranja", "Golden Frescolita", "7up"];
 
 export const MENU = {
   "Perros calientes": [
@@ -81,6 +84,7 @@ export const MENU = {
       desc: "Pan brioche, carne, facilista y ketchup.",
       ingredients: ["facilista", "ketchup"],
       choices: burgerChoices(["pan-brioche"], 1, ["carne-promo"]),
+      comboChoiceOptions: { pan: BURGER_COMBO_BREADS, carne: BURGER_COMBO_MEATS },
     },
     {
       id: "hc",
@@ -93,6 +97,7 @@ export const MENU = {
         { id: "2", label: "2 carnes", price: 7.99, units: 2 },
       ],
       choices: burgerChoices(),
+      comboChoiceOptions: { pan: BURGER_COMBO_BREADS, carne: BURGER_COMBO_MEATS },
     },
     {
       id: "hb",
@@ -105,6 +110,7 @@ export const MENU = {
         { id: "2", label: "2 carnes", price: 9.99, units: 2 },
       ],
       choices: burgerChoices(),
+      comboChoiceOptions: { pan: BURGER_COMBO_BREADS, carne: BURGER_COMBO_MEATS },
     },
     {
       id: "hd",
@@ -117,6 +123,7 @@ export const MENU = {
         { id: "2", label: "2 carnes", price: 9.50, units: 2 },
       ],
       choices: burgerChoices(),
+      comboChoiceOptions: { pan: BURGER_COMBO_BREADS, carne: BURGER_COMBO_MEATS },
     },
   ],
   "Extras": [
@@ -139,6 +146,8 @@ export const MENU = {
     {
       id: "b4", name: "Refresco de 1 Lt", price: 1.75, desc: "", ingredients: [],
       choices: drinkBrands(["Coca-Cola"]),
+      comboChoiceOptions: { marca: OFFER_LITER_DRINKS },
+      comboChoiceDefaults: { marca: OFFER_LITER_DRINKS },
     },
     {
       id: "b5", name: "Refresco de 1.25 Lt", price: 2.25, desc: "", ingredients: [],
@@ -175,6 +184,7 @@ export const MENU = {
       desc: "Hamburguesa de promoción.",
       ingredients: ["lechuga", "tomate", "pepinillos", "ketchup", "mayonesa", "mostaza", "facilista"],
       choices: burgerChoices(["pan-brioche-promo"], 1, ["carne-promo"]),
+      comboChoiceOptions: { pan: BURGER_COMBO_BREADS, carne: BURGER_COMBO_MEATS },
     },
     {
       id: "promo-2-hamburguesas",
@@ -184,7 +194,11 @@ export const MENU = {
       parts: [
         { ref: "hamburguesa-promo", label: "Hamburguesa 1" },
         { ref: "hamburguesa-promo", label: "Hamburguesa 2" },
-        { ref: "b4", label: "Refresco de 1 Lt" },
+        {
+          ref: "b4",
+          label: "Refresco de 1 Lt",
+          choiceOptions: { marca: OFFER_LITER_DRINKS },
+        },
       ],
     },
   ],
