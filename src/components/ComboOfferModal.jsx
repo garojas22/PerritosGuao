@@ -27,131 +27,10 @@ function initialPart(product, existing = {}) {
   };
 }
 
-function ExistingProductPicker({ catalog, value, onChange }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const selectedProduct = catalog.find(product => product.id === value);
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const filteredProducts = catalog.filter(product =>
-    product.name.toLocaleLowerCase().includes(normalizedQuery) ||
-    product.category.toLocaleLowerCase().includes(normalizedQuery)
-  );
-  const groupedProducts = Object.entries(
-    filteredProducts.reduce((groups, product) => {
-      (groups[product.category] ||= []).push(product);
-      return groups;
-    }, {}),
-  );
-  const listboxId = "combo-offer-product-list";
-
-  function choose(product) {
-    onChange(product.id);
-    setQuery("");
-    setIsOpen(false);
-    setActiveIndex(-1);
-  }
-
-  function handleKeyDown(event) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setIsOpen(true);
-      if (filteredProducts.length > 0) {
-        setActiveIndex(index => index < 0 ? 0 : Math.min(index + 1, filteredProducts.length - 1));
-      }
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setIsOpen(true);
-      if (filteredProducts.length > 0) {
-        setActiveIndex(index => index < 0 ? filteredProducts.length - 1 : Math.max(index - 1, 0));
-      }
-    } else if (event.key === "Enter" && isOpen && filteredProducts[activeIndex]) {
-      event.preventDefault();
-      choose(filteredProducts[activeIndex]);
-    } else if (event.key === "Escape" && isOpen) {
-      event.preventDefault();
-      setIsOpen(false);
-      setQuery("");
-      setActiveIndex(-1);
-    }
-  }
-
-  let optionIndex = -1;
-
-  return (
-    <div
-      className="combo-product-picker"
-      onBlur={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setIsOpen(false);
-          setQuery("");
-        }
-      }}
-    >
-      <label htmlFor="combo-offer-product-search">Producto existente</label>
-      <input
-        id="combo-offer-product-search"
-        type="text"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={isOpen}
-        aria-controls={listboxId}
-        aria-activedescendant={isOpen && filteredProducts[activeIndex] ? `combo-product-option-${filteredProducts[activeIndex].id}` : undefined}
-        value={isOpen ? query : selectedProduct?.name || ""}
-        placeholder="Busca un producto..."
-        onFocus={() => {
-          if (!isOpen) {
-            setQuery("");
-            setActiveIndex(-1);
-          }
-          setIsOpen(true);
-        }}
-        onChange={event => {
-          setQuery(event.target.value);
-          setActiveIndex(-1);
-          setIsOpen(true);
-          onChange("");
-        }}
-        onKeyDown={handleKeyDown}
-      />
-      {isOpen && (
-        <div className="combo-product-picker-menu" id={listboxId} role="listbox" aria-label="Productos existentes">
-          {groupedProducts.length === 0 ? (
-            <p className="combo-product-picker-empty">No hay productos que coincidan.</p>
-          ) : groupedProducts.map(([category, products]) => (
-            <div className="combo-product-picker-group" role="group" aria-label={category} key={category}>
-              <div className="combo-product-picker-category">{category}</div>
-              {products.map(product => {
-                optionIndex += 1;
-                const currentIndex = optionIndex;
-                return (
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={product.id === value}
-                    id={`combo-product-option-${product.id}`}
-                    className={`combo-product-picker-option ${currentIndex === activeIndex ? "is-active" : ""}`}
-                    key={product.id}
-                    onMouseDown={event => event.preventDefault()}
-                    onMouseEnter={() => setActiveIndex(currentIndex)}
-                    onClick={() => choose(product)}
-                  >
-                    {product.name}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function ComboOfferModal({ menu, offer, onClose, onSave, onDelete }) {
   const catalog = useMemo(
     () => Object.entries(menu).flatMap(([category, products]) =>
-      products.filter(product => !product.isCombo).map(product => ({ ...product, category }))
+      products.filter(product => !product.isCombo && !product.hidden).map(product => ({ ...product, category }))
     ),
     [menu],
   );
@@ -162,11 +41,16 @@ export default function ComboOfferModal({ menu, offer, onClose, onSave, onDelete
     const product = productsById[part.ref];
     return product ? initialPart(product, part) : null;
   }).filter(Boolean));
-  const [selectedProductId, setSelectedProductId] = useState(catalog[0]?.id || "");
+  const [activeProductCategory, setActiveProductCategory] = useState("Hamburguesas");
   const [error, setError] = useState("");
+  const productCategories = [
+    { label: "Hamburguesas", category: "Hamburguesas" },
+    { label: "Perros", category: "Perros calientes" },
+    { label: "Refrescos", category: "Bebidas" },
+  ];
+  const visibleProducts = catalog.filter(product => product.category === activeProductCategory);
 
-  function addPart() {
-    const product = productsById[selectedProductId];
+  function addPart(product) {
     if (!product) return;
     setParts(current => [...current, initialPart(product)]);
     setError("");
@@ -254,14 +138,39 @@ export default function ComboOfferModal({ menu, offer, onClose, onSave, onDelete
           </div>
 
           <div className="combo-offer-add">
-            <ExistingProductPicker
-              catalog={catalog}
-              value={selectedProductId}
-              onChange={setSelectedProductId}
-            />
-            <button type="button" className="btn-secondary" onClick={addPart} disabled={!selectedProductId}>Agregar producto</button>
+            <div className="combo-product-picker">
+              <span className="combo-product-picker-label">Agregar productos existentes</span>
+              <div className="combo-product-categories" role="group" aria-label="Categorías de productos">
+                {productCategories.map(({ label, category }) => (
+                  <button
+                    key={category}
+                    type="button"
+                    className={`combo-product-category-button ${activeProductCategory === category ? "active" : ""}`}
+                    aria-pressed={activeProductCategory === category}
+                    onClick={() => setActiveProductCategory(category)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="combo-product-options" aria-label={`${productCategories.find(item => item.category === activeProductCategory)?.label || "Productos"} disponibles`}>
+                {visibleProducts.length === 0 ? (
+                  <p className="combo-product-picker-empty">No hay productos disponibles en esta categoría.</p>
+                ) : visibleProducts.map(product => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    className="combo-product-option-button"
+                    onClick={() => addPart(product)}
+                  >
+                    <span>{product.name}</span>
+                    <span className="combo-product-option-add" aria-hidden="true">+</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <p className="combo-offer-hint">Incluye al menos una bebida y marca todas las variantes y opciones que el cajero podrá elegir al vender la oferta.</p>
+          <p className="combo-offer-hint">Toca un producto para sumarlo a la oferta. Incluye al menos una bebida y marca las opciones que el cajero podrá elegir al venderla.</p>
 
           <div className="combo-offer-parts">
             {parts.map((part, index) => {
