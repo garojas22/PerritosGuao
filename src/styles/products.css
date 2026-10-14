@@ -68,7 +68,7 @@
 .combo-product-category-button:hover{border-color:var(--brown);}
 .combo-product-category-button.active{border-color:var(--brown);background:var(--brown);color:#fff;}
 .combo-product-category-button:focus-visible,.combo-product-option-button:focus-visible{outline:2px solid var(--orange);outline-offset:2px;}
-.combo-product-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
+.combo-product-options{--combo-product-option-height:42px;--combo-product-option-gap:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--combo-product-option-gap);min-height:calc(3 * var(--combo-product-option-height) + 2 * var(--combo-product-option-gap));}
 .combo-product-option-button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:42px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:'Inter';font-size:12px;font-weight:600;text-align:left;cursor:pointer;touch-action:manipulation;transition:border-color .15s ease,background .15s ease,color .15s ease;}
 .combo-product-option-button:hover{border-color:var(--orange);background:rgba(227,91,30,.06);}
 .combo-product-option-button span:first-child{overflow-wrap:anywhere;}
@@ -96,9 +96,12 @@
 .combo-offer-modal .modal-actions{flex-wrap:wrap;align-items:center;}
 .combo-offer-modal .modal-delete-product{margin-right:auto;}
 @media(max-width:600px){
-  .combo-product-options{grid-template-columns:1fr;}
+  .combo-product-options{grid-template-columns:1fr;min-height:calc(9 * var(--combo-product-option-height) + 8 * var(--combo-product-option-gap));}
   .combo-offer-label{max-width:none;}
   .combo-offer-checks{gap:6px;}
+}
+@media(min-width:601px) and (max-width:637px){
+  .combo-product-options{min-height:calc(5 * var(--combo-product-option-height) + 4 * var(--combo-product-option-gap));}
 }
 .modal-danger-zone{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;display:flex;justify-content:flex-end;}
 .modal-delete-product{display:inline-flex;align-items:center;gap:6px;border:none;background:none;color:var(--rust);font-family:'Inter';font-size:12.5px;font-weight:700;cursor:pointer;padding:4px 2px;}
