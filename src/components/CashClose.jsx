@@ -142,7 +142,10 @@ export default function CashClose({
               <tr className="inv-group"><td colSpan={6}>{group}</td></tr>
               {rows.map(row => (
                 <tr key={row.id}>
-                  <td className="cc-strong">{row.name}</td>
+                  <td className="cc-strong">
+                    <span className="inv-item-name">{row.name}</span>
+                    {row.note && <span className="inv-item-note">{row.note}</span>}
+                  </td>
                   <td className="cc-num">
                     <span className="inv-carry">
                       <StockInput
@@ -303,7 +306,7 @@ export default function CashClose({
                     <tr key={product.name}>
                       <td>{product.name}</td>
                       <td>{product.qty}</td>
-                      <td className="cc-num">{formatUsd(product.totalUsd)}</td>
+                      <td className="cc-num">{product.totalUsd === null ? 'Incluido' : formatUsd(product.totalUsd)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -368,6 +371,22 @@ export default function CashClose({
                       </td>
                       <td className="cc-products">
                         {(sale.items || []).map(item => {
+                          if (item.isCombo) {
+                            return (
+                              <span key={item.uid ?? item.name} className="cc-product-line cc-combo-line">
+                                {item.qty}x {item.name} · {formatUsd(item.price * item.qty)}
+                                {(item.parts || []).map((part, index) => {
+                                  const details = [describeLine(part), ...(part.mods || [])].filter(Boolean);
+                                  return (
+                                    <span className="cc-combo-part" key={part.id || `${part.name}-${index}`}>
+                                      ↳ {item.qty}x {part.label || part.name}: {part.name}
+                                      {details.length > 0 && <em> ({details.join(', ')})</em>}
+                                    </span>
+                                  );
+                                })}
+                              </span>
+                            );
+                          }
                           const details = [describeLine(item), ...(item.mods || [])].filter(Boolean);
                           return (
                             <span key={item.uid ?? item.name} className="cc-product-line">

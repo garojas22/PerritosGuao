@@ -10,16 +10,20 @@
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 7;
+export const MENU_VERSION = 8;
+
+// Precio confirmado por el dueño; mantenerlo aquí evita que el cajero pueda
+// modificar el precio de la oferta al armar un pedido.
+export const PRECIO_PROMO_2_HAMBURGUESAS = 10;
 
 const BURGER_BREADS = ["pan-brioche", "pan-batata", "pan-pretzel"];
 // Una sola carne: no se le pregunta a nadie, pero igual se descuenta del inventario.
 const BURGER_MEATS = ["carne-normal"];
 
 /** Elecciones de una hamburguesa: pan y carne (la cantidad de carne depende del tamaño). */
-const burgerChoices = (breads = BURGER_BREADS, meatQty = "variant") => [
+const burgerChoices = (breads = BURGER_BREADS, meatQty = "variant", meats = BURGER_MEATS) => [
   { id: "pan", label: "Pan", options: breads, qty: 1 },
-  { id: "carne", label: "Carne", options: BURGER_MEATS, qty: meatQty },
+  { id: "carne", label: "Carne", options: meats, qty: meatQty },
 ];
 
 /** Elecciones de un perro caliente: pan de perro y la salchicha que corresponda. */
@@ -42,7 +46,7 @@ export const MENU = {
       price: 3.50,
       desc: "Pan brioche crustísimo, salchicha Plumrose, ensalada rallada, cebolla, papa, queso de año y salsas.",
       ingredients: ["ensalada", "cebolla", "papas", "queso de año", "salsas"],
-      choices: hotDogChoices(["salchicha-winner", "salchicha-pavo"]),
+      choices: hotDogChoices(["salchicha-winner"]),
     },
     {
       id: "ma",
@@ -76,7 +80,7 @@ export const MENU = {
       price: 5.50,
       desc: "Pan brioche, carne, facilista y ketchup.",
       ingredients: ["facilista", "ketchup"],
-      choices: burgerChoices(["pan-brioche"], 1),
+      choices: burgerChoices(["pan-brioche"], 1, ["carne-promo"]),
     },
     {
       id: "hc",
@@ -154,6 +158,53 @@ export const MENU = {
     },
     { id: "b9", name: "Agua mineral pequeña", price: 1.00, desc: "", ingredients: [] },
   ],
+  "Ofertas": [
+    {
+      id: "perro-dia",
+      name: "Perro del día",
+      price: 3.00,
+      desc: "Perro Guao con salchicha de pavo.",
+      ingredients: ["ensalada", "cebolla", "papas", "queso de año", "salsas"],
+      choices: hotDogChoices(["salchicha-pavo"]),
+    },
+    {
+      id: "hamburguesa-promo",
+      name: "Hamburguesa de promo",
+      price: 0,
+      hidden: true,
+      desc: "Hamburguesa de promoción.",
+      ingredients: ["lechuga", "tomate", "pepinillos", "ketchup", "mayonesa", "mostaza", "facilista"],
+      choices: burgerChoices(["pan-brioche-promo"], 1, ["carne-promo"]),
+    },
+    {
+      id: "promo-2-hamburguesas",
+      name: "2 Hamburguesas de promo",
+      isCombo: true,
+      price: PRECIO_PROMO_2_HAMBURGUESAS,
+      parts: [
+        { ref: "hamburguesa-promo", label: "Hamburguesa 1" },
+        { ref: "hamburguesa-promo", label: "Hamburguesa 2" },
+        { ref: "b4", label: "Refresco de 1 Lt" },
+      ],
+    },
+  ],
 };
+
+if (import.meta.env.DEV) {
+  Object.entries(MENU).forEach(([category, products]) => {
+    if (category === "Ofertas") return;
+    products.forEach(product => {
+      (product.choices || []).forEach(choice => {
+        const allowedPromoIngredient = product.id === "hj" && choice.id === "carne";
+        if (
+          choice.options.includes("pan-brioche-promo") ||
+          (choice.options.includes("carne-promo") && !allowedPromoIngredient)
+        ) {
+          console.warn(`El producto normal "${product.name}" ofrece un insumo exclusivo de promoción.`);
+        }
+      });
+    });
+  });
+}
 // Nota: el menú impreso no trae precios de Extras ni de Bebidas; se conservaron
 // los que ya tenía el sistema.

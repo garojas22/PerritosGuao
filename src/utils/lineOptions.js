@@ -1,4 +1,4 @@
-import { getInventoryName } from '../data/inventory';
+import { getInventoryName, getInventoryNote } from '../data/inventory';
 
 /**
  * Variantes (tamaño) y elecciones (pan, carne...) de un producto del menú.
@@ -30,6 +30,14 @@ return (hasVariants(product) && product.variants.length > 1) || askableChoices(p
 export function getStartingPrice(product) {
 if (!hasVariants(product)) return Number(product.price) || 0;
 return Math.min(...product.variants.map(variant => Number(variant.price) || 0));
+}
+
+export function hasValidComboPrice(product) {
+return product?.isCombo === true &&
+    Array.isArray(product.parts) &&
+    product.parts.length > 0 &&
+    Number.isFinite(Number(product.price)) &&
+    Number(product.price) > 0;
 }
 
 /** Selección inicial: primer tamaño y primera opción de cada elección. */
@@ -72,6 +80,37 @@ uses,
 };
 }
 
+/** Resuelve las partes configuradas de una oferta usando sus productos base. */
+export function resolveComboParts(combo, productsById) {
+return (combo.parts || []).map((part, index) => {
+    const product = productsById[part.ref];
+    if (!product) throw new Error(`No se encontró el producto "${part.ref}" de la oferta "${combo.name}".`);
+
+    const resolved = resolveSelection(product, part.selection ?? getDefaultSelection(product));
+    const ingredients = Array.isArray(product.ingredients) ? product.ingredients : [];
+    return {
+        id: `${part.ref}-${index}`,
+        name: product.name,
+        label: part.label || product.name,
+        productId: product.id,
+        variantLabel: resolved.variantLabel,
+        optionLabels: [...resolved.optionLabels],
+        uses: resolved.uses.map(use => ({ ...use })),
+        ingredients: [...ingredients],
+        availMods: ingredients.map(ingredient => `Sin ${ingredient}`),
+        mods: [],
+    };
+});
+}
+
+export function getProductNameKey(name = '') {
+return String(name)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 /** Partes del detalle de una línea, una por renglón: ["2 carnes", "Pan de batata"]. */
 export function getLineParts(line) {
 return [line.variantLabel, ...(line.optionLabels ?? [])].filter(Boolean);
@@ -79,5 +118,11 @@ return [line.variantLabel, ...(line.optionLabels ?? [])].filter(Boolean);
 
 /** Detalle de una línea en un solo texto: "2 carnes · Pan de batata". */
 export function describeLine(line) {
+if (line?.isCombo) {
+    return (line.parts || []).map(part => {
+        const detail = [part.variantLabel, ...(part.optionLabels ?? [])].filter(Boolean).join(' · ');
+        return `${part.name}${detail ? ` (${detail})` : ''}`;
+    }).join(', ');
+}
 return getLineParts(line).join(' · ');
 }

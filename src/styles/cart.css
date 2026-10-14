@@ -79,6 +79,8 @@
 .cart-items{border-top:1.5px dashed var(--line);margin-top:6px;padding-top:10px;max-height:280px;overflow-y:auto;}
 .cart-empty{font-size:13px;color:var(--ink-soft);text-align:center;padding:20px 0;}
 .cart-line{padding:10px 0;border-bottom:1px solid var(--line);}
+.combo-cart-parts{display:grid;gap:6px;margin-top:4px;}
+.combo-cart-part{padding-left:8px;border-left:2px solid var(--line);}
 .cart-line .top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
 .cart-line .name{font-family:'Baloo 2';font-size:14.5px;font-weight:600;}
 .cart-line .price{font-family:'JetBrains Mono';font-size:13px;color:var(--ink-soft);}

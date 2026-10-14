@@ -37,6 +37,32 @@ function getIngredientLabel(ingredient) {
   return INGREDIENT_LABELS[ingredient] ?? ingredient;
 }
 
+function IngredientChips({ item, line, onToggleMod, ingredientAvailability, partIndex = null }) {
+  if (!item.availMods?.length) return null;
+  return (
+    <div className="chips">
+      {item.availMods.map(mod => {
+        const ingredientKey = getModIngredientKey(mod);
+        const isAvailable = ingredientKey ? (ingredientAvailability[ingredientKey] ?? true) : true;
+        const isSelected = item.mods.includes(mod);
+
+        return (
+          <button
+            key={mod}
+            type="button"
+            className={`chip ${isSelected ? 'on' : ''} ${!isAvailable ? 'disabled' : ''}`}
+            onClick={() => isAvailable && onToggleMod(line.uid, mod, partIndex)}
+            disabled={!isAvailable}
+            title={!isAvailable ? 'Ingrediente agotado' : mod}
+          >
+            {!isAvailable ? `${mod} · Agotado` : mod}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }) {
   return (
     <div className="cart-line">
@@ -44,35 +70,36 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
         <span className="name">{line.name}</span>
         <span className="price">${(line.price * line.qty).toFixed(2)}</span>
       </div>
-      {describeLine(line) && <div className="line-detail">{describeLine(line)}</div>}
+      {line.isCombo ? (
+        <div className="combo-cart-parts">
+          {line.parts.map((part, index) => (
+            <div className="combo-cart-part" key={part.id}>
+              <div className="line-detail">
+                {part.label ? `${part.label}: ` : ''}{part.name}
+                {describeLine(part) ? ` · ${describeLine(part)}` : ''}
+              </div>
+              <IngredientChips
+                item={part}
+                line={line}
+                onToggleMod={onToggleMod}
+                ingredientAvailability={ingredientAvailability}
+                partIndex={index}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {describeLine(line) && <div className="line-detail">{describeLine(line)}</div>}
+          <IngredientChips item={line} line={line} onToggleMod={onToggleMod} ingredientAvailability={ingredientAvailability} />
+        </>
+      )}
       <div className="qty-ctrl">
         <button onClick={() => onQty(line.uid, -1)}>−</button>
         <span>{line.qty}</span>
         <button onClick={() => onQty(line.uid, 1)}>+</button>
         <span className="remove-x" onClick={() => onRemove(line.uid)}>Quitar</span>
       </div>
-      {line.availMods.length > 0 && (
-        <div className="chips">
-          {line.availMods.map(mod => {
-            const ingredientKey = getModIngredientKey(mod);
-            const isAvailable = ingredientKey ? (ingredientAvailability[ingredientKey] ?? true) : true;
-            const isSelected = line.mods.includes(mod);
-
-            return (
-              <button
-                key={mod}
-                type="button"
-                className={`chip ${isSelected ? 'on' : ''} ${!isAvailable ? 'disabled' : ''}`}
-                onClick={() => isAvailable && onToggleMod(line.uid, mod)}
-                disabled={!isAvailable}
-                title={!isAvailable ? 'Ingrediente agotado' : mod}
-              >
-                {!isAvailable ? `${mod} · Agotado` : mod}
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

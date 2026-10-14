@@ -10,7 +10,7 @@ const WIDTH = 32;
 
 function center(text, width = WIDTH) {
   text = String(text);
-  if (text.length >= width) return text;
+  if (text.length >= width) return text.slice(0, width);
   const pad = width - text.length;
   const left = Math.floor(pad / 2);
   const right = pad - left;
@@ -20,9 +20,9 @@ function center(text, width = WIDTH) {
 function line(left, right, width = WIDTH) {
   left = String(left);
   right = String(right);
+  if (right.length >= width) right = right.slice(-width + 1);
   const space = width - left.length - right.length;
   if (space < 1) {
-    // Si no cabe en una línea, corta el right a como quepa
     return left.slice(0, width - right.length - 1) + ' ' + right;
   }
   return left + ' '.repeat(space) + right;
@@ -30,6 +30,35 @@ function line(left, right, width = WIDTH) {
 
 function dashes(width = WIDTH) {
   return '-'.repeat(width);
+}
+
+function wrappedRows(text, prefix = '  ') {
+  const contentWidth = WIDTH - prefix.length;
+  const words = String(text).split(/\s+/);
+  const rows = [];
+  let current = prefix;
+
+  words.forEach(word => {
+    while (word.length > contentWidth) {
+      if (current !== prefix) {
+        rows.push(current);
+        current = prefix;
+      }
+      rows.push(`${prefix}${word.slice(0, contentWidth)}`);
+      word = word.slice(contentWidth);
+    }
+
+    const next = current === prefix ? word : `${current.slice(prefix.length)} ${word}`;
+    if (next.length > contentWidth) {
+      rows.push(current);
+      current = `${prefix}${word}`;
+    } else {
+      current = `${prefix}${next}`;
+    }
+  });
+
+  if (current !== prefix) rows.push(current);
+  return rows;
 }
 
 // El driver "Generic / Text Only" de la POS-80 no maneja bien los
@@ -77,13 +106,21 @@ export function buildTicketText(order, totalBs) {
     const left = `${l.qty}x ${l.name}`;
     const right = `$${(l.price * l.qty).toFixed(2)}`;
     rows.push(line(left, right));
-    // Tamaño, pan y tipo de carne: cada uno en su renglón para que quepa en 32 caracteres.
-    getLineParts(l).forEach((part) => {
-      rows.push(`  + ${part}`);
-    });
-    l.mods.forEach((m) => {
-      rows.push(`  » ${m}`);
-    });
+    if (l.isCombo) {
+      l.parts.forEach((part) => {
+        rows.push(...wrappedRows(`${l.qty}x ${part.label || part.name}: ${part.name}`));
+        getLineParts(part).forEach(detail => rows.push(...wrappedRows(`+ ${detail}`, '  ')));
+        (part.mods || []).forEach(mod => rows.push(...wrappedRows(`» ${mod}`, '  ')));
+      });
+    } else {
+      // Tamaño, pan y tipo de carne: cada uno en su renglón para que quepa en 32 caracteres.
+      getLineParts(l).forEach((part) => {
+        rows.push(...wrappedRows(`+ ${part}`, '  '));
+      });
+      (l.mods || []).forEach((mod) => {
+        rows.push(...wrappedRows(`» ${mod}`, '  '));
+      });
+    }
   });
 
   if (order.deliveryFee > 0) {
@@ -93,7 +130,13 @@ export function buildTicketText(order, totalBs) {
   if (order.stockWarnings && order.stockWarnings.length > 0) {
     rows.push(dashes());
     rows.push('*** INSUMOS AGOTADOS ***');
-    rows.push(order.stockWarnings.map((i) => i.toUpperCase()).join(', '));
+    order.stockWarnings.forEach(warning => {
+      if (typeof warning === 'string') {
+        rows.push(...wrappedRows(warning.toUpperCase(), '  '));
+      } else {
+        rows.push(...wrappedRows(`${warning.partName}: ${warning.ingredients.join(', ')}`.toUpperCase(), '  '));
+      }
+    });
   }
 
   rows.push(dashes());
@@ -116,5 +159,6 @@ export function buildTicketText(order, totalBs) {
   rows.push('.');
   rows.push('.');
 
-  return stripDiacritics(rows.join('\n'));
+  // The printer's width is a hard limit, including lines outside wrappedRows().
+  return stripDiacritics(rows.map(row => String(row).slice(0, WIDTH)).join('\n'));
 }
