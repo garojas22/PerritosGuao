@@ -117,9 +117,17 @@ const items = sale.items || [];
 // Un producto por línea dentro de la celda: se lee mucho mejor que
 // separarlos con " | " en una sola línea larga.
 const productLines = items.map(item => {
+if (item.isCombo) {
+const partLines = (item.parts || []).map(part => {
+const detail = [describeLine(part), ...(part.mods || [])].filter(Boolean).join(', ');
+const label = `${part.label || part.name}: ${part.name}`;
+return `  - ${item.qty}x ${label}${detail ? ` (${detail})` : ''}`;
+});
+return [`${item.qty}x ${item.name} · ${formatUsd(item.price * item.qty)}`, ...partLines];
+}
 const detail = describeLine(item);
 return `${item.qty}x ${item.name}${detail ? ` (${detail})` : ''}`;
-});
+}).flat();
 const modLines = items
     .filter(item => Array.isArray(item.mods) && item.mods.length > 0)
     .map(item => `${item.name}: ${item.mods.join(', ')}`);
@@ -288,7 +296,7 @@ Object.entries(summary.byType).map(([type, data]) => [type, data.count, data.tot
 writeBlock(
 sheet, next, 'Productos vendidos',
 ['Producto', 'Unidades', 'Total USD'],
-summary.products.map(product => [product.name, product.qty, product.totalUsd]),
+summary.products.map(product => [product.name, product.qty, product.totalUsd ?? 'Incluido']),
 { 3: FMT_USD },
 );
 
@@ -305,6 +313,7 @@ pageSetup: { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeigh
 sheet.columns = [
 { key: 'group', width: 14 },
 { key: 'name', width: 28 },
+{ key: 'note', width: 24 },
 { key: 'carry', width: 16 },
 { key: 'entered', width: 14 },
 { key: 'available', width: 14 },
@@ -312,10 +321,10 @@ sheet.columns = [
 { key: 'remaining', width: 12 },
 ];
 
-writeTitle(sheet, 'G', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
+writeTitle(sheet, 'H', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
 
 const headerRow = sheet.getRow(4);
-headerRow.values = ['Grupo', 'Insumo', 'Sobrante de ayer', 'Ingresó hoy', 'Disponible', 'Vendido', 'Quedan'];
+headerRow.values = ['Grupo', 'Insumo', 'Uso', 'Sobrante de ayer', 'Ingresó hoy', 'Disponible', 'Vendido', 'Quedan'];
 styleHeaderRow(headerRow);
 
 let index = 0;
@@ -326,18 +335,21 @@ const tracked = item.available !== null;
 const row = sheet.addRow([
 group,
 item.name,
+item.note || '',
 item.carry,
 item.entered,
 // Fórmulas: si alguien corrige un número en Excel, el resto se recalcula.
-tracked ? { formula: `N(C${rowNumber})+N(D${rowNumber})`, result: item.available } : null,
+tracked ? { formula: `N(D${rowNumber})+N(E${rowNumber})`, result: item.available } : null,
 item.sold,
-tracked ? { formula: `E${rowNumber}-F${rowNumber}`, result: item.remaining } : null,
+tracked ? { formula: `F${rowNumber}-G${rowNumber}`, result: item.remaining } : null,
 ]);
 styleBodyRow(row, index);
-for (let col = 3; col <= 7; col += 1) {
+for (let col = 4; col <= 8; col += 1) {
 row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
 }
 row.getCell('name').font = { bold: true };
+row.getCell('note').font = { color: { argb: 'FF777777' }, italic: true, size: 9 };
+row.getCell('note').alignment = { vertical: 'middle', wrapText: true };
 if (item.status === 'out') row.getCell('remaining').font = { bold: true, color: { argb: 'FFC1502E' } };
 index += 1;
 });

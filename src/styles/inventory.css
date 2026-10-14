@@ -23,6 +23,8 @@
 .inv-table td:not(:first-child){width:15.6%;}
 .inv-table th.cc-num,
 .inv-table td.cc-num{text-align:center;padding-right:0;}
+.inv-item-name{display:block;}
+.inv-item-note{display:block;color:var(--ink-soft);font-size:10px;font-weight:500;line-height:1.25;}
 
 /* Fila de grupo: Panes, Proteínas... */
 .inv-group td{

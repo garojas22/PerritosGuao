@@ -86,7 +86,7 @@ export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesB
   const knownIds = new Set(INVENTORY_ITEMS.map(item => item.id));
   const extraItems = Object.keys(usage)
     .filter(id => !knownIds.has(id))
-    .map(id => ({ id, name: getInventoryName(id), group: 'Otros' }));
+    .map(id => ({ id, name: getInventoryName(id), group: 'Otros', note: '' }));
 
   const groups = new Map();
   let hasStock = false;
@@ -118,6 +118,7 @@ export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesB
     groups.get(item.group).push({
       id: item.id,
       name: item.name,
+      note: item.note ?? '',
       carry: previous,
       carryAdjusted: adjusted,
       entered: ingreso,

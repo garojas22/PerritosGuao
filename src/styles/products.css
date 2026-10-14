@@ -4,6 +4,8 @@
   flex-direction:column;
   height:100%;
 }
+.item-card-disabled{opacity:.58;cursor:not-allowed;}
+.item-card-disabled .price{color:var(--rust);}
 .item-actions{
   display:flex;
   justify-content:flex-start;

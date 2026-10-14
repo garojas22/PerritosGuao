@@ -113,15 +113,29 @@ export function summarizeSales(sales = []) {
       const lineTotal = (Number(item.price) || 0) * qty;
       summary.itemsSold += qty;
 
-      const current = productMap.get(item.name) || { name: item.name, qty: 0, totalUsd: 0 };
+      const current = productMap.get(item.name) || { name: item.name, qty: 0, totalUsd: 0, hasDirectSales: false };
       current.qty += qty;
-      current.totalUsd += lineTotal;
+      current.totalUsd = (Number(current.totalUsd) || 0) + lineTotal;
+      current.hasDirectSales = true;
       productMap.set(item.name, current);
+
+      if (item.isCombo) {
+        (item.parts || []).forEach(part => {
+          const partEntry = productMap.get(part.name) || { name: part.name, qty: 0, totalUsd: null, hasDirectSales: false };
+          partEntry.qty += qty;
+          productMap.set(part.name, partEntry);
+        });
+      }
     });
   });
 
   summary.averageTicket = summary.count > 0 ? summary.totalUsd / summary.count : 0;
-  summary.products = Array.from(productMap.values()).sort((a, b) => b.qty - a.qty);
+  summary.products = Array.from(productMap.values())
+    .map(({ hasDirectSales, ...product }) => ({
+      ...product,
+      totalUsd: hasDirectSales ? product.totalUsd : null,
+    }))
+    .sort((a, b) => b.qty - a.qty);
 
   return summary;
 }

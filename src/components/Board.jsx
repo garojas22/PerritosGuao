@@ -30,10 +30,27 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
         )}
       </div>
       <div className="oc-name">{order.customer}</div>
-      <div className="oc-items">{order.items.map(l => {
+      <div className="oc-items">{order.items.map((l, index) => {
+        const separator = index > 0 ? <span className="oc-item-separator">, </span> : null;
+        if (l.isCombo) {
+          return (
+            <div className="oc-item-combo" key={l.uid ?? `${l.name}-${index}`}>
+              {separator}
+              <span>{l.qty}x {l.name} · ${ (l.price * l.qty).toFixed(2)}</span>
+              {l.parts.map((part, partIndex) => {
+                const detail = [describeLine(part), ...(part.mods || [])].filter(Boolean).join(", ");
+                return (
+                  <span className="oc-item-part" key={part.id || `${part.name}-${partIndex}`}>
+                    ↳ {l.qty}x {part.label || part.name}: {part.name}{detail ? ` (${detail})` : ""}
+                  </span>
+                );
+              })}
+            </div>
+          );
+        }
         const detail = describeLine(l);
-        return `${l.qty}x ${l.name}${detail ? ` (${detail})` : ""}`;
-      }).join(", ")}</div>
+        return <span key={l.uid ?? `${l.name}-${index}`}>{separator}{l.qty}x {l.name}{detail ? ` (${detail})` : ""}</span>;
+      })}</div>
       {order.revision > 0 && <div className="oc-corrected">Corregido</div>}
       <div className="oc-foot">
         <span>{order.type} · {order.pay}{order.payRef ? ` · Ref. ${order.payRef}` : ''}</span>

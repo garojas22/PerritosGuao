@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getInventoryName } from '../data/inventory';
+import { getInventoryName, getInventoryNote } from '../data/inventory';
 import {
 askableChoices,
 getDefaultSelection,
@@ -75,7 +75,10 @@ return (
                 className={`opt-btn ${selection.choices[choice.id] === itemId ? 'on' : ''}`}
                 onClick={() => pickChoice(choice.id, itemId)}
             >
-                <span>{getInventoryName(itemId)}</span>
+                <span>
+                    {getInventoryName(itemId)}
+                    {getInventoryNote(itemId) && <small className="opt-choice-note">{getInventoryNote(itemId)}</small>}
+                </span>
             </button>
             ))}
         </div>

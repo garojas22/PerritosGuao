@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { nextOrderNumber } from "../utils/orderCounter.js";
-import { describeLine, getDefaultSelection, resolveSelection } from "../utils/lineOptions.js";
+import { describeLine, getDefaultSelection, hasValidComboPrice, resolveComboParts, resolveSelection } from "../utils/lineOptions.js";
 import { buildPayLabel, buildPayRefText, roundMoney } from "../utils/payment.js";
 
 // STATUS_FLOW define a qué estado salta un pedido al hacer clic en su tarjeta.
@@ -33,6 +33,26 @@ function getIngredientKeyFromMod(mod = "") {
   return normalizeIngredientKey(withoutPrefix);
 }
 
+function copyOrderLine(line) {
+  return {
+    ...line,
+    uses: (line.uses || []).map(use => ({ ...use })),
+    ingredients: [...(line.ingredients || [])],
+    availMods: [...(line.availMods || [])],
+    mods: [...(line.mods || [])],
+    ...(Array.isArray(line.parts) ? {
+      parts: line.parts.map(part => ({
+        ...part,
+        uses: (part.uses || []).map(use => ({ ...use })),
+        ingredients: [...(part.ingredients || [])],
+        availMods: [...(part.availMods || [])],
+        optionLabels: [...(part.optionLabels || [])],
+        mods: [...(part.mods || [])],
+      })),
+    } : {}),
+  };
+}
+
 export function useOrders() {
   const [cart, setCart] = useState([]); // [{ uid, id, name, price, qty, availMods, mods }]
   const [orders, setOrders] = useState([]);
@@ -43,8 +63,10 @@ export function useOrders() {
    * defecto. Todo lo elegido se guarda en la línea (precio, detalle e insumos
    * que gasta) para que un cambio posterior del menú no altere el pedido.
    */
-  function addToCart(item, selection = null) {
-    const resolved = resolveSelection(item, selection ?? getDefaultSelection(item));
+  function addToCart(item, selection = null, productsById = {}) {
+    if (item.hidden || (item.isCombo && !hasValidComboPrice(item))) return false;
+    const parts = item.isCombo ? resolveComboParts(item, productsById) : null;
+    const resolved = item.isCombo ? null : resolveSelection(item, selection ?? getDefaultSelection(item));
     const availableMods = Array.isArray(item.ingredients) && item.ingredients.length > 0
       ? item.ingredients.map(ingredient => `Sin ${ingredient}`)
       : Array.isArray(item.mods) ? item.mods : [];
@@ -55,16 +77,21 @@ export function useOrders() {
         uid: Date.now() + Math.random(),
         id: item.id,
         name: item.name,
-        price: resolved.price,
-        variantLabel: resolved.variantLabel,
-        optionLabels: resolved.optionLabels,
-        uses: resolved.uses, // insumos que gasta UNA unidad (para el inventario)
+        isCombo: Boolean(item.isCombo),
+        price: item.isCombo ? Number(item.price) : resolved.price,
+        variantLabel: resolved?.variantLabel ?? '',
+        optionLabels: resolved?.optionLabels ?? [],
+        parts,
+        uses: item.isCombo
+          ? parts.flatMap(part => part.uses.map(use => ({ ...use })))
+          : resolved.uses, // insumos que gasta UNA unidad (para el inventario)
         qty: 1,
         ingredients: item.ingredients ?? [],
         availMods: availableMods,
         mods: [],
       },
     ]);
+    return true;
   }
 
   function updateQty(uid, delta) {
@@ -75,9 +102,19 @@ export function useOrders() {
     setCart(prev => prev.filter(l => l.uid !== uid));
   }
 
-  function toggleMod(uid, mod) {
+  function toggleMod(uid, mod, partIndex = null) {
     setCart(prev => prev.map(l => {
       if (l.uid !== uid) return l;
+      if (l.isCombo && Number.isInteger(partIndex)) {
+        return {
+          ...l,
+          parts: l.parts.map((part, index) => {
+            if (index !== partIndex) return part;
+            const has = part.mods.includes(mod);
+            return { ...part, mods: has ? part.mods.filter(m => m !== mod) : [...part.mods, mod] };
+          }),
+        };
+      }
       const has = l.mods.includes(mod);
       return { ...l, mods: has ? l.mods.filter(m => m !== mod) : [...l.mods, mod] };
     }));
@@ -105,7 +142,7 @@ export function useOrders() {
 
   /** Carga un pedido existente en el carrito para poder corregirlo. */
   function loadCartFromOrder(order) {
-    setCart(order.items.map(line => ({ ...line, mods: [...line.mods] })));
+    setCart(order.items.map(copyOrderLine));
   }
 
   function clearCart() {
@@ -136,11 +173,20 @@ export function useOrders() {
     const stockWarnings = new Set();
 
     cart.forEach(item => {
-      item.mods.forEach(mod => {
-        const ingredientKey = getIngredientKeyFromMod(mod);
-        if (!ingredientKey) return;
-        if (ingredientAvailability[ingredientKey] === false) {
-          stockWarnings.add(ingredientKey);
+      const parts = item.isCombo
+        ? item.parts.map(part => ({ name: part.label || part.name, mods: part.mods }))
+        : [{ name: item.name, mods: item.mods }];
+      parts.forEach(part => {
+        const unavailable = [];
+        part.mods.forEach(mod => {
+          const ingredientKey = getIngredientKeyFromMod(mod);
+          if (!ingredientKey) return;
+          if (ingredientAvailability[ingredientKey] === false) {
+            unavailable.push(ingredientKey);
+          }
+        });
+        if (unavailable.length > 0) {
+          stockWarnings.add(JSON.stringify({ partName: part.name, ingredients: unavailable }));
         }
       });
     });
@@ -164,11 +210,11 @@ export function useOrders() {
       payments,
       pay: buildPayLabel(payments),
       payRef: buildPayRefText(payments),
-      items: cart,
+      items: cart.map(copyOrderLine),
       total,
       totalBs,
       bcvRate: rate, // se guarda la tasa usada, para poder auditar el cierre de caja
-      stockWarnings: Array.from(stockWarnings),
+      stockWarnings: Array.from(stockWarnings, warning => JSON.parse(warning)),
       status: previous ? previous.status : "Pendiente",
       time: previous ? previous.time : timeLabel,
       revision: previous ? (previous.revision || 0) + 1 : 0,
@@ -182,7 +228,14 @@ export function useOrders() {
               prevPay: previous.pay,
               prevPayments: previous.payments ?? null,
               prevItems: previous.items.map(line => {
-                const detail = [describeLine(line), ...line.mods].filter(Boolean).join(", ");
+                if (line.isCombo) {
+                  const parts = line.parts.map(part => {
+                    const detail = [part.variantLabel, ...(part.optionLabels || []), ...(part.mods || [])].filter(Boolean).join(", ");
+                    return `${part.label || part.name}: ${part.name}${detail ? ` (${detail})` : ""}`;
+                  }).join("; ");
+                  return `${line.qty}x ${line.name}${parts ? `: ${parts}` : ""}`;
+                }
+                const detail = [describeLine(line), ...(line.mods || [])].filter(Boolean).join(", ");
                 return `${line.qty}x ${line.name}${detail ? ` (${detail})` : ""}`;
               }),
             },

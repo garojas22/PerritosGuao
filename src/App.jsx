@@ -19,7 +19,7 @@ import {
   needsPayRef, isValidPayRef, getOrderPayments, validateSplit,
   partsToPayments, paymentsToParts, roundMoney,
 } from "./utils/payment.js";
-import { needsOptions } from "./utils/lineOptions.js";
+import { getProductNameKey, hasValidComboPrice, needsOptions } from "./utils/lineOptions.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
 const MENU_STORAGE_KEY = "perritos_guao_menu";
@@ -88,11 +88,12 @@ function normalizeMenu(menu) {
 function keepCustomProducts(baseMenu, storedMenu) {
   const merged = Object.fromEntries(Object.entries(baseMenu).map(([category, items]) => [category, [...items]]));
   if (!storedMenu || typeof storedMenu !== "object") return merged;
+  const baseNames = new Set(Object.values(baseMenu).flat().map(item => getProductNameKey(item.name)));
 
   Object.entries(storedMenu).forEach(([category, items]) => {
     if (!Array.isArray(items)) return;
     items
-      .filter(item => item?.isCustom === true)
+      .filter(item => item?.isCustom === true && !baseNames.has(getProductNameKey(item.name)))
       .forEach(item => {
         merged[category] = [...(merged[category] ?? []), item];
       });
@@ -184,6 +185,15 @@ export default function App() {
   const [pendingEdit, setPendingEdit] = useState(null); // pedido a corregir, a la espera de confirmar
 
   const categories = Object.keys(menu);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    Object.values(menu).flat().forEach(item => {
+      if (item.isCombo && !hasValidComboPrice(item)) {
+        console.warn(`La oferta "${item.name}" no tiene un precio válido y no se puede vender.`);
+      }
+    });
+  }, [menu]);
 
   useEffect(() => {
     localStorage.setItem(INGREDIENT_STOCK_KEY, JSON.stringify(ingredientAvailability));
@@ -299,6 +309,11 @@ export default function App() {
 
   /** Tocar un producto: si hay que elegir tamaño o pan se abre la ventana; si no, entra directo. */
   function handleAddProduct(item) {
+    if (item.isCombo) {
+      const productsById = Object.fromEntries(Object.values(menu).flat().map(product => [product.id, product]));
+      addToCart(item, null, productsById);
+      return;
+    }
     if (needsOptions(item)) {
       setOptionsProduct(item);
     } else {

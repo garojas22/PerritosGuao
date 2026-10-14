@@ -61,7 +61,21 @@ export default function Ticket({ order, onNewOrder, onEdit }) {
             {getLineParts(l).map(part => (
               <div className="lopts" key={part}>+ {part}</div>
             ))}
-            {l.mods.length > 0 && (
+            {l.isCombo ? l.parts.map((part, index) => (
+              <div className="combo-ticket-part" key={part.id || `${part.name}-${index}`}>
+                <div className="lopts">{l.qty}x {part.label || part.name}: {part.name}</div>
+                {getLineParts(part).map(detail => (
+                  <div className="lopts" key={detail}>+ {detail}</div>
+                ))}
+                {part.mods.length > 0 && (
+                  <div className="lmods">
+                    {part.mods.map((mod, modIndex) => (
+                      <span key={`${mod}-${modIndex}`}>» {mod}{modIndex < part.mods.length - 1 && <br />}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )) : l.mods.length > 0 && (
               <div className="lmods">
                 {l.mods.map((m, i) => (
                   <span key={m}>» {m}{i < l.mods.length - 1 && <br />}</span>
@@ -82,8 +96,13 @@ export default function Ticket({ order, onNewOrder, onEdit }) {
           <div className="stock-warning-box">
             <div className="stock-warning-label">*** INSUMOS AGOTADOS ***</div>
             <div className="stock-warning-items">
-              {order.stockWarnings.map((ingredient, index) => (
-                <span key={ingredient}>{ingredient.toUpperCase()}{index < order.stockWarnings.length - 1 ? ', ' : ''}</span>
+              {order.stockWarnings.map((warning, index) => (
+                <span key={`${warning.partName || 'item'}-${index}`}>
+                  {typeof warning === 'string'
+                    ? warning.toUpperCase()
+                    : `${warning.partName}: ${warning.ingredients.map(ingredient => ingredient.toUpperCase()).join(', ')}`}
+                  {index < order.stockWarnings.length - 1 ? ', ' : ''}
+                </span>
               ))}
             </div>
           </div>
