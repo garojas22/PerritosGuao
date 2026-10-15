@@ -10,7 +10,7 @@
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 9;
+export const MENU_VERSION = 10;
 
 // Precio confirmado por el dueño; mantenerlo aquí evita que el cajero pueda
 // modificar el precio de la oferta al armar un pedido.
@@ -40,6 +40,21 @@ const drinkFlavors = (flavors) => [
   { id: "sabor", label: "Sabor", options: flavors, trackInventory: false, showSelected: true },
 ];
 const OFFER_LITER_DRINKS = ["Golden Manzanita", "Golden Naranja", "Golden Frescolita", "7up"];
+
+/**
+ * Hamburguesa de las promociones: es "La Clásica" (hc) con la elección forzada.
+ * No se duplica el producto: la oferta reutiliza sus ingredientes y sus "Sin X"
+ * y solo fija 1 carne + pan Crustissimo + carne promo. Como esas opciones viven
+ * en la PARTE de la oferta (choiceOptions / variantIds) y no en `hc`, La Clásica
+ * normal sigue sin ofrecer insumos de promo. Con una sola opción por elección
+ * el cajero no ve nada que escoger y el inventario igual descuenta lo correcto.
+ */
+const promoBurgerPart = label => ({
+  ref: "hc",
+  label,
+  variantIds: ["1"],
+  choiceOptions: { pan: ["pan-brioche-promo"], carne: ["carne-promo"] },
+});
 
 export const MENU = {
   "Perros calientes": [
@@ -177,23 +192,13 @@ export const MENU = {
       choices: hotDogChoices(["salchicha-pavo"]),
     },
     {
-      id: "hamburguesa-promo",
-      name: "Hamburguesa de promo",
-      price: 0,
-      hidden: true,
-      desc: "Hamburguesa de promoción.",
-      ingredients: ["lechuga", "tomate", "pepinillos", "ketchup", "mayonesa", "mostaza", "facilista"],
-      choices: burgerChoices(["pan-brioche-promo"], 1, ["carne-promo"]),
-      comboChoiceOptions: { pan: BURGER_COMBO_BREADS, carne: BURGER_COMBO_MEATS },
-    },
-    {
       id: "promo-2-hamburguesas",
       name: "2 Hamburguesas de promo",
       isCombo: true,
       price: PRECIO_PROMO_2_HAMBURGUESAS,
       parts: [
-        { ref: "hamburguesa-promo", label: "Hamburguesa 1" },
-        { ref: "hamburguesa-promo", label: "Hamburguesa 2" },
+        promoBurgerPart("Hamburguesa 1"),
+        promoBurgerPart("Hamburguesa 2"),
         {
           ref: "b4",
           label: "Refresco de 1 Lt",
