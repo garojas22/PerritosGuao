@@ -16,7 +16,7 @@ import ConfirmDialog from "./components/ConfirmDialog.jsx";
 import AdminLoginDialog from "./components/AdminLoginDialog.jsx";
 import ProductOptionsModal from "./components/ProductOptionsModal.jsx";
 import OfferTypeModal from "./components/OfferTypeModal.jsx";
-import ComboOfferModal from "./components/ComboofferModal.jsx";
+import ComboOfferModal from "./components/Combooffermodal.jsx";
 import {
   needsPayRef, isValidPayRef, getOrderPayments, validateSplit,
   partsToPayments, paymentsToParts, roundMoney,
