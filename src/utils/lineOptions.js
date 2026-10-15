@@ -40,6 +40,31 @@ return product?.isCombo === true &&
     Number(product.price) > 0;
 }
 
+/**
+ * ¿Por qué una oferta no se puede vender? Devuelve el motivo, o `null` si está bien.
+ * Una oferta guarda solo referencias a productos del menú: si alguno se elimina,
+ * o si se vacía una de sus opciones, la oferta queda incompleta. Detectarlo aquí
+ * evita que al tocarla el sistema falle en silencio.
+ *
+ * Motivos: 'precio' (sin precio válido), 'incompleta' (sin partes, falta un
+ * producto o una opción permitida ya no existe).
+ */
+export function getComboIssue(combo, productsById = {}) {
+if (!combo?.isCombo) return null;
+if (!hasValidComboPrice(combo)) return Array.isArray(combo.parts) && combo.parts.length > 0 ? 'precio' : 'incompleta';
+
+for (const part of combo.parts) {
+    const product = productsById[part.ref];
+    if (!product) return 'incompleta';
+
+    const variantIds = Array.isArray(part.variantIds) ? part.variantIds : [];
+    if (variantIds.length > 0 && !(product.variants || []).some(variant => variantIds.includes(variant.id))) {
+    return 'incompleta';
+    }
+}
+return null;
+}
+
 /** Selección inicial: primer tamaño y primera opción de cada elección. */
 export function getDefaultSelection(product) {
 return {
@@ -135,6 +160,17 @@ return String(name)
 /** Partes del detalle de una línea, una por renglón: ["2 carnes", "Pan de batata"]. */
 export function getLineParts(line) {
 return [line.variantLabel, ...(line.optionLabels ?? [])].filter(Boolean);
+}
+
+/**
+ * Título de una parte de oferta: "Hamburguesa 1: Hamburguesa de promo" cuando el
+ * nombre en cocina es distinto del producto, o solo el producto si es igual
+ * (antes salía "La Clásica: La Clásica").
+ */
+export function partTitle(part) {
+const label = String(part?.label ?? '').trim();
+const name = part?.name ?? '';
+return label && label !== name ? `${label}: ${name}` : name;
 }
 
 /** Detalle de una línea en un solo texto: "2 carnes · Pan de batata". */

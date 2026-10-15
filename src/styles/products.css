@@ -5,7 +5,8 @@
   height:100%;
 }
 .item-card-disabled{opacity:.58;cursor:not-allowed;}
-.item-card-disabled .price{color:var(--rust);}
+.item-card-disabled .price{background:rgba(193,80,46,.12);color:var(--rust);border:1px solid rgba(193,80,46,.3);}
+.item-card-disabled:hover{border-color:var(--line);transform:none;box-shadow:none;}
 .item-actions{
   display:flex;
   justify-content:flex-start;
@@ -59,7 +60,7 @@
 .offer-type-option:hover{border-color:var(--orange);background:rgba(227,91,30,.06);}
 .offer-type-option strong{font-size:14px;}
 .offer-type-option span{font-size:12px;color:var(--ink-soft);}
-.combo-offer-modal{width:min(100%,760px);overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--orange) var(--cream);}
+.combo-offer-modal{width:min(100%,760px);overflow-y:auto;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--orange) var(--cream);}
 .combo-offer-modal::-webkit-scrollbar{width:10px;}
 .combo-offer-modal::-webkit-scrollbar-track{margin:8px 0;border-radius:999px;background:var(--cream);}
 .combo-offer-modal::-webkit-scrollbar-thumb{border:2px solid var(--cream);border-radius:999px;background:var(--orange);}
@@ -71,10 +72,11 @@
 .combo-product-category-button:hover{border-color:var(--brown);}
 .combo-product-category-button.active{border-color:var(--brown);background:var(--brown);color:#fff;}
 .combo-product-category-button:focus-visible,.combo-product-option-button:focus-visible{outline:2px solid var(--orange);outline-offset:2px;}
-.combo-product-options{--combo-product-option-height:42px;--combo-product-option-gap:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--combo-product-option-gap);min-height:calc(3 * var(--combo-product-option-height) + 2 * var(--combo-product-option-gap));}
+.combo-product-options{--combo-product-option-height:42px;--combo-product-option-gap:8px;display:grid;align-content:start;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--combo-product-option-gap);min-height:calc(3 * var(--combo-product-option-height) + 2 * var(--combo-product-option-gap));}
 .combo-product-option-button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:42px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:'Inter';font-size:12px;font-weight:600;text-align:left;cursor:pointer;touch-action:manipulation;transition:border-color .15s ease,background .15s ease,color .15s ease;}
 .combo-product-option-button:hover{border-color:var(--orange);background:rgba(227,91,30,.06);}
 .combo-product-option-button span:first-child{overflow-wrap:anywhere;}
+.combo-product-option-note{display:block;margin-top:1px;color:var(--ink-soft);font-size:9.5px;font-weight:500;}
 .combo-product-option-add{display:grid;flex:0 0 24px;width:24px;height:24px;place-items:center;border-radius:7px;background:rgba(227,91,30,.1);color:var(--orange-deep);font-size:17px;font-weight:500;line-height:1;}
 .combo-product-picker-empty{grid-column:1/-1;margin:0;padding:12px 2px;color:var(--ink-soft);font-size:12px;font-weight:500;}
 .combo-offer-label input{width:100%;min-height:42px;border:1.5px solid var(--line);border-radius:9px;background:var(--cream);color:var(--ink);font:inherit;font-size:14px;font-weight:500;letter-spacing:0;text-transform:none;padding:9px 12px;outline:none;}
@@ -88,7 +90,7 @@
 .combo-offer-part-heading strong{font-size:13px;line-height:1.35;}
 .combo-offer-part .product-action{min-height:32px;padding:5px 10px;border-color:var(--line);background:var(--paper);color:var(--ink-soft);font-size:11px;}
 .combo-offer-part .product-action:hover{border-color:var(--rust);background:var(--paper);color:var(--rust);}
-.combo-offer-label{max-width:420px;}
+.combo-offer-label{display:flex;flex-direction:column;gap:6px;max-width:420px;color:var(--ink-soft);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;}
 .combo-offer-choice{margin:12px 0 0;padding:0;border:0;}
 .combo-offer-choice legend{margin-bottom:7px;color:var(--ink-soft);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
 .combo-offer-checks{display:flex;flex-wrap:wrap;gap:7px;}

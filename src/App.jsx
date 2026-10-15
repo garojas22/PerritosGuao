@@ -21,7 +21,7 @@ import {
   needsPayRef, isValidPayRef, getOrderPayments, validateSplit,
   partsToPayments, paymentsToParts, roundMoney,
 } from "./utils/payment.js";
-import { comboNeedsOptions, getProductNameKey, hasValidComboPrice, needsOptions } from "./utils/lineOptions.js";
+import { comboNeedsOptions, getComboIssue, getProductNameKey, needsOptions } from "./utils/lineOptions.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
 const MENU_STORAGE_KEY = "perritos_guao_menu";
@@ -179,8 +179,8 @@ export default function App() {
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
   const [productModal, setProductModal] = useState(null);
   const [showOfferTypeModal, setShowOfferTypeModal] = useState(false);
-  const [showComboOfferBuilder, setShowComboOfferBuilder] = useState(false);
-  const [comboOfferModal, setComboOfferModal] = useState(null);
+  // Ventana de ofertas combinadas: { offer: null } crea una nueva, { offer } edita una existente.
+  const [comboModal, setComboModal] = useState(null);
   const [optionsProduct, setOptionsProduct] = useState(null); // producto con tamaños/elecciones por configurar
   const [productToDelete, setProductToDelete] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
@@ -198,11 +198,12 @@ export default function App() {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     Object.values(menu).flat().forEach(item => {
-      if (item.isCombo && !hasValidComboPrice(item)) {
-        console.warn(`La oferta "${item.name}" no tiene un precio válido y no se puede vender.`);
+      const issue = getComboIssue(item, productsById);
+      if (issue) {
+        console.warn(`La oferta "${item.name}" no se puede vender (${issue}).`);
       }
     });
-  }, [menu]);
+  }, [menu, productsById]);
 
   useEffect(() => {
     localStorage.setItem(INGREDIENT_STOCK_KEY, JSON.stringify(ingredientAvailability));
@@ -226,8 +227,7 @@ export default function App() {
     if (isAdmin) return;
     setProductModal(null);
     setShowOfferTypeModal(false);
-    setShowComboOfferBuilder(false);
-    setComboOfferModal(null);
+    setComboModal(null);
     setProductToDelete(null);
     setOrderToDelete(null);
     setDayToClear(null);
@@ -322,6 +322,7 @@ export default function App() {
   /** Tocar un producto: si hay que elegir tamaño o pan se abre la ventana; si no, entra directo. */
   function handleAddProduct(item) {
     if (item.isCombo) {
+      if (getComboIssue(item, productsById)) return;
       if (comboNeedsOptions(item, productsById)) {
         setOptionsProduct(item);
       } else {
@@ -362,8 +363,14 @@ export default function App() {
       return next;
     });
     setActiveCat("Ofertas");
-    setShowComboOfferBuilder(false);
-    setComboOfferModal(null);
+    setComboModal(null);
+  }
+
+  /** Ofertas que usan un producto: si se elimina, quedan incompletas. */
+  function offersUsing(productId) {
+    return Object.values(menu).flat().filter(item =>
+      item.isCombo && (item.parts || []).some(part => part.ref === productId)
+    );
   }
 
   function toggleIngredientAvailability(ingredient) {
@@ -499,6 +506,7 @@ export default function App() {
               <CategoryTabs categories={categories} activeCat={activeCat} setActiveCat={setActiveCat} />
               <MenuGrid
                 items={menu[activeCat] || []}
+                productsById={productsById}
                 isAdmin={isAdmin}
                 addProductLabel={activeCat === "Ofertas" ? "Crear oferta" : "Agregar producto"}
                 onAdd={handleAddProduct}
@@ -506,7 +514,7 @@ export default function App() {
                   ? setShowOfferTypeModal(true)
                   : setProductModal({ product: null, category: activeCat })}
                 onEditProduct={product => product.isCombo
-                  ? setComboOfferModal(product)
+                  ? setComboModal({ offer: product })
                   : setProductModal({ product, category: activeCat })}
               />
             </div>
@@ -594,34 +602,21 @@ export default function App() {
           }}
           onChooseCombo={() => {
             setShowOfferTypeModal(false);
-            setShowComboOfferBuilder(true);
+            setComboModal({ offer: null });
           }}
           onClose={() => setShowOfferTypeModal(false)}
         />
       )}
 
-      {showComboOfferBuilder && isAdmin && (
+      {comboModal && isAdmin && (
         <ComboOfferModal
+          key={comboModal.offer?.id ?? "new-offer"}
           menu={menu}
-          onClose={() => setShowComboOfferBuilder(false)}
+          offer={comboModal.offer}
+          onClose={() => setComboModal(null)}
           onSave={saveComboOffer}
           onDelete={product => {
-            setShowComboOfferBuilder(false);
-            setComboOfferModal(null);
-            setProductToDelete(product);
-          }}
-        />
-      )}
-
-      {comboOfferModal && isAdmin && (
-        <ComboOfferModal
-          key={comboOfferModal.id}
-          menu={menu}
-          offer={comboOfferModal}
-          onClose={() => setComboOfferModal(null)}
-          onSave={saveComboOffer}
-          onDelete={product => {
-            setComboOfferModal(null);
+            setComboModal(null);
             setProductToDelete(product);
           }}
         />
@@ -651,7 +646,12 @@ export default function App() {
       {productToDelete && (
         <ConfirmDialog
           title={`¿Eliminar "${productToDelete.name}"?`}
-          message="El producto se quitará del menú. Esta acción no se puede deshacer."
+          message={(() => {
+            const affected = productToDelete.isCombo ? [] : offersUsing(productToDelete.id);
+            return affected.length > 0
+              ? `El producto se quitará del menú. Está en ${affected.length === 1 ? "la oferta" : "las ofertas"} ${affected.map(offer => `"${offer.name}"`).join(", ")}, que quedará${affected.length === 1 ? "" : "n"} incompleta${affected.length === 1 ? "" : "s"} y sin poder venderse hasta que la edites. Esta acción no se puede deshacer.`
+              : "El producto se quitará del menú. Esta acción no se puede deshacer.";
+          })()}
           confirmLabel="Eliminar producto"
           onConfirm={confirmDeleteProduct}
           onCancel={() => setProductToDelete(null)}

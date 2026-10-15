@@ -5,7 +5,7 @@ import {
   needsPayRef, sanitizePayRef, isValidPayRef,
   createPayPart, parseAmount, roundMoney, getSplitRemaining, validateSplit,
 } from '../utils/payment';
-import { describeLine } from '../utils/lineOptions';
+import { describeLine, partTitle } from '../utils/lineOptions';
 
 function normalizeIngredientKey(value = "") {
   return value
@@ -75,7 +75,7 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
           {line.parts.map((part, index) => (
             <div className="combo-cart-part" key={part.id}>
               <div className="line-detail">
-                {part.label ? `${part.label}: ` : ''}{part.name}
+                {partTitle(part)}
                 {describeLine(part) ? ` · ${describeLine(part)}` : ''}
               </div>
               <IngredientChips

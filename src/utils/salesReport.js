@@ -36,12 +36,19 @@ export function formatDayLabel(dateKey) {
   if (!dateKey) return '';
   const [year, month, day] = dateKey.split('-').map(Number);
   const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('es-VE', {
+  const label = date.toLocaleDateString('es-VE', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
+  // Solo la primera letra en mayúscula. Antes el CSS usaba capitalize y salía "15 De Octubre De 2026".
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** ¿Hay un número real? `null` y '' NO cuentan (Number(null) sería 0 y pasaría por válido). */
+export function hasAmount(value) {
+  return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 }
 
 export function formatUsd(value) {
@@ -80,7 +87,7 @@ export function summarizeSales(sales = []) {
     const total = Number(sale.total) || 0;
     summary.totalUsd += total;
 
-    if (Number.isFinite(Number(sale.totalBs))) {
+    if (hasAmount(sale.totalBs)) {
       summary.totalBs += Number(sale.totalBs);
       summary.hasBsData = true;
     }

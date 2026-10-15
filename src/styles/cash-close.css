@@ -5,14 +5,14 @@
   gap:16px;flex-wrap:wrap;margin-bottom:18px;
 }
 .cc-head h2{font-family:'Baloo 2';font-size:26px;margin:0;color:var(--ink);}
-.cc-day{margin:2px 0 0;color:var(--ink-soft);font-size:13.5px;text-transform:capitalize;}
+.cc-day{margin:2px 0 0;color:var(--ink-soft);font-size:13.5px;}
 .cc-live{color:var(--green);font-weight:700;margin-left:6px;text-transform:none;}
 .cc-head-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 
 .cc-select{
   padding:10px 12px;border:2px solid var(--line);border-radius:9px;
   background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;
-  font-size:13.5px;font-weight:600;cursor:pointer;text-transform:capitalize;
+  font-size:13.5px;font-weight:600;cursor:pointer;
 }
 
 .cc-btn{

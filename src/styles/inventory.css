@@ -40,6 +40,7 @@
   background:var(--cream);color:var(--ink);text-align:center;
   font-family:'JetBrains Mono';font-size:14px;font-weight:600;
 }
+.inv-input::placeholder{color:var(--ink-soft);font-weight:400;opacity:.4;}
 .inv-input:focus{outline:none;border-color:var(--orange);background:var(--paper);}
 
 /* Cuántos quedan, con su aviso de color. */
@@ -63,3 +64,7 @@
   position:absolute;left:calc(100% + 1px);width:24px;height:24px;border:none;background:none;cursor:pointer;
   color:var(--ink-soft);font-size:15px;line-height:1;touch-action:manipulation;
 }
+/* Sobrante corregido a mano: se marca en ámbar y aparece ↺ para volver al cálculo. */
+.inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
+.inv-reset{border-radius:50%;}
+.inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}

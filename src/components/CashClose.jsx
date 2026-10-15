@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   summarizeSales,
   formatDayLabel,
   formatUsd,
   formatBs,
   getBusinessDayKey,
+  hasAmount,
 } from '../utils/salesReport';
 import { downloadSalesExcel } from '../utils/salesExcel';
 import { summarizeInventory } from '../utils/inventoryReport';
 import { PAY_MOBILE, getOrderPayments, isSplitPayment, paymentBs } from '../utils/payment';
-import { describeLine } from '../utils/lineOptions';
+import { describeLine, partTitle } from '../utils/lineOptions';
 
 function StatCard({ label, value, sub, accent }) {
   return (
@@ -77,12 +78,19 @@ export default function CashClose({
   const dayKey = dayOptions.includes(selectedDay) ? selectedDay : today;
   // El número se asigna al crear el pedido; la hora de cobro puede ser posterior
   // y distinta para cada pedido, así que no representa el orden cronológico.
-  const sales = [...(salesByDay[dayKey] || [])].sort(
-    (a, b) => Number(a.num) - Number(b.num)
+  const daySales = salesByDay[dayKey];
+  const sales = useMemo(
+    () => [...(daySales || [])].sort((a, b) => Number(a.num) - Number(b.num)),
+    [daySales],
   );
-  const summary = summarizeSales(sales);
+  // Estos cálculos recorren todas las ventas e historial de inventario: solo se
+  // rehacen cuando cambia algo, no en cada tecla que se escribe en un campo.
+  const summary = useMemo(() => summarizeSales(sales), [sales]);
   const isToday = dayKey === getBusinessDayKey();
-  const inventory = summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay });
+  const inventory = useMemo(
+    () => summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay }),
+    [dayKey, sales, stockByDay, salesByDay, startByDay],
+  );
   const hasEntries = Object.keys(stockByDay[dayKey] || {}).length > 0
     || Object.keys(startByDay[dayKey] || {}).length > 0;
 
@@ -379,7 +387,7 @@ export default function CashClose({
                                   const details = [describeLine(part), ...(part.mods || [])].filter(Boolean);
                                   return (
                                     <span className="cc-combo-part" key={part.id || `${part.name}-${index}`}>
-                                      ↳ {item.qty}x {part.label || part.name}: {part.name}
+                                      ↳ {item.qty}x {partTitle(part)}
                                       {details.length > 0 && <em> ({details.join(', ')})</em>}
                                     </span>
                                   );
@@ -401,7 +409,7 @@ export default function CashClose({
                         {sale.deliveryFee > 0 && (
                           <span className="cc-sub-bs">Incluye delivery {formatUsd(sale.deliveryFee)}</span>
                         )}
-                        {Number.isFinite(Number(sale.totalBs)) && (
+                        {hasAmount(sale.totalBs) && (
                           <span className="cc-sub-bs">{formatBs(sale.totalBs)}</span>
                         )}
                       </td>

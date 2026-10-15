@@ -1,4 +1,4 @@
-import { getLineParts } from './lineOptions';
+import { getLineParts, partTitle } from './lineOptions';
 import { getOrderPayments, isSplitPayment } from './payment';
 
 // Ancho de línea en caracteres para la impresora térmica.
@@ -108,7 +108,7 @@ export function buildTicketText(order, totalBs) {
     rows.push(line(left, right));
     if (l.isCombo) {
       l.parts.forEach((part) => {
-        rows.push(...wrappedRows(`${l.qty}x ${part.label || part.name}: ${part.name}`));
+        rows.push(...wrappedRows(`${l.qty}x ${partTitle(part)}`));
         getLineParts(part).forEach(detail => rows.push(...wrappedRows(`+ ${detail}`, '  ')));
         (part.mods || []).forEach(mod => rows.push(...wrappedRows(`» ${mod}`, '  ')));
       });

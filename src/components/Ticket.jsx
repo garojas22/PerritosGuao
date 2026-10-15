@@ -1,6 +1,6 @@
 import { useBcvRate } from '../hooks/useBcvRate';
 import { buildTicketText } from '../utils/ticketText';
-import { getLineParts } from '../utils/lineOptions';
+import { getLineParts, partTitle } from '../utils/lineOptions';
 import { getOrderPayments, isSplitPayment } from '../utils/payment';
 
 export default function Ticket({ order, onNewOrder, onEdit }) {
@@ -63,7 +63,7 @@ export default function Ticket({ order, onNewOrder, onEdit }) {
             ))}
             {l.isCombo ? l.parts.map((part, index) => (
               <div className="combo-ticket-part" key={part.id || `${part.name}-${index}`}>
-                <div className="lopts">{l.qty}x {part.label || part.name}: {part.name}</div>
+                <div className="lopts">{l.qty}x {partTitle(part)}</div>
                 {getLineParts(part).map(detail => (
                   <div className="lopts" key={detail}>+ {detail}</div>
                 ))}

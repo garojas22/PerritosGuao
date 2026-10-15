@@ -128,7 +128,10 @@ return payments.map(part => createPayPart(part.method, Number(part.amount).toFix
  * Así cada método cuenta con la tasa con la que se cobró el pedido.
  */
 export function paymentBs(sale, payment) {
-const totalBs = Number(sale?.totalBs);
+// Sin tasa BCV el pedido se guardó con totalBs = null: Number(null) es 0 y
+// habría mostrado "Bs. 0,00" como si fuera un monto real.
+if (sale?.totalBs === null || sale?.totalBs === undefined || sale?.totalBs === '') return null;
+const totalBs = Number(sale.totalBs);
 const total = Number(sale?.total);
 if (!Number.isFinite(totalBs) || !(total > 0)) return null;
 return totalBs * (Number(payment.amount) / total);

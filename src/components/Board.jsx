@@ -1,4 +1,4 @@
-import { describeLine } from "../utils/lineOptions.js";
+import { describeLine, partTitle } from "../utils/lineOptions.js";
 
 const COLUMNS = [
   { status: "Pendiente", label: "Pendiente", colClass: "col-pend" },
@@ -41,7 +41,7 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
                 const detail = [describeLine(part), ...(part.mods || [])].filter(Boolean).join(", ");
                 return (
                   <span className="oc-item-part" key={part.id || `${part.name}-${partIndex}`}>
-                    ↳ {l.qty}x {part.label || part.name}: {part.name}{detail ? ` (${detail})` : ""}
+                    ↳ {l.qty}x {partTitle(part)}{detail ? ` (${detail})` : ""}
                   </span>
                 );
               })}
@@ -90,7 +90,7 @@ export default function Board({ orders, onAdvance, onDelete, onCharge, onEdit, c
   return (
     <>
       <div className="hint-bar">
-        💡 Simulación: al generar un comprobante, el pedido entra aquí en "Pendiente".
+        💡 Al generar un comprobante, el pedido entra aquí en "Pendiente".
         Haz clic en una tarjeta para avanzar su estado. Al llegar a "Listo", cóbralo para que entre al cierre de caja.
       </div>
       <div className="board">

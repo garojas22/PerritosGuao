@@ -1,6 +1,6 @@
 import { summarizeSales, formatDayLabel, formatUsd } from './salesReport';
 import { getOrderPayments, isSplitPayment } from './payment';
-import { describeLine } from './lineOptions';
+import { describeLine, partTitle } from './lineOptions';
 
 /**
  * Exportación del cierre de caja a un Excel real (.xlsx) con formato.
@@ -120,7 +120,7 @@ const productLines = items.map(item => {
 if (item.isCombo) {
 const partLines = (item.parts || []).map(part => {
 const detail = [describeLine(part), ...(part.mods || [])].filter(Boolean).join(', ');
-const label = `${part.label || part.name}: ${part.name}`;
+const label = partTitle(part);
 return `  - ${item.qty}x ${label}${detail ? ` (${detail})` : ''}`;
 });
 return [`${item.qty}x ${item.name} · ${formatUsd(item.price * item.qty)}`, ...partLines];

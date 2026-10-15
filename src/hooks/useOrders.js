@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { nextOrderNumber } from "../utils/orderCounter.js";
-import { describeLine, getDefaultSelection, hasValidComboPrice, resolveComboParts, resolveSelection } from "../utils/lineOptions.js";
+import { describeLine, partTitle, getComboIssue, getDefaultSelection, resolveComboParts, resolveSelection } from "../utils/lineOptions.js";
 import { buildPayLabel, buildPayRefText, roundMoney } from "../utils/payment.js";
 
 // STATUS_FLOW define a qué estado salta un pedido al hacer clic en su tarjeta.
@@ -53,9 +53,37 @@ function copyOrderLine(line) {
   };
 }
 
+const ORDERS_STORAGE_KEY = "perritos_guao_active_orders";
+
+/**
+ * Los pedidos activos (pendientes, en preparación y listos sin cobrar) se
+ * guardan en el navegador: antes vivían solo en memoria y un refresco de la
+ * página, o la tablet que se apaga, los borraba con la cocina trabajando.
+ */
+function loadOrders() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY));
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(order =>
+      order && order.num && Array.isArray(order.items) && order.status in STATUS_FLOW
+    );
+  } catch (error) {
+    console.warn("No se pudieron cargar los pedidos activos:", error);
+    return [];
+  }
+}
+
 export function useOrders() {
   const [cart, setCart] = useState([]); // [{ uid, id, name, price, qty, availMods, mods }]
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(loadOrders);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    } catch (error) {
+      console.warn("No se pudieron guardar los pedidos activos:", error);
+    }
+  }, [orders]);
 
   /**
    * Agrega un producto al carrito. Si tiene tamaños o elecciones (pan, carne),
@@ -64,8 +92,17 @@ export function useOrders() {
    * que gasta) para que un cambio posterior del menú no altere el pedido.
    */
   function addToCart(item, selection = null, productsById = {}) {
-    if (item.hidden || (item.isCombo && !hasValidComboPrice(item))) return false;
-    const parts = item.isCombo ? resolveComboParts(item, productsById, selection || []) : null;
+    // Una oferta con precio inválido o con un producto que ya no existe no se puede vender.
+    if (item.hidden || getComboIssue(item, productsById)) return false;
+    let parts = null;
+    if (item.isCombo) {
+      try {
+        parts = resolveComboParts(item, productsById, selection || []);
+      } catch (error) {
+        console.warn(error.message);
+        return false;
+      }
+    }
     const resolved = item.isCombo ? null : resolveSelection(item, selection ?? getDefaultSelection(item));
     const availableMods = Array.isArray(item.ingredients) && item.ingredients.length > 0
       ? item.ingredients.map(ingredient => `Sin ${ingredient}`)
@@ -120,7 +157,8 @@ export function useOrders() {
     }));
   }
 
-  const cartTotal = cart.reduce((s, l) => s + l.price * l.qty, 0);
+  // Redondeado a centavos: sumar precios con decimales deja restos tipo 13.490000000000002.
+  const cartTotal = roundMoney(cart.reduce((s, l) => s + l.price * l.qty, 0));
 
   function getStoredBcvRate() {
     try {
@@ -168,7 +206,7 @@ export function useOrders() {
     const chargedDeliveryFee = orderType === "Delivery"
       ? roundMoney(Math.max(0, Number(deliveryFee) || 0))
       : 0;
-    const total = cartTotal + chargedDeliveryFee;
+    const total = roundMoney(cartTotal + chargedDeliveryFee);
     const totalBs = rate !== null ? total * rate : null;
     const stockWarnings = new Set();
 
@@ -198,8 +236,15 @@ export function useOrders() {
     const now = new Date();
     const timeLabel = now.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
 
+    // Un pedido activo de un día anterior puede seguir en el tablero: si el número
+    // que toca ya lo usa alguno, se salta al siguiente para no mezclarlos.
+    let num = previous ? previous.num : nextOrderNumber(); // persistente: no se reinicia al refrescar (ver orderCounter.js)
+    while (!previous && orders.some(existing => existing.num === num)) {
+      num = nextOrderNumber();
+    }
+
     const order = {
-      num: previous ? previous.num : nextOrderNumber(), // persistente: no se reinicia al refrescar (ver orderCounter.js)
+      num,
       customer: trimmedCustomer,
       type: orderType,
       deliveryFee: chargedDeliveryFee,
@@ -231,7 +276,7 @@ export function useOrders() {
                 if (line.isCombo) {
                   const parts = line.parts.map(part => {
                     const detail = [part.variantLabel, ...(part.optionLabels || []), ...(part.mods || [])].filter(Boolean).join(", ");
-                    return `${part.label || part.name}: ${part.name}${detail ? ` (${detail})` : ""}`;
+                    return `${partTitle(part)}${detail ? ` (${detail})` : ""}`;
                   }).join("; ");
                   return `${line.qty}x ${line.name}${parts ? `: ${parts}` : ""}`;
                 }
