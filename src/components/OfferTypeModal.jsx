@@ -1,4 +1,15 @@
+import { useEffect } from "react";
+
 export default function OfferTypeModal({ onChooseProduct, onChooseCombo, onClose }) {
+  // Escape cierra la ventana, igual que en los demás modales del sistema.
+  useEffect(() => {
+    function handleKey(event) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
       <section className="product-modal offer-type-modal" role="dialog" aria-modal="true" aria-labelledby="offer-type-title">

@@ -106,6 +106,18 @@ if (remaining < 0) return `Los montos se pasan del total por $${Math.abs(remaini
 if (parts.some(part => needsPayRef(part.method) && !isValidPayRef(part.ref))) {
 return `Escribe los ${PAY_REF_LENGTH} últimos dígitos de la referencia de cada pago.`;
 }
+
+// Dos cobros del MISMO método no pueden compartir referencia: son dos
+// transacciones distintas en el banco, así que es un error de tipeo (pegar la
+// misma dos veces). Entre métodos distintos sí puede coincidir por azar, y por
+// eso ese caso no se bloquea.
+const seen = new Set();
+for (const part of parts) {
+if (!needsPayRef(part.method)) continue;
+const key = `${part.method}|${part.ref}`;
+if (seen.has(key)) return `Hay dos pagos de ${part.method} con la misma referencia (${part.ref}). Revisa el comprobante.`;
+seen.add(key);
+}
 return null;
 }
 

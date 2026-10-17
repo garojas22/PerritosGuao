@@ -68,6 +68,12 @@ export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDa
 
 /** Cuando lo que queda es este porcentaje (o menos) de lo disponible se avisa "Poco". */
 const LOW_STOCK_RATIO = 0.15;
+/**
+ * ...y también cuando quedan pocas unidades, sin importar el porcentaje.
+ * Con cifras chicas el porcentaje engaña: 1 de 6 es el 16 %, no avisaba, y
+ * al cocinero le queda una sola salchicha.
+ */
+const LOW_STOCK_UNITS = 5;
 
 /**
  * Filas del inventario de un día, agrupadas (Panes, Proteínas...).
@@ -108,7 +114,7 @@ export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesB
     let status = null;
     if (tracked) {
       if (remaining <= 0) status = 'out';
-      else if (available > 0 && remaining / available <= LOW_STOCK_RATIO) status = 'low';
+      else if (remaining <= LOW_STOCK_UNITS || (available > 0 && remaining / available <= LOW_STOCK_RATIO)) status = 'low';
     }
 
     if (tracked) hasStock = true;

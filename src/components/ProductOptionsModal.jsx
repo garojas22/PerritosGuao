@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getInventoryName, getInventoryNote } from '../data/inventory';
 import {
 askableChoices,
+describeFixedSelection,
 getComboPartProduct,
 getDefaultSelection,
 hasVariants,
@@ -105,9 +106,13 @@ return (
     {product.isCombo ? product.parts.map((part, index) => {
         const partProduct = getComboPartProduct(productsById[part.ref], part);
         if (!partProduct) return null;
+        // Lo que esa parte ya trae fijo: si no se muestra, el cajero ve un
+        // título suelto sin nada debajo y no sabe qué lleva la hamburguesa.
+        const fixed = describeFixedSelection(partProduct, selection[index]);
         return (
             <section className="combo-option-part" key={`${part.ref}-${index}`}>
                 <h3>{part.label || partProduct.name}</h3>
+                {fixed.length > 0 && <p className="combo-part-fixed">{fixed.join(' · ')}</p>}
                 <SelectionFields
                     product={partProduct}
                     selection={selection[index]}

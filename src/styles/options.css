@@ -40,3 +40,7 @@
 @media (max-width:600px){
   .opt-choices{grid-template-columns:1fr;}
 }
+/* Resumen de lo que una parte de oferta ya trae fijo (pan, carne, tamaño). */
+.combo-option-part .combo-part-fixed{
+  margin:-2px 0 0;font-size:12px;line-height:1.4;color:var(--ink-soft);
+}

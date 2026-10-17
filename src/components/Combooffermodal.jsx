@@ -126,9 +126,8 @@ const numericPrice = Number(price);
 if (!trimmedName) return setError("Escribe el nombre de la oferta.");
 if (!Number.isFinite(numericPrice) || numericPrice <= 0) return setError("El precio de la oferta debe ser mayor que cero.");
 if (parts.length < 2) return setError("Agrega al menos dos productos a la oferta.");
-if (!parts.some(part => productsById[part.ref]?.category === "Bebidas")) {
-    return setError("Agrega al menos una bebida a la oferta.");
-}
+// Antes se exigía incluir una bebida. Se quitó a propósito: es una regla del
+// negocio, no del sistema, y bloqueaba ofertas válidas como "2 perros por $6".
 for (const part of parts) {
     const product = productsById[part.ref];
     if (!product) return setError("Uno de los productos seleccionados ya no está disponible.");

@@ -16,6 +16,11 @@ function getChoices(product) {
 return Array.isArray(product?.choices) ? product.choices : [];
 }
 
+/** Texto de una opción: el nombre del insumo, o la opción tal cual si no lo es. */
+function getOptionLabelText(choice, optionId) {
+return choice.trackInventory === false ? optionId : getInventoryName(optionId);
+}
+
 /** Elecciones que sí hay que preguntar: las que tienen más de una opción. */
 export function askableChoices(product) {
 return getChoices(product).filter(choice => choice.options.length > 1);
@@ -155,6 +160,30 @@ return String(name)
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+}
+
+/**
+ * Lo que una parte de oferta ya trae decidido y el cajero NO elige
+ * (ej. "1 carne", "Brioche Crustissimo", "Carne promo").
+ *
+ * Sirve para que la ventana de opciones no muestre un título solo, sin nada
+ * debajo, cuando una parte viene con todo fijo: el cajero no sabría qué lleva.
+ */
+export function describeFixedSelection(product, selection) {
+const variants = hasVariants(product) ? product.variants : [];
+const variant = variants.find(v => v.id === selection?.variantId) ?? variants[0] ?? null;
+const labels = [];
+
+// El tamaño solo cuenta como fijo si no hay varios entre los que elegir.
+if (variant && variants.length === 1 && product.showVariantLabel) labels.push(variant.label);
+
+getChoices(product).forEach(choice => {
+    if (choice.options.length > 1) return;   // esto sí se pregunta
+    if (!choice.showSelected) return;        // no aporta información al cajero
+    labels.push(getOptionLabelText(choice, choice.options[0]));
+});
+
+return labels;
 }
 
 /** Partes del detalle de una línea, una por renglón: ["2 carnes", "Pan de batata"]. */
