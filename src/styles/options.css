@@ -26,6 +26,11 @@
 .combo-option-part{padding:10px 0;border-bottom:1px solid var(--line);}
 .combo-option-part h3{margin:0 0 6px;font-size:13px;color:var(--brown);}
 
+/* Resumen de lo que una parte de oferta ya trae fijo (pan, carne, tamaño). */
+.combo-option-part .combo-part-fixed{
+  margin:-2px 0 0;font-size:12px;line-height:1.4;color:var(--ink-soft);
+}
+
 /* Detalle de la línea en el carrito, el comprobante y la tarjeta del tablero. */
 .cart-line .line-detail{font-size:11px;color:var(--ink-soft);margin:2px 0 6px;line-height:1.35;}
 .ticket .litem .lopts{font-size:10.5px;color:var(--ink-soft);padding-left:10px;font-weight:600;}
