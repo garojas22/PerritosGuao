@@ -258,15 +258,35 @@ export default function App() {
   } = useSales();
 
   // Insumos que ingresaron cada día; lo vendido sale de las ventas cobradas.
-  const { stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay, customItems, saveCustomItem } = useInventory();
+  const {
+    stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay,
+    customItems, saveCustomItem, deleteCustomItem,
+  } = useInventory();
 
   // Lista combinada: insumos del código + los que el admin creó desde la app.
-  // Solo los activos aparecen en la tabla; los inactivos se ocultan pero sus
-  // IDs siguen siendo válidos para el historial de ventas.
+  // Los del código son intocables (el menú los referencia por id); los creados
+  // aquí se editan y, si nunca se movieron, se borran.
   const inventoryItems = useMemo(() => [
     ...INVENTORY_ITEMS,
-    ...customItems.filter(item => item.active !== false),
+    ...customItems,
   ], [customItems]);
+
+  // IDs con movimiento guardado: una venta que los gastó, o un conteo de
+  // algún día. Borrar uno de estos dejaría esos registros nombrando un id
+  // que ya no existe, así que el modal solo deja borrar los que están limpios.
+  const itemsWithHistory = useMemo(() => {
+    const ids = new Set();
+    Object.values(salesByDay).flat().forEach(sale => {
+      (sale.items || []).forEach(line => {
+        (line.uses || []).forEach(use => ids.add(use.item));
+        (line.parts || []).forEach(part => (part.uses || []).forEach(use => ids.add(use.item)));
+      });
+    });
+    [stockByDay, startByDay].forEach(map => {
+      Object.values(map).forEach(day => Object.keys(day).forEach(id => ids.add(id)));
+    });
+    return ids;
+  }, [salesByDay, stockByDay, startByDay]);
 
   // IDs que algún producto del menú consume: sirve para marcar los insumos
   // que no bajan solos y el dueño tiene que llevar a mano.
@@ -602,6 +622,7 @@ export default function App() {
             inventoryItems={inventoryItems}
             usedInventoryIds={usedInventoryIds}
             onOpenNewItem={() => setInventoryItemModal({ item: null })}
+            onEditItem={row => setInventoryItemModal({ item: row })}
           />
         )}
       </main>
@@ -692,7 +713,9 @@ export default function App() {
         <InventoryItemModal
           item={inventoryItemModal.item}
           usedInventoryIds={usedInventoryIds}
+          hasHistory={!!inventoryItemModal.item && itemsWithHistory.has(inventoryItemModal.item.id)}
           onSave={item => { saveCustomItem(item); setInventoryItemModal(null); }}
+          onDelete={item => { deleteCustomItem(item.id); setInventoryItemModal(null); }}
           onClose={() => setInventoryItemModal(null)}
         />
       )}

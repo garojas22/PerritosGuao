@@ -91,7 +91,7 @@ function StockInput({ value, onCommit, label, className = 'inv-input' }) {
 const INV_STATUS_LABEL = { out: 'Agotado', low: 'Poco' };
 
 /** Fila de datos del inventario (insumo individual). */
-function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem }) {
+function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem, isAdmin, onEditItem }) {
   return (
     <tr key={row.id} className={row.status ? `inv-row-${row.status}` : ''}>
       {/* El insumo es el nivel MÁS ligero: sin cc-strong, que lo dejaba
@@ -100,6 +100,19 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem }) {
         <span className="inv-item-name">
           {row.name}
           {row.manualOnly && <span className="inv-manual-tag">solo conteo manual</span>}
+          {/* Solo los insumos creados desde la app se editan. Los del código
+              los referencia el menú por id: cambiarlos rompe el histórico. */}
+          {isAdmin && row.isCustom && (
+            <button
+              type="button"
+              className="product-action inv-edit-btn"
+              onClick={() => onEditItem(row)}
+              title={`Editar ${row.name}`}
+              aria-label={`Editar ${row.name}`}
+            >
+              ✎
+            </button>
+          )}
         </span>
         {row.note && <span className="inv-item-note">{row.note}</span>}
       </td>
@@ -212,6 +225,7 @@ export default function CashClose({
   inventoryItems,
   usedInventoryIds,
   onOpenNewItem,
+  onEditItem,
 }) {
   const [selectedDay, setSelectedDay] = useState(today);
   const [isExporting, setIsExporting] = useState(false);
@@ -368,7 +382,7 @@ export default function CashClose({
 
                 {/* Ítems sin subgrupo: se muestran directamente */}
                 {isGroupOpen && rows.map(row => (
-                  <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} />
+                  <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} isAdmin={isAdmin} onEditItem={onEditItem} />
                 ))}
 
                 {/* Subgrupos plegables */}
@@ -384,7 +398,7 @@ export default function CashClose({
                         onToggle={() => toggleSubgroup(key)}
                       />
                       {isOpen && subRows.map(row => (
-                        <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} isSubgroupItem />
+                        <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} isSubgroupItem isAdmin={isAdmin} onEditItem={onEditItem} />
                       ))}
                     </React.Fragment>
                   );

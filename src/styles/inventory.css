@@ -17,10 +17,12 @@
 .inv-head .cc-panel-hint{max-width:560px;}
 .inv-head-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;}
 
+/* Radio 12 y no píldora: el texto pasa de una línea y una píldora de dos
+   renglones se ve deformada. */
 .inv-note{
-  margin:0 0 12px;padding:8px 14px;border-radius:999px;
+  margin:0 0 14px;padding:10px 14px;border-radius:12px;
   background:rgba(217,154,43,.14);border:1px solid rgba(217,154,43,.4);
-  color:var(--brown);font-size:12px;font-weight:600;line-height:1.4;
+  color:var(--brown);font-size:12px;font-weight:600;line-height:1.45;
 }
 
 /* separate (y no collapse) es lo que permite redondear las filas:
@@ -204,6 +206,28 @@ td.inv-indent-2{padding-left:48px;}
   border:1.5px solid var(--line);
 }
 .cc-btn-secondary:hover{border-color:var(--orange);color:var(--orange-deep);}
+
+/* ============================================================
+   Ventana de insumo (hereda todo de .product-modal en products.css)
+   ============================================================ */
+.inv-item-modal .modal-fields input:disabled,
+.inv-item-modal .modal-fields select:disabled{
+  background:rgba(0,0,0,.035);color:var(--ink-soft);cursor:not-allowed;
+}
+.inv-delete-blocked{
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:600;
+  color:var(--ink-soft);text-align:right;line-height:1.4;
+}
+
+/* Botón "Editar" de un insumo creado por el usuario.
+   Reutiliza .product-action (products.css), que es el mismo botón
+   chiquito naranja de las tarjetas del menú. */
+.inv-edit-btn{
+  margin-left:8px;vertical-align:middle;
+  width:24px;height:24px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:12px;
+}
 
 @media (max-width:720px){
   .inv-head .cc-btn{width:100%;}

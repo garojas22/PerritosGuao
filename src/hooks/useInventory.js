@@ -133,5 +133,19 @@ export function useInventory() {
     });
   }
 
-  return { stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay, customItems, saveCustomItem };
+  /**
+   * Borra un insumo creado desde la app. Solo debe llamarse cuando el insumo
+   * NO tiene movimiento: si alguna venta lo gastó, el Excel del histórico
+   * mostraría el id crudo en vez del nombre. Para esos se usa `active:false`,
+   * que lo saca de la tabla sin romper lo ya registrado.
+   * Los insumos de data/inventory.js no viven aquí, así que son intocables.
+   */
+  function deleteCustomItem(itemId) {
+    setCustomItems(prev => prev.filter(item => item.id !== itemId));
+  }
+
+  return {
+    stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay,
+    customItems, saveCustomItem, deleteCustomItem,
+  };
 }

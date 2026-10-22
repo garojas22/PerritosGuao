@@ -171,6 +171,11 @@ export function summarizeInventory({
       id:           item.id,
       name:         item.name,
       note:         item.note ?? '',
+      // group/subgroup/isCustom viajan en la fila para que la tabla del cierre
+      // pueda abrir el editor sin volver a buscar el insumo en la lista.
+      group:        item.group,
+      subgroup:     item.subgroup,
+      isCustom:     item.isCustom === true,
       carry:        previous,
       carryAdjusted: adjusted,
       entered:      ingreso,

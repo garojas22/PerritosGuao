@@ -1,30 +1,41 @@
-import { useEffect, useRef, useState } from 'react';
-import { INVENTORY_ITEMS } from '../data/inventory';
+import { useEffect, useState } from 'react';
 
 const GROUPS = ['Panes', 'Proteínas', 'Bebidas', 'Extras', 'Otros'];
 
 /**
- * Modal para crear o editar un insumo personalizado (modo admin).
+ * Crear o editar un insumo del inventario (modo admin).
  *
- * Condiciones no negociables:
- *  - Un insumo con ventas registradas no se puede borrar, solo desactivar:
- *    borrar rompería el histórico y el Excel.
- *  - Los ids se generan una vez y no se cambian: usan el nombre normalizado
- *    + timestamp para garantizar unicidad.
- *  - Los insumos sin asociación al menú quedan marcados "solo conteo manual"
- *    en la tabla del cierre (se avisa aquí también).
+ * Usa el mismo esqueleto que ProductModal (.product-modal, .modal-fields,
+ * .modal-danger-zone) a propósito: son las clases que products.css ya
+ * define. Inventar clases nuevas aquí fue lo que dejó esta ventana sin
+ * estilo en producción.
+ *
+ * Reglas que no se negocian:
+ *  - Los insumos de data/inventory.js NO se editan ni se borran desde aquí.
+ *    Son los que el menú referencia por id; tocarlos rompe el histórico.
+ *  - Un insumo creado por el usuario solo se borra si nunca se movió. Si ya
+ *    tiene ventas o conteos no se borra: los registros guardados lo nombran
+ *    por id y quedarían mostrando el id crudo en el Excel del histórico.
+ *  - El id se genera una vez y nunca cambia, aunque se renombre el insumo.
  */
-export default function InventoryItemModal({ item, usedInventoryIds, onSave, onClose }) {
+export default function InventoryItemModal({
+  item,
+  usedInventoryIds,
+  hasHistory = false,
+  onSave,
+  onDelete,
+  onClose,
+}) {
   const isNew = !item;
+  // Un insumo del código llega sin isCustom: se puede mirar, no editar.
+  const isCustom = item?.isCustom === true;
+  const isReadOnly = !isNew && !isCustom;
+
   const [name, setName]         = useState(item?.name ?? '');
   const [group, setGroup]       = useState(item?.group ?? 'Bebidas');
   const [subgroup, setSubgroup] = useState(item?.subgroup ?? '');
   const [note, setNote]         = useState(item?.note ?? '');
-  const [active, setActive]     = useState(item?.active !== false);
   const [error, setError]       = useState('');
-
-  const nameRef = useRef(null);
-  useEffect(() => { nameRef.current?.focus(); }, []);
 
   useEffect(() => {
     function handleKey(event) { if (event.key === 'Escape') onClose(); }
@@ -32,148 +43,142 @@ export default function InventoryItemModal({ item, usedInventoryIds, onSave, onC
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  // ¿Tiene ventas registradas? Si sí, no se puede borrar.
-  const hasUsage = item && usedInventoryIds instanceof Set && !usedInventoryIds.has(item.id)
-    ? false  // no está en usedInventoryIds → puede no tener ventas (pero no podemos saberlo sin escanear)
-    : false;
-  // La forma correcta: buscar si el id aparece en cualquier sale.uses.
-  // Eso lo resuelve App.jsx pasando `itemsWithSales` (Set de IDs usados en ventas históricas).
-  const canDelete = false; // conservador: nunca borrar desde aquí, solo desactivar
-
   const isLinkedToMenu = usedInventoryIds instanceof Set && usedInventoryIds.has(item?.id);
 
   function handleSubmit(event) {
     event.preventDefault();
+    if (isReadOnly) return onClose();
+
     const trimmedName = name.trim();
     if (!trimmedName) return setError('Escribe el nombre del insumo.');
     if (!group) return setError('Selecciona un grupo.');
 
-    // Verificar nombre duplicado contra insumos del código y otros custom
-    const allIds = new Set(INVENTORY_ITEMS.map(i => i.id));
-    const normalizedName = trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+    // Slug solo para que el id sea legible al depurar; la unicidad la da el
+    // timestamp, no el nombre. Por eso renombrar después no genera otro id.
+    const slug = trimmedName
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    const saved = {
-      // Al crear: generar id estable a partir del nombre + timestamp corto.
-      // Al editar: conservar el id original.
-      id: item?.id ?? `custom-${normalizedName}-${Date.now().toString(36)}`,
+    onSave({
+      id: item?.id ?? `custom-${slug}-${Date.now().toString(36)}`,
       name: trimmedName,
       group,
       subgroup: subgroup.trim() || undefined,
       note: note.trim() || undefined,
-      active,
       isCustom: true,
-    };
-
-    onSave(saved);
+    });
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <section className="product-modal" role="dialog" aria-modal="true" aria-labelledby="inv-modal-title">
-        <div className="modal-header">
-          <h2 id="inv-modal-title">{isNew ? 'Nuevo insumo' : 'Editar insumo'}</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
+    <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
+      {/* .product-modal trae el esqueleto de products.css; .inv-item-modal
+          es solo el gancho para lo propio de esta ventana. */}
+      <section className="product-modal inv-item-modal" role="dialog" aria-modal="true" aria-labelledby="inv-modal-title">
+        <div className="modal-heading">
+          <div>
+            <span className="modal-kicker">Inventario</span>
+            <h2 id="inv-modal-title">
+              {isNew ? 'Nuevo insumo' : isReadOnly ? 'Insumo del sistema' : 'Editar insumo'}
+            </h2>
+          </div>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar ventana">×</button>
         </div>
 
         {isNew && (
-          <div className="inv-modal-notice">
-            <strong>Aviso:</strong> Este insumo se contará a mano hasta que se asocie a un producto del menú.
-            Avísale a Gabriel para que lo conecte.
+          <div className="inv-note">
+            Este insumo se va a contar a mano hasta que se asocie a un producto del menú.
           </div>
         )}
 
-        {!isNew && !isLinkedToMenu && (
-          <div className="inv-modal-notice inv-modal-notice-warn">
-            Este insumo no está asociado a ningún producto del menú: no baja solo.
-            El dueño lo puede llevar a mano corrigiendo "Sobrante de ayer" cada día.
+        {isReadOnly && (
+          <div className="inv-note">
+            Viene con el sistema y hay productos del menú que lo usan por su nombre interno.
+            Para cambiarlo o quitarlo hay que tocar el código, si no se rompe el historial de ventas.
+          </div>
+        )}
+
+        {!isNew && isCustom && !isLinkedToMenu && (
+          <div className="inv-note">
+            No está asociado a ningún producto del menú, así que no baja solo:
+            se lleva a mano desde "Sobrante de ayer".
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="modal-field">
-            <label className="modal-label" htmlFor="inv-name">Nombre del insumo</label>
-            <input
-              id="inv-name"
-              ref={nameRef}
-              className="modal-input"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Ej. Tocineta ahumada"
-              maxLength={60}
-            />
-          </div>
-
-          <div className="modal-field">
-            <label className="modal-label" htmlFor="inv-group">Grupo</label>
-            <select id="inv-group" className="modal-input" value={group} onChange={e => setGroup(e.target.value)}>
-              {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
-          </div>
-
-          <div className="modal-field">
-            <label className="modal-label" htmlFor="inv-subgroup">
-              Presentación / subgrupo <span className="modal-optional">(opcional)</span>
+          <div className="modal-fields">
+            <label className="modal-field-wide">
+              Nombre del insumo
+              <input
+                value={name}
+                onChange={event => setName(event.target.value)}
+                placeholder="Ej. Tocineta ahumada"
+                maxLength={60}
+                disabled={isReadOnly}
+                autoFocus={!isReadOnly}
+              />
             </label>
-            <input
-              id="inv-subgroup"
-              className="modal-input"
-              value={subgroup}
-              onChange={e => setSubgroup(e.target.value)}
-              placeholder="Ej. Refresco de lata"
-              maxLength={40}
-            />
-          </div>
 
-          <div className="modal-field">
-            <label className="modal-label" htmlFor="inv-note">
-              Nota de uso <span className="modal-optional">(opcional)</span>
+            <label>
+              Grupo
+              <select value={group} onChange={event => setGroup(event.target.value)} disabled={isReadOnly}>
+                {GROUPS.map(option => <option key={option} value={option}>{option}</option>)}
+              </select>
             </label>
-            <input
-              id="inv-note"
-              className="modal-input"
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Ej. Solo para Mr. Amarillo"
-              maxLength={80}
-            />
-          </div>
 
-          {!isNew && (
-            <div className="modal-field">
-              <label className="modal-label">Estado</label>
-              <div className="inv-modal-toggle">
-                <button
-                  type="button"
-                  className={`inv-toggle-btn ${active ? 'on' : ''}`}
-                  onClick={() => setActive(true)}
-                >
-                  Activo
-                </button>
-                <button
-                  type="button"
-                  className={`inv-toggle-btn ${!active ? 'on' : ''}`}
-                  onClick={() => setActive(false)}
-                >
-                  Inactivo
-                </button>
-              </div>
-              {!active && (
-                <p className="inv-modal-hint">
-                  Un insumo inactivo sigue en el historial pero no aparece en la tabla del cierre.
-                </p>
-              )}
-            </div>
-          )}
+            <label>
+              Presentación
+              <input
+                value={subgroup}
+                onChange={event => setSubgroup(event.target.value)}
+                placeholder="Ej. Refresco de lata"
+                maxLength={40}
+                disabled={isReadOnly}
+              />
+              <small>Opcional. Agrupa marcas de una misma presentación.</small>
+            </label>
+
+            <label className="modal-field-wide">
+              Nota de uso
+              <input
+                value={note}
+                onChange={event => setNote(event.target.value)}
+                placeholder="Ej. Solo para Mr. Amarillo"
+                maxLength={80}
+                disabled={isReadOnly}
+              />
+              <small>Opcional. Sale bajo el nombre en la tabla del cierre.</small>
+            </label>
+          </div>
 
           {error && <div className="modal-error" role="alert">{error}</div>}
 
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn-primary">
-              {isNew ? 'Crear insumo' : 'Guardar cambios'}
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              {isReadOnly ? 'Cerrar' : 'Cancelar'}
             </button>
+            {!isReadOnly && (
+              <button type="submit" className="btn-primary">
+                {isNew ? 'Crear insumo' : 'Guardar cambios'}
+              </button>
+            )}
           </div>
         </form>
+
+        {/* Borrar solo lo creado por el usuario, y solo si nunca se movió. */}
+        {!isNew && isCustom && (
+          <div className="modal-danger-zone">
+            {hasHistory ? (
+              <span className="inv-delete-blocked">
+                Ya tiene ventas o conteos registrados. No se puede borrar sin
+                romper el historial de esos días; se puede renombrar.
+              </span>
+            ) : (
+              <button type="button" className="modal-delete-product" onClick={() => onDelete(item)}>
+                <span className="product-action-icon product-action-icon-delete" aria-hidden="true">✕</span> Eliminar insumo
+              </button>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );
