@@ -21,6 +21,21 @@ function loadCollapsed() {
   } catch { return new Set(); }
 }
 
+const COLLAPSED_GROUPS_KEY = 'perritos_inv_groups_collapsed';
+
+function loadCollapsedGroups() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(COLLAPSED_GROUPS_KEY)) || []);
+  } catch { return new Set(); }
+}
+
+function computeGroupAlerts(rows, subgroups) {
+  let out = 0, low = 0;
+  for (const r of rows) { if (r.status === 'out') out++; else if (r.status === 'low') low++; }
+  for (const sg of subgroups) for (const r of sg.rows) { if (r.status === 'out') out++; else if (r.status === 'low') low++; }
+  return { out, low };
+}
+
 function StatCard({ label, value, sub, accent }) {
   return (
     <div className={`cc-stat ${accent ? 'cc-stat-accent' : ''}`}>
@@ -68,10 +83,10 @@ function StockInput({ value, onCommit, label, className = 'inv-input' }) {
 const INV_STATUS_LABEL = { out: 'Agotado', low: 'Poco' };
 
 /** Fila de datos del inventario (insumo individual). */
-function InvRow({ row, dayKey, onSetStock, onSetStart }) {
+function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem }) {
   return (
     <tr key={row.id} className={row.status ? `inv-row-${row.status}` : ''}>
-      <td className="cc-strong">
+      <td className={`cc-strong${isSubgroupItem ? ' inv-item-indent' : ''}`}>
         <span className="inv-item-name">
           {row.name}
           {row.manualOnly && <span className="inv-manual-tag">solo conteo manual</span>}
@@ -120,41 +135,33 @@ function InvRow({ row, dayKey, onSetStock, onSetStart }) {
   );
 }
 
-/** Fila de cabecera de un subgrupo (plegable). Muestra la suma de sus marcas. */
+/** Fila de cabecera de un subgrupo (plegable). Totales alineados en las mismas columnas que los ítems. */
 function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
   const { alerts } = summary;
-  const hasAlerts = alerts.out > 0 || alerts.low > 0;
-
   return (
     <tr className="inv-subgroup" onClick={onToggle} role="button" aria-expanded={isOpen}>
-      <td colSpan={6}>
+      <td>
         <span className="inv-subgroup-toggle">{isOpen ? '▾' : '▸'}</span>
         <span className="inv-subgroup-name">{subgroup}</span>
-        {!isOpen && hasAlerts && (
+        {!isOpen && (alerts.out > 0 || alerts.low > 0) && (
           <span className="inv-subgroup-alerts">
-            {alerts.out > 0 && (
-              <span className="inv-alert-badge inv-alert-out">
-                {alerts.out} agotad{alerts.out === 1 ? 'a' : 'as'}
-              </span>
-            )}
-            {alerts.low > 0 && (
-              <span className="inv-alert-badge inv-alert-low">
-                {alerts.low} por acabarse
-              </span>
-            )}
+            {alerts.out > 0 && <span className="inv-alert-badge inv-alert-out">{alerts.out} agotad{alerts.out === 1 ? 'a' : 'as'}</span>}
+            {alerts.low > 0 && <span className="inv-alert-badge inv-alert-low">{alerts.low} por acabarse</span>}
           </span>
         )}
-        {isOpen && (
-          <span className="inv-subgroup-summary">
-            {summary.available !== null && <span>Disp. {summary.available}</span>}
-            <span>Vend. {summary.sold}</span>
-            {summary.remaining !== null && (
-              <span className={alerts.out > 0 ? 'inv-text-out' : alerts.low > 0 ? 'inv-text-low' : ''}>
-                Quedan {summary.remaining}
-              </span>
-            )}
+      </td>
+      <td className="cc-num inv-sg-num">{summary.carry !== null ? summary.carry : '—'}</td>
+      <td className="cc-num inv-sg-num">{summary.entered !== null ? summary.entered : '—'}</td>
+      <td className="cc-num inv-sg-num">{summary.available !== null ? summary.available : '—'}</td>
+      <td className="cc-num inv-sg-num">{summary.sold}</td>
+      <td className="cc-num inv-sg-num">
+        {summary.remaining !== null ? (
+          <span className={`inv-remaining ${alerts.out > 0 ? 'inv-out' : alerts.low > 0 ? 'inv-low' : ''}`}>
+            {summary.remaining}
+            {alerts.out > 0 && <em>Agotado</em>}
+            {alerts.out === 0 && alerts.low > 0 && <em>Poco</em>}
           </span>
-        )}
+        ) : '—'}
       </td>
     </tr>
   );
@@ -171,6 +178,7 @@ export default function CashClose({
   const [selectedDay, setSelectedDay] = useState(today);
   const [isExporting, setIsExporting] = useState(false);
   const [collapsed, setCollapsed] = useState(loadCollapsed);
+  const [collapsedGroups, setCollapsedGroups] = useState(loadCollapsedGroups);
 
   // Persistir estado plegado en localStorage.
   useEffect(() => {
@@ -179,11 +187,26 @@ export default function CashClose({
     } catch { /* localStorage lleno */ }
   }, [collapsed]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...collapsedGroups]));
+    } catch { /* localStorage lleno */ }
+  }, [collapsedGroups]);
+
   function toggleSubgroup(key) {
     setCollapsed(prev => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleGroup(group) {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
       return next;
     });
   }
@@ -268,36 +291,56 @@ export default function CashClose({
               <th className="cc-num">Quedan</th>
             </tr>
           </thead>
-          {inventory.groups.map(({ group, rows, subgroups }) => (
-            <tbody key={group}>
-              {/* Fila de categoría principal (Panes, Proteínas, Bebidas, Extras) */}
-              <tr className="inv-group"><td colSpan={6}>{group}</td></tr>
+          {inventory.groups.map(({ group, rows, subgroups }) => {
+            const isGroupOpen = !collapsedGroups.has(group);
+            const groupAlerts = computeGroupAlerts(rows, subgroups);
+            return (
+              <tbody key={group}>
+                {/* Fila de categoría principal — plegable */}
+                <tr
+                  className="inv-group"
+                  onClick={() => toggleGroup(group)}
+                  role="button"
+                  aria-expanded={isGroupOpen}
+                >
+                  <td colSpan={6}>
+                    <span className="inv-group-toggle">{isGroupOpen ? '▾' : '▸'}</span>
+                    <span className="inv-group-name">{group}</span>
+                    {!isGroupOpen && (groupAlerts.out > 0 || groupAlerts.low > 0) && (
+                      <span className="inv-subgroup-alerts">
+                        {groupAlerts.out > 0 && <span className="inv-alert-badge inv-alert-out">{groupAlerts.out} agotad{groupAlerts.out === 1 ? 'a' : 'as'}</span>}
+                        {groupAlerts.low > 0 && <span className="inv-alert-badge inv-alert-low">{groupAlerts.low} por acabarse</span>}
+                      </span>
+                    )}
+                  </td>
+                </tr>
 
-              {/* Ítems sin subgrupo: se muestran directamente */}
-              {rows.map(row => (
-                <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} />
-              ))}
+                {/* Ítems sin subgrupo: se muestran directamente */}
+                {isGroupOpen && rows.map(row => (
+                  <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} />
+                ))}
 
-              {/* Subgrupos plegables (ej. "Refresco de lata", "Carnes") */}
-              {subgroups.map(({ subgroup, rows: subRows, summary: subSum }) => {
-                const key = `${group}__${subgroup}`;
-                const isOpen = !collapsed.has(key); // abierto por defecto
-                return (
-                  <React.Fragment key={key}>
-                    <SubgroupRow
-                      subgroup={subgroup}
-                      summary={subSum}
-                      isOpen={isOpen}
-                      onToggle={() => toggleSubgroup(key)}
-                    />
-                    {isOpen && subRows.map(row => (
-                      <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} />
-                    ))}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          ))}
+                {/* Subgrupos plegables */}
+                {isGroupOpen && subgroups.map(({ subgroup, rows: subRows, summary: subSum }) => {
+                  const key = `${group}__${subgroup}`;
+                  const isOpen = !collapsed.has(key);
+                  return (
+                    <React.Fragment key={key}>
+                      <SubgroupRow
+                        subgroup={subgroup}
+                        summary={subSum}
+                        isOpen={isOpen}
+                        onToggle={() => toggleSubgroup(key)}
+                      />
+                      {isOpen && subRows.map(row => (
+                        <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} isSubgroupItem />
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            );
+          })}
         </table>
       </div>
     </section>

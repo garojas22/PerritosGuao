@@ -24,8 +24,6 @@
 .inv-table td:not(:first-child){width:14.4%;}
 .inv-table th.cc-num,
 .inv-table td.cc-num{text-align:center;padding-right:0;}
-.inv-item-name{display:block;}
-.inv-item-note{display:block;color:var(--ink-soft);font-size:10px;font-weight:500;line-height:1.25;}
 
 /* Etiqueta "solo conteo manual": avisa que el insumo no está asociado al menú */
 .inv-manual-tag{
@@ -36,37 +34,51 @@
   vertical-align:middle;
 }
 
-/* Fila de categoría principal: Panes, Proteínas, Bebidas, Extras */
+/* ============================================================
+   Nivel 1 — Categoría (PANES, PROTEÍNAS, BEBIDAS, EXTRAS)
+   El más prominente: fondo marrón, texto blanco, plegable.
+   ============================================================ */
 .inv-group td{
-  padding:14px 0 6px;border-bottom:1.5px solid var(--line);
-  font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--brown);
-  text-transform:uppercase;letter-spacing:.06em;
+  height:44px;padding:0 12px;
+  background:var(--brown);color:#fff;
+  font-family:'Baloo 2';font-size:13px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.08em;
+  border-bottom:none;cursor:pointer;user-select:none;
+}
+.inv-group:hover td{filter:brightness(1.14);}
+
+.inv-group-toggle{
+  margin-right:8px;font-size:11px;
+  display:inline-block;width:12px;opacity:.85;
 }
 
-/* Fila de subgrupo plegable: Refresco de lata, Carnes, etc. */
+/* ============================================================
+   Nivel 2 — Subgrupo (Refresco de lata, Carnes, etc.)
+   Fondo tintado, totales alineados a las mismas columnas que los ítems.
+   ============================================================ */
 .inv-subgroup td{
-  padding:8px 0 6px;border-bottom:1px dashed var(--line);
+  height:44px;padding:0 8px;
+  background:rgba(120,74,32,.06);
+  border-bottom:1px solid var(--line);
   cursor:pointer;user-select:none;
 }
-.inv-subgroup:hover td{background:rgba(0,0,0,.03);}
+.inv-subgroup:hover td{background:rgba(120,74,32,.10);}
+
 .inv-subgroup-toggle{
   margin-right:6px;font-size:11px;color:var(--ink-soft);
   display:inline-block;width:12px;
 }
 .inv-subgroup-name{
-  font-family:'Baloo 2';font-size:12px;font-weight:700;color:var(--ink);
+  font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--ink);
   letter-spacing:.03em;
 }
 
-/* Resumen numérico inline cuando el subgrupo está abierto */
-.inv-subgroup-summary{
-  margin-left:12px;font-size:11px;font-weight:600;color:var(--ink-soft);
+/* Números de columna en fila de subgrupo, alineados con las cols de ítems */
+.inv-sg-num{
+  font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--ink-soft);
 }
-.inv-subgroup-summary span{margin-right:10px;}
-.inv-text-low{color:var(--brown) !important;}
-.inv-text-out{color:var(--rust) !important;}
 
-/* Badges de alerta cuando el subgrupo está plegado */
+/* Badges de alerta (en categoría plegada y en subgrupo plegado) */
 .inv-subgroup-alerts{margin-left:10px;}
 .inv-alert-badge{
   display:inline-block;margin-left:4px;padding:1px 7px;border-radius:5px;
@@ -79,15 +91,17 @@
   background:rgba(217,154,43,.18);border:1px solid rgba(217,154,43,.5);color:var(--brown);
 }
 
-/* Filas de ítems dentro de un subgrupo: sangría leve */
-.inv-subgroup + tr:not(.inv-group):not(.inv-subgroup) td:first-child,
-.inv-subgroup ~ tr:not(.inv-group):not(.inv-subgroup) td:first-child{
-  padding-left:20px;
-}
+/* ============================================================
+   Nivel 3 — Ítem individual (el más ligero)
+   ============================================================ */
+.inv-item-indent{padding-left:28px !important;}
+
+.inv-item-name{display:block;font-size:13px;}
+.inv-item-note{display:block;color:var(--ink-soft);font-size:10px;font-weight:500;line-height:1.25;}
 
 .inv-muted{color:var(--ink-soft);}
 
-/* Campo "Ingresó hoy": mismo aspecto que los demás campos de la app. */
+/* Campo "Ingresó hoy" */
 .inv-input{
   width:78px;padding:7px 10px;border-radius:99px;border:1.5px solid var(--line);
   background:var(--cream);color:var(--ink);text-align:center;
@@ -96,8 +110,8 @@
 .inv-input::placeholder{color:var(--ink-soft);font-weight:400;opacity:.4;}
 .inv-input:focus{outline:none;border-color:var(--orange);background:var(--paper);}
 
-/* Cuántos quedan, con su aviso de color. */
-.inv-remaining{font-family:'Baloo 2';font-size:15px;font-weight:700;color:var(--ink);}
+/* Cuántos quedan, con su aviso de color */
+.inv-remaining{font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--ink);}
 .inv-remaining em{
   margin-left:7px;padding:1px 7px;border-radius:5px;font-style:normal;
   font-family:'Inter';font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
@@ -107,24 +121,23 @@
 .inv-remaining.inv-out{color:var(--rust);}
 .inv-remaining.inv-out em{background:rgba(193,80,46,.1);border:1px solid rgba(193,80,46,.35);}
 
-@media (max-width:720px){
-  .inv-head .cc-btn{width:100%;}
-}
-
-/* Sobrante de ayer: editable, con marca cuando se corrigió a mano. */
+/* Sobrante de ayer: editable, con marca cuando se corrigió a mano */
 .inv-carry{position:relative;display:flex;align-items:center;justify-content:center;width:78px;margin:0 auto;}
 .inv-reset{
   position:absolute;left:calc(100% + 1px);width:24px;height:24px;border:none;background:none;cursor:pointer;
   color:var(--ink-soft);font-size:15px;line-height:1;touch-action:manipulation;
 }
-/* Sobrante corregido a mano: se marca en ámbar y aparece ↺ para volver al cálculo. */
 .inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
 .inv-reset{border-radius:50%;}
 .inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}
 
-/* Botón secundario admin (mismo alto que cc-btn-danger) */
+/* Botón secundario admin */
 .cc-btn-secondary{
   background:var(--cream);color:var(--ink);
   border:1.5px solid var(--line);
 }
 .cc-btn-secondary:hover{border-color:var(--orange);color:var(--orange-deep);}
+
+@media (max-width:720px){
+  .inv-head .cc-btn{width:100%;}
+}
