@@ -18,6 +18,8 @@ import { describeLine, partTitle } from './lineOptions';
 const EXCEL_GREEN = 'FF217346';
 const ZEBRA = 'FFEAF4EE';
 const BORDER_COLOR = 'FFBFBFBF';
+const GROUP_BG = 'FFD5E8DC';   // cabecera de subgrupo en la hoja Inventario
+const SUBGROUP_BG = 'FFEEF6F1';
 
 const FMT_USD = '"$"#,##0.00';
 const FMT_BS = '"Bs. "#,##0.00';
@@ -305,57 +307,117 @@ return sheet;
 
 /* ---------- Hoja 3: inventario ---------- */
 
+/**
+ * La hoja de inventario ahora tiene dos niveles (grupo → subgrupo → ítems).
+ * Los grupos principales (Panes, Proteínas, Bebidas, Extras) se marcan con
+ * fondo verde; los subgrupos (Refresco de lata, Carnes, etc.) con fondo gris
+ * claro. Los ítems individuales van con el zebra striping normal.
+ * Columnas: Categoría · Presentación · Insumo · Nota · Sobrante · Ingresó · Disponible · Vendido · Quedan
+ */
 function buildInventorySheet(workbook, inventory, dateKey) {
 const sheet = workbook.addWorksheet('Inventario', {
 views: [{ state: 'frozen', ySplit: 4 }],
 pageSetup: { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
 });
+// Columna extra "Presentación" (subgrupo) para distinguir marcas iguales
+// que aparecen en varias presentaciones (ej. Coca-Cola lata vs. botella).
 sheet.columns = [
-{ key: 'group', width: 14 },
-{ key: 'name', width: 28 },
-{ key: 'note', width: 24 },
-{ key: 'carry', width: 16 },
-{ key: 'entered', width: 14 },
+{ key: 'group',     width: 14 },
+{ key: 'subgroup',  width: 20 },
+{ key: 'name',      width: 22 },
+{ key: 'note',      width: 20 },
+{ key: 'carry',     width: 16 },
+{ key: 'entered',   width: 14 },
 { key: 'available', width: 14 },
-{ key: 'sold', width: 12 },
+{ key: 'sold',      width: 12 },
 { key: 'remaining', width: 12 },
 ];
 
-writeTitle(sheet, 'H', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
+writeTitle(sheet, 'I', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
 
 const headerRow = sheet.getRow(4);
-headerRow.values = ['Grupo', 'Insumo', 'Uso', 'Sobrante de ayer', 'Ingresó hoy', 'Disponible', 'Vendido', 'Quedan'];
+headerRow.values = ['Grupo', 'Presentación', 'Insumo', 'Uso', 'Sobrante de ayer', 'Ingresó hoy', 'Disponible', 'Vendido', 'Quedan'];
 styleHeaderRow(headerRow);
 
-let index = 0;
-inventory.groups.forEach(({ group, rows }) => {
-rows.forEach(item => {
-const rowNumber = 5 + index;
-const tracked = item.available !== null;
-const row = sheet.addRow([
-group,
-item.name,
-item.note || '',
-item.carry,
-item.entered,
-// Fórmulas: si alguien corrige un número en Excel, el resto se recalcula.
-tracked ? { formula: `N(D${rowNumber})+N(E${rowNumber})`, result: item.available } : null,
-item.sold,
-tracked ? { formula: `F${rowNumber}-G${rowNumber}`, result: item.remaining } : null,
-]);
-styleBodyRow(row, index);
-for (let col = 4; col <= 8; col += 1) {
-row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
+let itemIndex = 0; // para el zebra striping solo en ítems, no en cabeceras
+
+inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
+  // ── Fila de categoría principal ──────────────────────────────────────
+  const groupRow = sheet.addRow([group]);
+  sheet.mergeCells(`A${groupRow.number}:I${groupRow.number}`);
+  groupRow.height = 22;
+  groupRow.eachCell({ includeEmpty: true }, cell => {
+    cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_GREEN } };
+    cell.border = BORDERS;
+    cell.alignment = { vertical: 'middle' };
+  });
+
+  // ── Ítems sin subgrupo ───────────────────────────────────────────────
+  directRows.forEach(item => {
+    const rowN = sheet.rowCount + 1;
+    const tracked = item.available !== null;
+    const row = sheet.addRow([
+      '',           // grupo ya está en la cabecera
+      '',           // sin presentación
+      item.name,
+      item.note || '',
+      item.carry,
+      item.entered,
+      tracked ? { formula: `N(E${rowN})+N(F${rowN})`, result: item.available } : null,
+      item.sold,
+      tracked ? { formula: `G${rowN}-H${rowN}`, result: item.remaining } : null,
+    ]);
+    styleBodyRow(row, itemIndex++);
+    styleInvRow(row, item);
+  });
+
+  // ── Subgrupos ─────────────────────────────────────────────────────────
+  subgroups.forEach(({ subgroup, rows: subRows }) => {
+    // Cabecera del subgrupo
+    const sgRow = sheet.addRow(['', subgroup]);
+    sheet.mergeCells(`B${sgRow.number}:I${sgRow.number}`);
+    sgRow.height = 20;
+    sgRow.eachCell({ includeEmpty: true }, cell => {
+      cell.font = { bold: true, size: 11, color: { argb: 'FF333333' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SUBGROUP_BG } };
+      cell.border = BORDERS;
+      cell.alignment = { vertical: 'middle' };
+    });
+
+    subRows.forEach(item => {
+      const rowN = sheet.rowCount + 1;
+      const tracked = item.available !== null;
+      const row = sheet.addRow([
+        '',
+        '',          // subgrupo ya está en la cabecera
+        item.name,
+        item.note || '',
+        item.carry,
+        item.entered,
+        tracked ? { formula: `N(E${rowN})+N(F${rowN})`, result: item.available } : null,
+        item.sold,
+        tracked ? { formula: `G${rowN}-H${rowN}`, result: item.remaining } : null,
+      ]);
+      styleBodyRow(row, itemIndex++);
+      styleInvRow(row, item);
+    });
+  });
+});
+
+return sheet;
+}
+
+/** Aplica alineación y color de alerta a una fila de insumo individual. */
+function styleInvRow(row, item) {
+for (let col = 5; col <= 9; col += 1) {
+  row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
 }
 row.getCell('name').font = { bold: true };
 row.getCell('note').font = { color: { argb: 'FF777777' }, italic: true, size: 9 };
 row.getCell('note').alignment = { vertical: 'middle', wrapText: true };
 if (item.status === 'out') row.getCell('remaining').font = { bold: true, color: { argb: 'FFC1502E' } };
-index += 1;
-});
-});
-
-return sheet;
+if (item.status === 'low') row.getCell('remaining').font = { bold: true, color: { argb: 'FF8B6E00' } };
 }
 
 /* ---------- API pública ---------- */

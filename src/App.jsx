@@ -17,11 +17,13 @@ import AdminLoginDialog from "./components/AdminLoginDialog.jsx";
 import ProductOptionsModal from "./components/ProductOptionsModal.jsx";
 import OfferTypeModal from "./components/OfferTypeModal.jsx";
 import ComboOfferModal from "./components/Combooffermodal.jsx";
+import InventoryItemModal from "./components/InventoryItemModal.jsx";
 import {
   needsPayRef, isValidPayRef, getOrderPayments, validateSplit,
   partsToPayments, paymentsToParts, roundMoney,
 } from "./utils/payment.js";
 import { comboNeedsOptions, getComboIssue, getProductNameKey, needsOptions } from "./utils/lineOptions.js";
+import { INVENTORY_ITEMS } from "./data/inventory.js";
 
 const INGREDIENT_STOCK_KEY = "kitchen_ingredient_stock";
 const MENU_STORAGE_KEY = "perritos_guao_menu";
@@ -188,6 +190,8 @@ export default function App() {
   const [showAdminDialog, setShowAdminDialog] = useState(false);
   const [editingNum, setEditingNum] = useState(null); // número del pedido que se está corrigiendo
   const [pendingEdit, setPendingEdit] = useState(null); // pedido a corregir, a la espera de confirmar
+  // null = cerrado; { item: null } = crear nuevo; { item: {...} } = editar
+  const [inventoryItemModal, setInventoryItemModal] = useState(null);
 
   const categories = Object.keys(menu);
   const productsById = useMemo(
@@ -254,7 +258,29 @@ export default function App() {
   } = useSales();
 
   // Insumos que ingresaron cada día; lo vendido sale de las ventas cobradas.
-  const { stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay } = useInventory();
+  const { stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay, customItems, saveCustomItem } = useInventory();
+
+  // Lista combinada: insumos del código + los que el admin creó desde la app.
+  // Solo los activos aparecen en la tabla; los inactivos se ocultan pero sus
+  // IDs siguen siendo válidos para el historial de ventas.
+  const inventoryItems = useMemo(() => [
+    ...INVENTORY_ITEMS,
+    ...customItems.filter(item => item.active !== false),
+  ], [customItems]);
+
+  // IDs que algún producto del menú consume: sirve para marcar los insumos
+  // que no bajan solos y el dueño tiene que llevar a mano.
+  const usedInventoryIds = useMemo(() => {
+    const ids = new Set();
+    Object.values(menu).flat().forEach(product => {
+      (product.choices || []).forEach(choice => {
+        if (choice.trackInventory !== false) {
+          choice.options.forEach(id => ids.add(id));
+        }
+      });
+    });
+    return ids;
+  }, [menu]);
 
   /**
    * Cobrar un pedido: queda asentado en el registro de ventas (persistido)
@@ -572,6 +598,10 @@ export default function App() {
             onClearStock={clearStockDay}
             onRemoveSale={removeSale}
             onClearDay={dateKey => setDayToClear(dateKey)}
+            isAdmin={isAdmin}
+            inventoryItems={inventoryItems}
+            usedInventoryIds={usedInventoryIds}
+            onOpenNewItem={() => setInventoryItemModal({ item: null })}
           />
         )}
       </main>
@@ -655,6 +685,15 @@ export default function App() {
           confirmLabel="Eliminar producto"
           onConfirm={confirmDeleteProduct}
           onCancel={() => setProductToDelete(null)}
+        />
+      )}
+
+      {inventoryItemModal !== null && isAdmin && (
+        <InventoryItemModal
+          item={inventoryItemModal.item}
+          usedInventoryIds={usedInventoryIds}
+          onSave={item => { saveCustomItem(item); setInventoryItemModal(null); }}
+          onClose={() => setInventoryItemModal(null)}
         />
       )}
 

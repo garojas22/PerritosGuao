@@ -76,29 +76,72 @@ const LOW_STOCK_RATIO = 0.15;
 const LOW_STOCK_UNITS = 5;
 
 /**
- * Filas del inventario de un día, agrupadas (Panes, Proteínas...).
- *
- * Cada fila trae: carry (sobrante de ayer), entered (ingresó hoy), available,
- * sold, remaining y status ('out' | 'low' | null). Los valores son `null`
- * mientras no se haya ingresado nada de ese insumo.
+ * Suma acumulada de un campo numérico en un array de filas.
+ * Devuelve null si TODAS las filas tienen ese campo en null
+ * (nadie ha ingresado nada → no existe cifra que mostrar).
  */
-export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesByDay = {}, startByDay = {} }) {
+function sumField(rows, field) {
+  const withData = rows.filter(row => row[field] !== null);
+  if (withData.length === 0) return null;
+  return withData.reduce((acc, row) => acc + (row[field] ?? 0), 0);
+}
+
+/** Resumen agregado de un subgrupo (la fila de cabecera plegable). */
+function computeSubgroupSummary(rows) {
+  return {
+    carry:     sumField(rows, 'carry'),
+    entered:   sumField(rows, 'entered'),
+    available: sumField(rows, 'available'),
+    sold:      rows.reduce((acc, r) => acc + r.sold, 0),
+    remaining: sumField(rows, 'remaining'),
+    // cuántos ítems están agotados o por acabarse: se muestra aunque el grupo esté plegado
+    alerts: {
+      out: rows.filter(r => r.status === 'out').length,
+      low: rows.filter(r => r.status === 'low').length,
+    },
+  };
+}
+
+/**
+ * Filas del inventario de un día con soporte de dos niveles (group → subgroup).
+ *
+ * Parámetros:
+ *  - inventoryItems: lista combinada (código + localStorage). Por defecto usa
+ *    INVENTORY_ITEMS para no romper llamadas antiguas.
+ *  - usedInventoryIds: Set de IDs que algún producto del menú consume. Si se
+ *    pasa, las filas cuyo ID no aparece quedan marcadas como `manualOnly: true`.
+ *
+ * Salida por grupo:
+ *  - rows:      ítems sin subgroup (se renderizan directamente).
+ *  - subgroups: ítems con subgroup, ya agrupados. Cada subgrupo trae sus `rows`
+ *               y un `summary` calculado (suma de todas sus marcas).
+ */
+export function summarizeInventory({
+  dayKey,
+  sales = [],
+  stockByDay = {},
+  salesByDay = {},
+  startByDay = {},
+  inventoryItems = INVENTORY_ITEMS,
+  usedInventoryIds = null,
+}) {
   const usage = countUsage(sales);
   const carry = getCarryOver(dayKey, stockByDay, salesByDay, startByDay);
   const entered = stockByDay[dayKey] || {};
   const fixedStart = startByDay[dayKey] || {};
 
   // Un insumo que ya no está en la lista pero sí se vendió no debe desaparecer del reporte.
-  const knownIds = new Set(INVENTORY_ITEMS.map(item => item.id));
+  const knownIds = new Set(inventoryItems.map(item => item.id));
   const extraItems = Object.keys(usage)
     .filter(id => !knownIds.has(id))
     .map(id => ({ id, name: getInventoryName(id), group: 'Otros', note: '' }));
 
-  const groups = new Map();
+  // groupMap: group → { directRows[], subgroupMap: subgroup → rows[] }
+  const groupMap = new Map();
   let hasStock = false;
   let soldTotal = 0;
 
-  [...INVENTORY_ITEMS, ...extraItems].forEach(item => {
+  [...inventoryItems, ...extraItems].forEach(item => {
     const sold = usage[item.id] || 0;
     const ingreso = Number.isFinite(entered[item.id]) ? entered[item.id] : null;
     const adjusted = Number.isFinite(fixedStart[item.id]);
@@ -120,23 +163,49 @@ export function summarizeInventory({ dayKey, sales = [], stockByDay = {}, salesB
     if (tracked) hasStock = true;
     soldTotal += sold;
 
-    if (!groups.has(item.group)) groups.set(item.group, []);
-    groups.get(item.group).push({
-      id: item.id,
-      name: item.name,
-      note: item.note ?? '',
-      carry: previous,
+    // manualOnly: ningún producto del menú activo consume este insumo.
+    // El dueño solo puede registrar entradas/salidas a mano.
+    const manualOnly = usedInventoryIds !== null && !usedInventoryIds.has(item.id);
+
+    const row = {
+      id:           item.id,
+      name:         item.name,
+      note:         item.note ?? '',
+      carry:        previous,
       carryAdjusted: adjusted,
-      entered: ingreso,
+      entered:      ingreso,
       available,
       sold,
       remaining,
       status,
-    });
+      manualOnly,
+    };
+
+    if (!groupMap.has(item.group)) {
+      groupMap.set(item.group, { directRows: [], subgroupMap: new Map() });
+    }
+    const g = groupMap.get(item.group);
+
+    if (item.subgroup) {
+      if (!g.subgroupMap.has(item.subgroup)) g.subgroupMap.set(item.subgroup, []);
+      g.subgroupMap.get(item.subgroup).push(row);
+    } else {
+      g.directRows.push(row);
+    }
   });
 
+  const groups = [...groupMap.entries()].map(([group, { directRows, subgroupMap }]) => ({
+    group,
+    rows: directRows,
+    subgroups: [...subgroupMap.entries()].map(([subgroup, rows]) => ({
+      subgroup,
+      rows,
+      summary: computeSubgroupSummary(rows),
+    })),
+  }));
+
   return {
-    groups: [...groups.entries()].map(([group, rows]) => ({ group, rows })),
+    groups,
     hasStock,
     soldTotal,
     salesWithoutDetail: countSalesWithoutUses(sales),

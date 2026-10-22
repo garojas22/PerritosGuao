@@ -10,7 +10,7 @@
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 10;
+export const MENU_VERSION = 11;
 
 // Precio confirmado por el dueño; mantenerlo aquí evita que el cajero pueda
 // modificar el precio de la oferta al armar un pedido.
@@ -33,13 +33,23 @@ const hotDogChoices = (sausages) => [
   { id: "pan-perro", label: "Pan", options: ["pan-perro"], qty: 1 },
   { id: "proteina", label: "Salchicha", options: sausages, qty: 1 },
 ];
-const drinkBrands = (brands) => [
-  { id: "marca", label: "Marca", options: brands, trackInventory: false, showSelected: true },
+
+/**
+ * Elecciones de marca para refrescos con múltiples marcas.
+ * Las options son IDs de insumos (data/inventory.js), así el inventario
+ * descuenta la marca exacta que se vendió.
+ */
+const drinkBrands = (brandIds) => [
+  { id: "marca", label: "Marca", options: brandIds, showSelected: true },
 ];
-const drinkFlavors = (flavors) => [
-  { id: "sabor", label: "Sabor", options: flavors, trackInventory: false, showSelected: true },
+
+/**
+ * Elecciones de sabor (Nestea). Los ids apuntan a insumos distintos porque
+ * el dueño compra y cuenta Limón y Durazno por separado.
+ */
+const drinkFlavors = (flavorIds) => [
+  { id: "sabor", label: "Sabor", options: flavorIds, showSelected: true },
 ];
-const OFFER_LITER_DRINKS = ["Golden Manzanita", "Golden Naranja", "Golden Frescolita", "7up"];
 
 /**
  * Hamburguesa de las promociones: es "La Clásica" (hc) con la elección forzada.
@@ -142,45 +152,79 @@ export const MENU = {
     },
   ],
   "Extras": [
-    { id: "ex1", name: "Pepinillos", price: 0.50, desc: "Porción extra de pepinillos.", ingredients: [] },
-    { id: "ex3", name: "Maíz", price: 0.50, desc: "Porción extra de maíz.", ingredients: [] },
-    { id: "ex4", name: "Queso amarillo", price: 0.75, desc: "Porción extra de queso amarillo.", ingredients: [] },
-    { id: "ex5", name: "Tocineta", price: 1.00, desc: "Porción extra de tocineta.", ingredients: [] },
-    { id: "ex6", name: "Salchicha", price: 1.00, desc: "Salchicha adicional.", ingredients: [] },
+    {
+      id: "ex1", name: "Pepinillos", price: 0.50, desc: "Porción extra de pepinillos.", ingredients: [],
+      // choice de un solo item: no aparece en UI pero descuenta del inventario
+      choices: [{ id: "insumo", label: "Insumo", options: ["extra-pepinillos"], qty: 1 }],
+    },
+    {
+      id: "ex3", name: "Maíz", price: 0.50, desc: "Porción extra de maíz.", ingredients: [],
+      choices: [{ id: "insumo", label: "Insumo", options: ["extra-maiz"], qty: 1 }],
+    },
+    {
+      id: "ex4", name: "Queso amarillo", price: 0.75, desc: "Porción extra de queso amarillo.", ingredients: [],
+      choices: [{ id: "insumo", label: "Insumo", options: ["extra-queso-amarillo"], qty: 1 }],
+    },
+    {
+      id: "ex5", name: "Tocineta", price: 1.00, desc: "Porción extra de tocineta.", ingredients: [],
+      choices: [{ id: "insumo", label: "Insumo", options: ["extra-tocineta"], qty: 1 }],
+    },
+    {
+      id: "ex6", name: "Salchicha", price: 1.00, desc: "Salchicha adicional.", ingredients: [],
+      // reutiliza el mismo insumo que los perros calientes
+      choices: [{ id: "insumo", label: "Insumo", options: ["salchicha-winner"], qty: 1 }],
+    },
   ],
   "Bebidas": [
-    { id: "b1", name: "Malta retornable", price: 0.80, desc: "", ingredients: [] },
+    {
+      id: "b1", name: "Malta retornable", price: 0.80, desc: "", ingredients: [],
+      // choice silencioso: no se pregunta (1 opción) pero descuenta del inventario
+      choices: [{ id: "bebida", label: "Bebida", options: ["bebida-malta"], qty: 1 }],
+    },
     {
       id: "b2", name: "Refresco de lata", price: 1.25, desc: "", ingredients: [],
-      choices: drinkBrands(["Frescolita", "Chinotto", "Fanta", "Coca-Cola"]),
+      choices: drinkBrands(["refresco-lata-frescolita", "refresco-lata-chinotto", "refresco-lata-fanta", "refresco-lata-cocacola"]),
     },
     {
       id: "b3", name: "Refresco de botella", price: 1.25, desc: "", ingredients: [],
-      choices: drinkBrands(["Nevada", "Chinotto", "Coca-Cola", "Frescolita", "Hit"]),
+      choices: drinkBrands(["refresco-botella-cocacola", "refresco-botella-frescolita", "refresco-botella-chinotto", "refresco-botella-hit"]),
     },
     {
+      // Producto nuevo: botella pequeña (Nevada, Chinotto). Precio a confirmar con el dueño.
+      id: "b10", name: "Refresco de botellita", price: 1.00, desc: "", ingredients: [],
+      choices: drinkBrands(["refresco-botellita-nevada", "refresco-botellita-chinotto"]),
+    },
+    {
+      // Todas las marcas disponibles en venta normal y en combo.
       id: "b4", name: "Refresco de 1 Lt", price: 1.75, desc: "", ingredients: [],
-      choices: drinkBrands(["Coca-Cola"]),
-      comboChoiceOptions: { marca: OFFER_LITER_DRINKS },
-      comboChoiceDefaults: { marca: OFFER_LITER_DRINKS },
+      choices: drinkBrands([
+        "refresco-1lt-cocacola",
+        "refresco-1lt-golden-manzanita",
+        "refresco-1lt-golden-naranja",
+        "refresco-1lt-golden-frescolita",
+        "refresco-1lt-7up",
+      ]),
     },
     {
       id: "b5", name: "Refresco de 1.25 Lt", price: 2.25, desc: "", ingredients: [],
-      choices: drinkBrands(["Coca-Cola", "Frescolita"]),
+      choices: drinkBrands(["refresco-125lt-cocacola", "refresco-125lt-frescolita"]),
     },
     {
       id: "b6", name: "Refresco de 1.5 Lt", price: 2.50, desc: "", ingredients: [],
-      choices: drinkBrands(["Fanta", "Coca-Cola"]),
+      choices: drinkBrands(["refresco-15lt-fanta", "refresco-15lt-cocacola"]),
     },
     {
       id: "b7", name: "Refresco de 2 Lt", price: 3.50, desc: "", ingredients: [],
-      choices: drinkBrands(["Pepsi", "Golden", "7up"]),
+      choices: drinkBrands(["refresco-2lt-pepsi", "refresco-2lt-golden", "refresco-2lt-7up"]),
     },
     {
       id: "b8", name: "Nestea", price: 2.00, desc: "", ingredients: [],
-      choices: drinkFlavors(["Limón", "Durazno"]),
+      choices: drinkFlavors(["nestea-limon", "nestea-durazno"]),
     },
-    { id: "b9", name: "Agua mineral pequeña", price: 1.00, desc: "", ingredients: [] },
+    {
+      id: "b9", name: "Agua mineral pequeña", price: 1.00, desc: "", ingredients: [],
+      choices: [{ id: "bebida", label: "Bebida", options: ["bebida-agua-mineral"], qty: 1 }],
+    },
   ],
   "Ofertas": [
     {
@@ -200,9 +244,9 @@ export const MENU = {
         promoBurgerPart("Hamburguesa 1"),
         promoBurgerPart("Hamburguesa 2"),
         {
+          // b4 ya tiene todas las marcas en modo normal: no hace falta restricción
           ref: "b4",
           label: "Refresco de 1 Lt",
-          choiceOptions: { marca: OFFER_LITER_DRINKS },
         },
       ],
     },

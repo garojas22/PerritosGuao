@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   summarizeSales,
   formatDayLabel,
@@ -11,6 +11,15 @@ import { downloadSalesExcel } from '../utils/salesExcel';
 import { summarizeInventory } from '../utils/inventoryReport';
 import { PAY_MOBILE, getOrderPayments, isSplitPayment, paymentBs } from '../utils/payment';
 import { describeLine, partTitle } from '../utils/lineOptions';
+
+// Clave localStorage para el estado abierto/cerrado de los subgrupos.
+const COLLAPSED_KEY = 'perritos_inv_collapsed';
+
+function loadCollapsed() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY)) || []);
+  } catch { return new Set(); }
+}
 
 function StatCard({ label, value, sub, accent }) {
   return (
@@ -58,15 +67,128 @@ function StockInput({ value, onCommit, label, className = 'inv-input' }) {
 
 const INV_STATUS_LABEL = { out: 'Agotado', low: 'Poco' };
 
+/** Fila de datos del inventario (insumo individual). */
+function InvRow({ row, dayKey, onSetStock, onSetStart }) {
+  return (
+    <tr key={row.id} className={row.status ? `inv-row-${row.status}` : ''}>
+      <td className="cc-strong">
+        <span className="inv-item-name">
+          {row.name}
+          {row.manualOnly && <span className="inv-manual-tag">solo conteo manual</span>}
+        </span>
+        {row.note && <span className="inv-item-note">{row.note}</span>}
+      </td>
+      <td className="cc-num">
+        <span className="inv-carry">
+          <StockInput
+            className={`inv-input inv-input-carry ${row.carryAdjusted ? 'inv-adjusted' : ''}`}
+            value={row.carry}
+            onCommit={value => value !== null && onSetStart(dayKey, row.id, value)}
+            label={`Sobrante de ayer: ${row.name}`}
+          />
+          {row.carryAdjusted && (
+            <button
+              type="button"
+              className="inv-reset"
+              onClick={() => onSetStart(dayKey, row.id, null)}
+              title="Volver al cálculo automático"
+              aria-label={`Volver al cálculo automático: ${row.name}`}
+            >
+              ↺
+            </button>
+          )}
+        </span>
+      </td>
+      <td className="cc-num">
+        <StockInput
+          value={row.entered}
+          onCommit={value => onSetStock(dayKey, row.id, value)}
+          label={`Ingresó: ${row.name}`}
+        />
+      </td>
+      <td className="cc-num">{row.available !== null ? row.available : '—'}</td>
+      <td className="cc-num">{row.sold}</td>
+      <td className="cc-num">
+        {row.remaining !== null ? (
+          <span className={`inv-remaining ${row.status ? `inv-${row.status}` : ''}`}>
+            {row.remaining}
+            {row.status && <em>{INV_STATUS_LABEL[row.status]}</em>}
+          </span>
+        ) : '—'}
+      </td>
+    </tr>
+  );
+}
+
+/** Fila de cabecera de un subgrupo (plegable). Muestra la suma de sus marcas. */
+function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
+  const { alerts } = summary;
+  const hasAlerts = alerts.out > 0 || alerts.low > 0;
+
+  return (
+    <tr className="inv-subgroup" onClick={onToggle} role="button" aria-expanded={isOpen}>
+      <td colSpan={6}>
+        <span className="inv-subgroup-toggle">{isOpen ? '▾' : '▸'}</span>
+        <span className="inv-subgroup-name">{subgroup}</span>
+        {!isOpen && hasAlerts && (
+          <span className="inv-subgroup-alerts">
+            {alerts.out > 0 && (
+              <span className="inv-alert-badge inv-alert-out">
+                {alerts.out} agotad{alerts.out === 1 ? 'a' : 'as'}
+              </span>
+            )}
+            {alerts.low > 0 && (
+              <span className="inv-alert-badge inv-alert-low">
+                {alerts.low} por acabarse
+              </span>
+            )}
+          </span>
+        )}
+        {isOpen && (
+          <span className="inv-subgroup-summary">
+            {summary.available !== null && <span>Disp. {summary.available}</span>}
+            <span>Vend. {summary.sold}</span>
+            {summary.remaining !== null && (
+              <span className={alerts.out > 0 ? 'inv-text-out' : alerts.low > 0 ? 'inv-text-low' : ''}>
+                Quedan {summary.remaining}
+              </span>
+            )}
+          </span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 export default function CashClose({
   salesByDay, availableDays, today, stockByDay = {}, startByDay = {},
   onSetStock, onSetStart, onClearStock, onRemoveSale, onClearDay,
+  isAdmin = false,
+  inventoryItems,
+  usedInventoryIds,
+  onOpenNewItem,
 }) {
   const [selectedDay, setSelectedDay] = useState(today);
   const [isExporting, setIsExporting] = useState(false);
+  const [collapsed, setCollapsed] = useState(loadCollapsed);
 
-  // Se puede abrir cualquier día con ventas o con inventario cargado: así se
-  // corrige el inventario de un día pasado aunque ese día no haya vendido nada.
+  // Persistir estado plegado en localStorage.
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsed]));
+    } catch { /* localStorage lleno */ }
+  }, [collapsed]);
+
+  function toggleSubgroup(key) {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  // Se puede abrir cualquier día con ventas o con inventario cargado.
   const dayOptions = [...new Set([
     today,
     ...availableDays,
@@ -74,26 +196,20 @@ export default function CashClose({
     ...Object.keys(startByDay),
   ])].sort((a, b) => b.localeCompare(a));
 
-  // Si el día seleccionado ya no existe (se borró), se cae a hoy.
   const dayKey = dayOptions.includes(selectedDay) ? selectedDay : today;
-  // El número se asigna al crear el pedido; la hora de cobro puede ser posterior
-  // y distinta para cada pedido, así que no representa el orden cronológico.
   const daySales = salesByDay[dayKey];
   const sales = useMemo(
     () => [...(daySales || [])].sort((a, b) => Number(a.num) - Number(b.num)),
     [daySales],
   );
-  // Estos cálculos recorren todas las ventas e historial de inventario: solo se
-  // rehacen cuando cambia algo, no en cada tecla que se escribe en un campo.
   const summary = useMemo(() => summarizeSales(sales), [sales]);
   const isToday = dayKey === getBusinessDayKey();
   const inventory = useMemo(
-    () => summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay }),
-    [dayKey, sales, stockByDay, salesByDay, startByDay],
+    () => summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay, inventoryItems, usedInventoryIds }),
+    [dayKey, sales, stockByDay, salesByDay, startByDay, inventoryItems, usedInventoryIds],
   );
   const hasEntries = Object.keys(stockByDay[dayKey] || {}).length > 0
     || Object.keys(startByDay[dayKey] || {}).length > 0;
-
 
   async function handleExport() {
     setIsExporting(true);
@@ -118,11 +234,18 @@ export default function CashClose({
             Para corregir otro día, elígelo arriba.
           </p>
         </div>
-        {hasEntries && (
-          <button type="button" className="cc-btn cc-btn-danger" onClick={() => onClearStock(dayKey)}>
-            Limpiar inventario del día
-          </button>
-        )}
+        <div className="inv-head-actions">
+          {isAdmin && (
+            <button type="button" className="cc-btn cc-btn-secondary" onClick={onOpenNewItem}>
+              + Nuevo insumo
+            </button>
+          )}
+          {hasEntries && (
+            <button type="button" className="cc-btn cc-btn-danger" onClick={() => onClearStock(dayKey)}>
+              Limpiar inventario del día
+            </button>
+          )}
+        </div>
       </div>
 
       {inventory.salesWithoutDetail > 0 && (
@@ -145,55 +268,34 @@ export default function CashClose({
               <th className="cc-num">Quedan</th>
             </tr>
           </thead>
-          {inventory.groups.map(({ group, rows }) => (
+          {inventory.groups.map(({ group, rows, subgroups }) => (
             <tbody key={group}>
+              {/* Fila de categoría principal (Panes, Proteínas, Bebidas, Extras) */}
               <tr className="inv-group"><td colSpan={6}>{group}</td></tr>
+
+              {/* Ítems sin subgrupo: se muestran directamente */}
               {rows.map(row => (
-                <tr key={row.id}>
-                  <td className="cc-strong">
-                    <span className="inv-item-name">{row.name}</span>
-                    {row.note && <span className="inv-item-note">{row.note}</span>}
-                  </td>
-                  <td className="cc-num">
-                    <span className="inv-carry">
-                      <StockInput
-                        className={`inv-input inv-input-carry ${row.carryAdjusted ? 'inv-adjusted' : ''}`}
-                        value={row.carry}
-                        onCommit={value => value !== null && onSetStart(dayKey, row.id, value)}
-                        label={`Sobrante de ayer: ${row.name}`}
-                      />
-                      {row.carryAdjusted && (
-                        <button
-                          type="button"
-                          className="inv-reset"
-                          onClick={() => onSetStart(dayKey, row.id, null)}
-                          title="Volver al cálculo automático"
-                          aria-label={`Volver al cálculo automático: ${row.name}`}
-                        >
-                          ↺
-                        </button>
-                      )}
-                    </span>
-                  </td>
-                  <td className="cc-num">
-                    <StockInput
-                      value={row.entered}
-                      onCommit={value => onSetStock(dayKey, row.id, value)}
-                      label={`Ingresó: ${row.name}`}
-                    />
-                  </td>
-                  <td className="cc-num">{row.available !== null ? row.available : '—'}</td>
-                  <td className="cc-num">{row.sold}</td>
-                  <td className="cc-num">
-                    {row.remaining !== null ? (
-                      <span className={`inv-remaining ${row.status ? `inv-${row.status}` : ''}`}>
-                        {row.remaining}
-                        {row.status && <em>{INV_STATUS_LABEL[row.status]}</em>}
-                      </span>
-                    ) : '—'}
-                  </td>
-                </tr>
+                <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} />
               ))}
+
+              {/* Subgrupos plegables (ej. "Refresco de lata", "Carnes") */}
+              {subgroups.map(({ subgroup, rows: subRows, summary: subSum }) => {
+                const key = `${group}__${subgroup}`;
+                const isOpen = !collapsed.has(key); // abierto por defecto
+                return (
+                  <React.Fragment key={key}>
+                    <SubgroupRow
+                      subgroup={subgroup}
+                      summary={subSum}
+                      isOpen={isOpen}
+                      onToggle={() => toggleSubgroup(key)}
+                    />
+                    {isOpen && subRows.map(row => (
+                      <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} />
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           ))}
         </table>
@@ -237,11 +339,11 @@ export default function CashClose({
 
       {sales.length === 0 ? (
         <>
-        <div className="cc-empty">
-          Todavía no hay ventas cobradas en este día.
-          <span>Los pedidos entran aquí cuando los cobras desde "Pedidos activos".</span>
-        </div>
-        {inventoryPanel}
+          <div className="cc-empty">
+            Todavía no hay ventas cobradas en este día.
+            <span>Los pedidos entran aquí cuando los cobras desde "Pedidos activos".</span>
+          </div>
+          {inventoryPanel}
         </>
       ) : (
         <>

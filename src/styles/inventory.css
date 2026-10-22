@@ -8,6 +8,7 @@
   gap:12px;flex-wrap:wrap;margin-bottom:4px;
 }
 .inv-head .cc-panel-hint{max-width:560px;}
+.inv-head-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;}
 
 .inv-note{
   margin:0 0 12px;padding:8px 12px;border-radius:10px;
@@ -18,20 +19,72 @@
 .inv-table{min-width:820px;table-layout:fixed;}
 .inv-table td{vertical-align:middle;padding-top:7px;padding-bottom:7px;}
 .inv-table th:first-child,
-.inv-table td:first-child{width:22%;}
+.inv-table td:first-child{width:28%;}
 .inv-table th:not(:first-child),
-.inv-table td:not(:first-child){width:15.6%;}
+.inv-table td:not(:first-child){width:14.4%;}
 .inv-table th.cc-num,
 .inv-table td.cc-num{text-align:center;padding-right:0;}
 .inv-item-name{display:block;}
 .inv-item-note{display:block;color:var(--ink-soft);font-size:10px;font-weight:500;line-height:1.25;}
 
-/* Fila de grupo: Panes, Proteínas... */
+/* Etiqueta "solo conteo manual": avisa que el insumo no está asociado al menú */
+.inv-manual-tag{
+  display:inline-block;margin-left:6px;
+  padding:1px 6px;border-radius:4px;
+  font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
+  color:var(--ink-soft);background:rgba(0,0,0,.06);border:1px solid var(--line);
+  vertical-align:middle;
+}
+
+/* Fila de categoría principal: Panes, Proteínas, Bebidas, Extras */
 .inv-group td{
   padding:14px 0 6px;border-bottom:1.5px solid var(--line);
   font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--brown);
   text-transform:uppercase;letter-spacing:.06em;
 }
+
+/* Fila de subgrupo plegable: Refresco de lata, Carnes, etc. */
+.inv-subgroup td{
+  padding:8px 0 6px;border-bottom:1px dashed var(--line);
+  cursor:pointer;user-select:none;
+}
+.inv-subgroup:hover td{background:rgba(0,0,0,.03);}
+.inv-subgroup-toggle{
+  margin-right:6px;font-size:11px;color:var(--ink-soft);
+  display:inline-block;width:12px;
+}
+.inv-subgroup-name{
+  font-family:'Baloo 2';font-size:12px;font-weight:700;color:var(--ink);
+  letter-spacing:.03em;
+}
+
+/* Resumen numérico inline cuando el subgrupo está abierto */
+.inv-subgroup-summary{
+  margin-left:12px;font-size:11px;font-weight:600;color:var(--ink-soft);
+}
+.inv-subgroup-summary span{margin-right:10px;}
+.inv-text-low{color:var(--brown) !important;}
+.inv-text-out{color:var(--rust) !important;}
+
+/* Badges de alerta cuando el subgrupo está plegado */
+.inv-subgroup-alerts{margin-left:10px;}
+.inv-alert-badge{
+  display:inline-block;margin-left:4px;padding:1px 7px;border-radius:5px;
+  font-family:'Inter';font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+}
+.inv-alert-out{
+  background:rgba(193,80,46,.1);border:1px solid rgba(193,80,46,.35);color:var(--rust);
+}
+.inv-alert-low{
+  background:rgba(217,154,43,.18);border:1px solid rgba(217,154,43,.5);color:var(--brown);
+}
+
+/* Filas de ítems dentro de un subgrupo: sangría leve */
+.inv-subgroup + tr:not(.inv-group):not(.inv-subgroup) td:first-child,
+.inv-subgroup ~ tr:not(.inv-group):not(.inv-subgroup) td:first-child{
+  padding-left:20px;
+}
+
 .inv-muted{color:var(--ink-soft);}
 
 /* Campo "Ingresó hoy": mismo aspecto que los demás campos de la app. */
@@ -68,3 +121,10 @@
 .inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
 .inv-reset{border-radius:50%;}
 .inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}
+
+/* Botón secundario admin (mismo alto que cc-btn-danger) */
+.cc-btn-secondary{
+  background:var(--cream);color:var(--ink);
+  border:1.5px solid var(--line);
+}
+.cc-btn-secondary:hover{border-color:var(--orange);color:var(--orange-deep);}
