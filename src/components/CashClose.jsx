@@ -86,7 +86,9 @@ const INV_STATUS_LABEL = { out: 'Agotado', low: 'Poco' };
 function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem }) {
   return (
     <tr key={row.id} className={row.status ? `inv-row-${row.status}` : ''}>
-      <td className={`cc-strong${isSubgroupItem ? ' inv-item-indent' : ''}`}>
+      {/* El insumo es el nivel MÁS ligero: sin cc-strong, que lo dejaba
+          más pesado que el subgrupo que lo contiene. */}
+      <td className={isSubgroupItem ? 'inv-indent-2' : 'inv-indent-1'}>
         <span className="inv-item-name">
           {row.name}
           {row.manualOnly && <span className="inv-manual-tag">solo conteo manual</span>}
@@ -121,17 +123,55 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem }) {
           label={`Ingresó: ${row.name}`}
         />
       </td>
-      <td className="cc-num">{row.available !== null ? row.available : '—'}</td>
-      <td className="cc-num">{row.sold}</td>
+      <td className="cc-num">
+        <span className={`inv-fig ${row.available === null ? 'inv-muted' : ''}`}>
+          {row.available !== null ? row.available : '—'}
+        </span>
+      </td>
+      <td className="cc-num">
+        <span className={`inv-fig ${row.sold === 0 ? 'inv-muted' : ''}`}>{row.sold}</span>
+      </td>
       <td className="cc-num">
         {row.remaining !== null ? (
           <span className={`inv-remaining ${row.status ? `inv-${row.status}` : ''}`}>
             {row.remaining}
             {row.status && <em>{INV_STATUS_LABEL[row.status]}</em>}
           </span>
-        ) : '—'}
+        ) : <span className="inv-fig inv-muted">—</span>}
       </td>
     </tr>
+  );
+}
+
+/**
+ * Señales de agotado / por acabarse de un conjunto de insumos.
+ * Se muestran SIEMPRE, no solo al plegar: el dueño tiene que ver que se
+ * acabó el Chinotto sin tener que abrir los cuatro grupos de bebidas.
+ */
+function AlertBadges({ alerts }) {
+  if (alerts.out === 0 && alerts.low === 0) return null;
+  return (
+    <span className="inv-alerts">
+      {alerts.out > 0 && (
+        <span className="inv-alert-badge inv-alert-out">
+          {alerts.out} agotad{alerts.out === 1 ? 'o' : 'os'}
+        </span>
+      )}
+      {alerts.low > 0 && (
+        <span className="inv-alert-badge inv-alert-low">{alerts.low} por acabarse</span>
+      )}
+    </span>
+  );
+}
+
+/** Celda numérica de una fila de subgrupo: el total, o "—" si nadie ingresó nada. */
+function SgNum({ value }) {
+  return (
+    <td className="cc-num">
+      <span className={`inv-sg-num ${value === null ? 'inv-muted' : ''}`}>
+        {value !== null ? value : '—'}
+      </span>
+    </td>
   );
 }
 
@@ -143,26 +183,16 @@ function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
       <td>
         <span className="inv-subgroup-toggle">{isOpen ? '▾' : '▸'}</span>
         <span className="inv-subgroup-name">{subgroup}</span>
-        {!isOpen && (alerts.out > 0 || alerts.low > 0) && (
-          <span className="inv-subgroup-alerts">
-            {alerts.out > 0 && <span className="inv-alert-badge inv-alert-out">{alerts.out} agotad{alerts.out === 1 ? 'a' : 'as'}</span>}
-            {alerts.low > 0 && <span className="inv-alert-badge inv-alert-low">{alerts.low} por acabarse</span>}
-          </span>
-        )}
+        <AlertBadges alerts={alerts} />
       </td>
-      <td className="cc-num inv-sg-num">{summary.carry !== null ? summary.carry : '—'}</td>
-      <td className="cc-num inv-sg-num">{summary.entered !== null ? summary.entered : '—'}</td>
-      <td className="cc-num inv-sg-num">{summary.available !== null ? summary.available : '—'}</td>
-      <td className="cc-num inv-sg-num">{summary.sold}</td>
-      <td className="cc-num inv-sg-num">
-        {summary.remaining !== null ? (
-          <span className={`inv-remaining ${alerts.out > 0 ? 'inv-out' : alerts.low > 0 ? 'inv-low' : ''}`}>
-            {summary.remaining}
-            {alerts.out > 0 && <em>Agotado</em>}
-            {alerts.out === 0 && alerts.low > 0 && <em>Poco</em>}
-          </span>
-        ) : '—'}
-      </td>
+      <SgNum value={summary.carry} />
+      <SgNum value={summary.entered} />
+      <SgNum value={summary.available} />
+      <SgNum value={summary.sold} />
+      {/* El total del subgrupo NO lleva etiqueta "Agotado": decía
+          "58 Agotado" en Salchichas porque UNA de las tres estaba en cero.
+          Cuáles se acabaron ya lo dicen los badges de la izquierda. */}
+      <SgNum value={summary.remaining} />
     </tr>
   );
 }
@@ -306,12 +336,7 @@ export default function CashClose({
                   <td colSpan={6}>
                     <span className="inv-group-toggle">{isGroupOpen ? '▾' : '▸'}</span>
                     <span className="inv-group-name">{group}</span>
-                    {!isGroupOpen && (groupAlerts.out > 0 || groupAlerts.low > 0) && (
-                      <span className="inv-subgroup-alerts">
-                        {groupAlerts.out > 0 && <span className="inv-alert-badge inv-alert-out">{groupAlerts.out} agotad{groupAlerts.out === 1 ? 'a' : 'as'}</span>}
-                        {groupAlerts.low > 0 && <span className="inv-alert-badge inv-alert-low">{groupAlerts.low} por acabarse</span>}
-                      </span>
-                    )}
+                    <AlertBadges alerts={groupAlerts} />
                   </td>
                 </tr>
 

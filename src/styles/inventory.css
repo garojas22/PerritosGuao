@@ -1,6 +1,10 @@
 /* ============================================================
    Inventario en el cierre de caja
    (se apoya en .cc-panel, .cc-table y .cc-btn de cash-close.css)
+
+   Tres niveles con peso visual DECRECIENTE. La regla que ordena
+   todo el archivo: categoría > subgrupo > insumo. Si un insumo se
+   ve más pesado que su grupo, la jerarquía está rota.
    ============================================================ */
 
 .inv-head{
@@ -16,119 +20,151 @@
   color:var(--brown);font-size:12px;font-weight:600;line-height:1.4;
 }
 
-.inv-table{min-width:820px;table-layout:fixed;}
-.inv-table td{vertical-align:middle;padding-top:7px;padding-bottom:7px;}
+/* Sube a 880 porque las cifras ahora son más grandes y a 820 se apretaban. */
+.inv-table{min-width:880px;table-layout:fixed;}
+.inv-table td{vertical-align:middle;height:48px;padding-top:6px;padding-bottom:6px;}
 .inv-table th:first-child,
-.inv-table td:first-child{width:28%;}
+.inv-table td:first-child{width:30%;}
 .inv-table th:not(:first-child),
-.inv-table td:not(:first-child){width:14.4%;}
+.inv-table td:not(:first-child){width:14%;}
 .inv-table th.cc-num,
-.inv-table td.cc-num{text-align:center;padding-right:0;}
-
-/* Etiqueta "solo conteo manual": avisa que el insumo no está asociado al menú */
-.inv-manual-tag{
-  display:inline-block;margin-left:6px;
-  padding:1px 6px;border-radius:4px;
-  font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
-  color:var(--ink-soft);background:rgba(0,0,0,.06);border:1px solid var(--line);
-  vertical-align:middle;
-}
+.inv-table td.cc-num{text-align:center;padding-right:0;padding-left:0;}
+.inv-table thead th{font-size:11px;padding-bottom:10px;}
 
 /* ============================================================
    Nivel 1 — Categoría (PANES, PROTEÍNAS, BEBIDAS, EXTRAS)
-   El más prominente: fondo marrón, texto blanco, plegable.
+   Barra naranja de ancho completo: es el botón de plegar.
    ============================================================ */
 .inv-group td{
-  height:44px;padding:0 12px;
-  background:var(--brown);color:#fff;
-  font-family:'Baloo 2';font-size:13px;font-weight:800;
-  text-transform:uppercase;letter-spacing:.08em;
+  height:50px;padding:0 14px;
+  background:var(--orange-deep);color:#fff;
+  font-family:'Baloo 2';font-size:14px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.1em;
   border-bottom:none;cursor:pointer;user-select:none;
+  /* El borde superior del color del panel separa categorías sin
+     necesitar margin, que en tablas no funciona. */
+  border-top:12px solid var(--paper);
 }
-.inv-group:hover td{filter:brightness(1.14);}
+.inv-table tbody:first-of-type .inv-group td{border-top-width:0;}
+.inv-group:hover td{background:var(--orange);}
 
 .inv-group-toggle{
-  margin-right:8px;font-size:11px;
-  display:inline-block;width:12px;opacity:.85;
+  margin-right:10px;font-size:12px;
+  display:inline-block;width:12px;
 }
+.inv-group-name{vertical-align:middle;}
 
 /* ============================================================
-   Nivel 2 — Subgrupo (Refresco de lata, Carnes, etc.)
-   Fondo tintado, totales alineados a las mismas columnas que los ítems.
+   Nivel 2 — Subgrupo (Carnes, Salchichas, Refresco de lata…)
+   Banda tintada, un escalón adentro, totales legibles.
    ============================================================ */
 .inv-subgroup td{
-  height:44px;padding:0 8px;
-  background:rgba(120,74,32,.06);
+  height:46px;padding-top:0;padding-bottom:0;
+  background:rgba(92,58,33,.07);
   border-bottom:1px solid var(--line);
   cursor:pointer;user-select:none;
 }
-.inv-subgroup:hover td{background:rgba(120,74,32,.10);}
+.inv-subgroup td:first-child{padding-left:14px;}
+.inv-subgroup:hover td{background:rgba(92,58,33,.12);}
 
 .inv-subgroup-toggle{
-  margin-right:6px;font-size:11px;color:var(--ink-soft);
+  margin-right:8px;font-size:11px;color:var(--orange-deep);
   display:inline-block;width:12px;
 }
 .inv-subgroup-name{
-  font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--ink);
-  letter-spacing:.03em;
+  font-family:'Baloo 2';font-size:14.5px;font-weight:700;color:var(--ink);
+  vertical-align:middle;
 }
 
-/* Números de columna en fila de subgrupo, alineados con las cols de ítems */
+/* Totales del subgrupo: mismo tamaño que los del insumo pero en tinta
+   plena, para que se lean como el resumen de las filas de abajo. */
 .inv-sg-num{
-  font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--ink-soft);
+  font-family:'Baloo 2';font-size:15px;font-weight:700;color:var(--ink);
 }
-
-/* Badges de alerta (en categoría plegada y en subgrupo plegado) */
-.inv-subgroup-alerts{margin-left:10px;}
-.inv-alert-badge{
-  display:inline-block;margin-left:4px;padding:1px 7px;border-radius:5px;
-  font-family:'Inter';font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
-}
-.inv-alert-out{
-  background:rgba(193,80,46,.1);border:1px solid rgba(193,80,46,.35);color:var(--rust);
-}
-.inv-alert-low{
-  background:rgba(217,154,43,.18);border:1px solid rgba(217,154,43,.5);color:var(--brown);
-}
+.inv-sg-num.inv-muted{color:var(--ink-soft);font-weight:600;}
 
 /* ============================================================
-   Nivel 3 — Ítem individual (el más ligero)
+   Señales de agotado / por acabarse
+   Van en la fila de categoría y de subgrupo SIEMPRE, no solo al
+   plegar: el dueño tiene que ver "Chinotto agotado" sin abrir nada.
    ============================================================ */
-.inv-item-indent{padding-left:28px !important;}
+.inv-alerts{margin-left:12px;vertical-align:middle;white-space:nowrap;}
+.inv-alert-badge{
+  display:inline-block;margin-left:5px;padding:2px 8px;border-radius:6px;
+  font-family:'Inter';font-size:10px;font-weight:800;
+  letter-spacing:.4px;text-transform:uppercase;
+}
+.inv-alert-out{
+  background:rgba(193,80,46,.12);border:1px solid rgba(193,80,46,.4);color:var(--rust);
+}
+.inv-alert-low{
+  background:rgba(217,154,43,.2);border:1px solid rgba(217,154,43,.55);color:var(--brown);
+}
+/* Sobre la barra naranja los badges necesitan fondo propio para leerse. */
+.inv-group .inv-alert-out{background:#fff;border-color:#fff;color:var(--rust);}
+.inv-group .inv-alert-low{background:#fff;border-color:#fff;color:var(--brown);}
 
-.inv-item-name{display:block;font-size:13px;}
-.inv-item-note{display:block;color:var(--ink-soft);font-size:10px;font-weight:500;line-height:1.25;}
+/* ============================================================
+   Nivel 3 — Insumo (el más ligero de los tres)
+   ============================================================ */
+.inv-indent-1 td:first-child,
+td.inv-indent-1{padding-left:18px;}
+td.inv-indent-2{padding-left:38px;}
+
+.inv-item-name{
+  display:block;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3;
+}
+.inv-item-note{
+  display:block;color:var(--ink-soft);font-size:11px;font-weight:500;line-height:1.3;
+}
+
+/* Fila con insumo agotado: tinte apenas perceptible, suficiente para
+   que la vista caiga ahí al recorrer la tabla. */
+.inv-row-out td{background:rgba(193,80,46,.05);}
 
 .inv-muted{color:var(--ink-soft);}
 
-/* Campo "Ingresó hoy" */
+/* Etiqueta "solo conteo manual": informativa, no debe competir con el nombre */
+.inv-manual-tag{
+  display:inline-block;margin-left:7px;
+  padding:1px 6px;border-radius:4px;
+  font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
+  color:var(--ink-soft);background:rgba(0,0,0,.05);
+  vertical-align:middle;
+}
+
+/* Campo "Ingresó hoy" / "Sobrante de ayer" — 40px de alto por el uso en tablet */
 .inv-input{
-  width:78px;padding:7px 10px;border-radius:99px;border:1.5px solid var(--line);
+  width:84px;height:40px;padding:0 10px;border-radius:99px;
+  border:1.5px solid var(--line);
   background:var(--cream);color:var(--ink);text-align:center;
-  font-family:'JetBrains Mono';font-size:14px;font-weight:600;
+  font-family:'JetBrains Mono';font-size:15px;font-weight:600;
 }
 .inv-input::placeholder{color:var(--ink-soft);font-weight:400;opacity:.4;}
 .inv-input:focus{outline:none;border-color:var(--orange);background:var(--paper);}
 
-/* Cuántos quedan, con su aviso de color */
-.inv-remaining{font-family:'Baloo 2';font-size:13px;font-weight:700;color:var(--ink);}
+/* Cifras de solo lectura: Disponible y Vendido */
+.inv-fig{font-family:'Baloo 2';font-size:15px;font-weight:600;color:var(--ink);}
+.inv-fig.inv-muted{font-weight:500;}
+
+/* Cuántos quedan: la cifra que más se mira, la más grande de la fila */
+.inv-remaining{font-family:'Baloo 2';font-size:16px;font-weight:700;color:var(--ink);}
 .inv-remaining em{
-  margin-left:7px;padding:1px 7px;border-radius:5px;font-style:normal;
-  font-family:'Inter';font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+  margin-left:7px;padding:2px 7px;border-radius:6px;font-style:normal;
+  font-family:'Inter';font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
 }
 .inv-remaining.inv-low{color:var(--brown);}
-.inv-remaining.inv-low em{background:rgba(217,154,43,.18);border:1px solid rgba(217,154,43,.5);}
+.inv-remaining.inv-low em{background:rgba(217,154,43,.2);border:1px solid rgba(217,154,43,.55);}
 .inv-remaining.inv-out{color:var(--rust);}
-.inv-remaining.inv-out em{background:rgba(193,80,46,.1);border:1px solid rgba(193,80,46,.35);}
+.inv-remaining.inv-out em{background:rgba(193,80,46,.12);border:1px solid rgba(193,80,46,.4);}
 
 /* Sobrante de ayer: editable, con marca cuando se corrigió a mano */
-.inv-carry{position:relative;display:flex;align-items:center;justify-content:center;width:78px;margin:0 auto;}
+.inv-carry{position:relative;display:flex;align-items:center;justify-content:center;width:84px;margin:0 auto;}
 .inv-reset{
-  position:absolute;left:calc(100% + 1px);width:24px;height:24px;border:none;background:none;cursor:pointer;
-  color:var(--ink-soft);font-size:15px;line-height:1;touch-action:manipulation;
+  position:absolute;left:calc(100% + 1px);width:26px;height:26px;border:none;background:none;cursor:pointer;
+  color:var(--ink-soft);font-size:15px;line-height:1;touch-action:manipulation;border-radius:50%;
 }
 .inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
-.inv-reset{border-radius:50%;}
 .inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}
 
 /* Botón secundario admin */
