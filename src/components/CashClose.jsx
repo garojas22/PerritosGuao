@@ -23,10 +23,18 @@ function loadCollapsed() {
 
 const COLLAPSED_GROUPS_KEY = 'perritos_inv_groups_collapsed';
 
+/**
+ * Devuelve `null` cuando nunca se ha tocado nada: eso significa "todas las
+ * categorías cerradas", que es como debe abrir la tabla. No se puede
+ * representar con un Set lleno porque los nombres de las categorías no se
+ * conocen hasta que el inventario está calculado.
+ */
 function loadCollapsedGroups() {
   try {
-    return new Set(JSON.parse(localStorage.getItem(COLLAPSED_GROUPS_KEY)) || []);
-  } catch { return new Set(); }
+    const raw = localStorage.getItem(COLLAPSED_GROUPS_KEY);
+    if (raw === null) return null;
+    return new Set(JSON.parse(raw) || []);
+  } catch { return null; }
 }
 
 function computeGroupAlerts(rows, subgroups) {
@@ -181,7 +189,7 @@ function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
   return (
     <tr className="inv-subgroup" onClick={onToggle} role="button" aria-expanded={isOpen}>
       <td>
-        <span className="inv-subgroup-toggle">{isOpen ? '▾' : '▸'}</span>
+        <span className="inv-sub-chevron">{isOpen ? '▾' : '▸'}</span>
         <span className="inv-subgroup-name">{subgroup}</span>
         <AlertBadges alerts={alerts} />
       </td>
@@ -218,6 +226,9 @@ export default function CashClose({
   }, [collapsed]);
 
   useEffect(() => {
+    // null = nunca se tocó. Guardarlo como [] haría que la próxima visita
+    // abriera con todas las categorías desplegadas.
+    if (collapsedGroups === null) return;
     try {
       localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...collapsedGroups]));
     } catch { /* localStorage lleno */ }
@@ -234,6 +245,10 @@ export default function CashClose({
 
   function toggleGroup(group) {
     setCollapsedGroups(prev => {
+      // Primer clic de la sesión: estaba todo cerrado, se abre solo este.
+      if (prev === null) {
+        return new Set(inventory.groups.map(g => g.group).filter(g => g !== group));
+      }
       const next = new Set(prev);
       if (next.has(group)) next.delete(group);
       else next.add(group);
@@ -322,21 +337,32 @@ export default function CashClose({
             </tr>
           </thead>
           {inventory.groups.map(({ group, rows, subgroups }) => {
-            const isGroupOpen = !collapsedGroups.has(group);
+            const isGroupOpen = collapsedGroups !== null && !collapsedGroups.has(group);
             const groupAlerts = computeGroupAlerts(rows, subgroups);
             return (
               <tbody key={group}>
                 {/* Fila de categoría principal — plegable */}
-                <tr
-                  className="inv-group"
-                  onClick={() => toggleGroup(group)}
-                  role="button"
-                  aria-expanded={isGroupOpen}
-                >
+                <tr className={`inv-group ${isGroupOpen ? 'is-open' : ''}`}>
                   <td colSpan={6}>
-                    <span className="inv-group-toggle">{isGroupOpen ? '▾' : '▸'}</span>
-                    <span className="inv-group-name">{group}</span>
-                    <AlertBadges alerts={groupAlerts} />
+                    {/* La píldora va dentro de la celda y no en el <tr>:
+                        una fila de tabla no acepta border-radius. */}
+                    <div
+                      className="inv-group-bar"
+                      onClick={() => toggleGroup(group)}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={isGroupOpen}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          toggleGroup(group);
+                        }
+                      }}
+                    >
+                      <span className="inv-chevron">{isGroupOpen ? '▾' : '▸'}</span>
+                      <span className="inv-group-name">{group}</span>
+                      <AlertBadges alerts={groupAlerts} />
+                    </div>
                   </td>
                 </tr>
 

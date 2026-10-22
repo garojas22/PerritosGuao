@@ -2,9 +2,12 @@
    Inventario en el cierre de caja
    (se apoya en .cc-panel, .cc-table y .cc-btn de cash-close.css)
 
-   Tres niveles con peso visual DECRECIENTE. La regla que ordena
-   todo el archivo: categoría > subgrupo > insumo. Si un insumo se
-   ve más pesado que su grupo, la jerarquía está rota.
+   Sistema visual: el MISMO del nav de arriba (nav.tabs).
+     - radio de píldora 999px, nunca esquinas vivas
+     - Inter 700 para los rótulos, Baloo 2 solo para las cifras
+       (igual que .cc-stat-value)
+     - naranja reservado a lo que está ACTIVO/abierto, no a todo
+   Tres niveles con peso decreciente: categoría > subgrupo > insumo.
    ============================================================ */
 
 .inv-head{
@@ -15,13 +18,17 @@
 .inv-head-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;}
 
 .inv-note{
-  margin:0 0 12px;padding:8px 12px;border-radius:10px;
+  margin:0 0 12px;padding:8px 14px;border-radius:999px;
   background:rgba(217,154,43,.14);border:1px solid rgba(217,154,43,.4);
   color:var(--brown);font-size:12px;font-weight:600;line-height:1.4;
 }
 
-/* Sube a 880 porque las cifras ahora son más grandes y a 820 se apretaban. */
-.inv-table{min-width:880px;table-layout:fixed;}
+/* separate (y no collapse) es lo que permite redondear las filas:
+   con border-collapse:collapse el navegador ignora border-radius en las celdas. */
+.inv-table{
+  min-width:880px;table-layout:fixed;
+  border-collapse:separate;border-spacing:0;
+}
 .inv-table td{vertical-align:middle;height:48px;padding-top:6px;padding-bottom:6px;}
 .inv-table th:first-child,
 .inv-table td:first-child{width:30%;}
@@ -32,52 +39,73 @@
 .inv-table thead th{font-size:11px;padding-bottom:10px;}
 
 /* ============================================================
-   Nivel 1 — Categoría (PANES, PROTEÍNAS, BEBIDAS, EXTRAS)
-   Barra naranja de ancho completo: es el botón de plegar.
+   Nivel 1 — Categoría (Panes, Proteínas, Bebidas, Extras)
+   Píldora igual que una pestaña del nav: apagada cuando está
+   cerrada, naranja cuando está abierta.
    ============================================================ */
 .inv-group td{
-  height:50px;padding:0 14px;
-  background:var(--orange-deep);color:#fff;
-  font-family:'Baloo 2';font-size:14px;font-weight:800;
-  text-transform:uppercase;letter-spacing:.1em;
-  border-bottom:none;cursor:pointer;user-select:none;
-  /* El borde superior del color del panel separa categorías sin
-     necesitar margin, que en tablas no funciona. */
-  border-top:12px solid var(--paper);
+  height:auto;padding:0;border-bottom:none;background:transparent;
 }
-.inv-table tbody:first-of-type .inv-group td{border-top-width:0;}
-.inv-group:hover td{background:var(--orange);}
 
-.inv-group-toggle{
-  margin-right:10px;font-size:12px;
-  display:inline-block;width:12px;
+.inv-group-bar{
+  display:flex;align-items:center;gap:12px;
+  height:50px;padding:0 18px;margin:14px 0 10px;
+  border-radius:999px;
+  background:var(--cream);border:1.5px solid var(--line);
+  cursor:pointer;user-select:none;
+  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;
 }
-.inv-group-name{vertical-align:middle;}
+.inv-table tbody:first-of-type .inv-group-bar{margin-top:2px;}
+.inv-group-bar:hover{border-color:rgba(227,91,30,.45);}
+
+.inv-group.is-open .inv-group-bar{
+  background:var(--orange);border-color:var(--orange);
+  box-shadow:0 2px 8px rgba(227,91,30,.35);
+}
+
+.inv-group-name{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:14.5px;
+  color:var(--ink);letter-spacing:.01em;
+}
+.inv-group.is-open .inv-group-name{color:#fff;}
+
+/* Chevron en círculo: el mismo gesto que el punto naranja del header */
+.inv-chevron{
+  flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--orange);color:#fff;font-size:10px;line-height:1;
+  transition:transform .15s ease,background .15s ease,color .15s ease;
+}
+.inv-group.is-open .inv-chevron{background:#fff;color:var(--orange-deep);}
 
 /* ============================================================
    Nivel 2 — Subgrupo (Carnes, Salchichas, Refresco de lata…)
-   Banda tintada, un escalón adentro, totales legibles.
+   Banda redondeada, un escalón adentro, sin línea dura.
    ============================================================ */
 .inv-subgroup td{
   height:46px;padding-top:0;padding-bottom:0;
-  background:rgba(92,58,33,.07);
-  border-bottom:1px solid var(--line);
+  background:rgba(92,58,33,.055);
+  border-bottom:3px solid var(--paper);
   cursor:pointer;user-select:none;
+  transition:background .15s ease;
 }
-.inv-subgroup td:first-child{padding-left:14px;}
-.inv-subgroup:hover td{background:rgba(92,58,33,.12);}
+.inv-subgroup td:first-child{border-radius:999px 0 0 999px;padding-left:22px;}
+.inv-subgroup td:last-child{border-radius:0 999px 999px 0;}
+.inv-subgroup:hover td{background:rgba(92,58,33,.1);}
 
-.inv-subgroup-toggle{
-  margin-right:8px;font-size:11px;color:var(--orange-deep);
-  display:inline-block;width:12px;
+.inv-sub-chevron{
+  flex:0 0 auto;width:21px;height:21px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(227,91,30,.14);color:var(--orange-deep);
+  font-size:9px;line-height:1;margin-right:10px;vertical-align:middle;
 }
 .inv-subgroup-name{
-  font-family:'Baloo 2';font-size:14.5px;font-weight:700;color:var(--ink);
-  vertical-align:middle;
+  font-family:'Inter',sans-serif;font-weight:700;font-size:13.5px;
+  color:var(--ink);vertical-align:middle;
 }
 
-/* Totales del subgrupo: mismo tamaño que los del insumo pero en tinta
-   plena, para que se lean como el resumen de las filas de abajo. */
+/* Totales del subgrupo: Baloo, igual que las cifras de los insumos,
+   pero en tinta plena porque resumen a las de abajo. */
 .inv-sg-num{
   font-family:'Baloo 2';font-size:15px;font-weight:700;color:var(--ink);
 }
@@ -85,14 +113,15 @@
 
 /* ============================================================
    Señales de agotado / por acabarse
-   Van en la fila de categoría y de subgrupo SIEMPRE, no solo al
-   plegar: el dueño tiene que ver "Chinotto agotado" sin abrir nada.
+   Van SIEMPRE en la categoría y en el subgrupo, no solo al plegar:
+   con todo cerrado el dueño tiene que ver que se acabó el Chinotto.
    ============================================================ */
-.inv-alerts{margin-left:12px;vertical-align:middle;white-space:nowrap;}
+.inv-alerts{margin-left:auto;display:flex;gap:6px;white-space:nowrap;}
+.inv-subgroup .inv-alerts{display:inline-flex;margin-left:12px;vertical-align:middle;}
 .inv-alert-badge{
-  display:inline-block;margin-left:5px;padding:2px 8px;border-radius:6px;
-  font-family:'Inter';font-size:10px;font-weight:800;
-  letter-spacing:.4px;text-transform:uppercase;
+  display:inline-block;padding:3px 10px;border-radius:999px;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.2px;
 }
 .inv-alert-out{
   background:rgba(193,80,46,.12);border:1px solid rgba(193,80,46,.4);color:var(--rust);
@@ -100,16 +129,15 @@
 .inv-alert-low{
   background:rgba(217,154,43,.2);border:1px solid rgba(217,154,43,.55);color:var(--brown);
 }
-/* Sobre la barra naranja los badges necesitan fondo propio para leerse. */
-.inv-group .inv-alert-out{background:#fff;border-color:#fff;color:var(--rust);}
-.inv-group .inv-alert-low{background:#fff;border-color:#fff;color:var(--brown);}
+/* Sobre la píldora naranja abierta necesitan fondo propio para leerse */
+.inv-group.is-open .inv-alert-out,
+.inv-group.is-open .inv-alert-low{background:#fff;border-color:#fff;}
 
 /* ============================================================
    Nivel 3 — Insumo (el más ligero de los tres)
    ============================================================ */
-.inv-indent-1 td:first-child,
-td.inv-indent-1{padding-left:18px;}
-td.inv-indent-2{padding-left:38px;}
+td.inv-indent-1{padding-left:26px;}
+td.inv-indent-2{padding-left:48px;}
 
 .inv-item-name{
   display:block;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3;
@@ -118,27 +146,30 @@ td.inv-indent-2{padding-left:38px;}
   display:block;color:var(--ink-soft);font-size:11px;font-weight:500;line-height:1.3;
 }
 
-/* Fila con insumo agotado: tinte apenas perceptible, suficiente para
-   que la vista caiga ahí al recorrer la tabla. */
+/* Insumo agotado: tinte apenas perceptible, suficiente para que la
+   vista caiga ahí al recorrer la tabla. Redondeado como todo lo demás. */
 .inv-row-out td{background:rgba(193,80,46,.05);}
+.inv-row-out td:first-child{border-radius:999px 0 0 999px;}
+.inv-row-out td:last-child{border-radius:0 999px 999px 0;}
 
 .inv-muted{color:var(--ink-soft);}
 
-/* Etiqueta "solo conteo manual": informativa, no debe competir con el nombre */
+/* Etiqueta "solo conteo manual": informativa, no compite con el nombre */
 .inv-manual-tag{
   display:inline-block;margin-left:7px;
-  padding:1px 6px;border-radius:4px;
+  padding:2px 8px;border-radius:999px;
   font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
   color:var(--ink-soft);background:rgba(0,0,0,.05);
   vertical-align:middle;
 }
 
-/* Campo "Ingresó hoy" / "Sobrante de ayer" — 40px de alto por el uso en tablet */
+/* Campos editables — 40px de alto por el uso con el dedo en tablet */
 .inv-input{
-  width:84px;height:40px;padding:0 10px;border-radius:99px;
+  width:84px;height:40px;padding:0 10px;border-radius:999px;
   border:1.5px solid var(--line);
   background:var(--cream);color:var(--ink);text-align:center;
   font-family:'JetBrains Mono';font-size:15px;font-weight:600;
+  transition:border-color .15s ease,background .15s ease;
 }
 .inv-input::placeholder{color:var(--ink-soft);font-weight:400;opacity:.4;}
 .inv-input:focus{outline:none;border-color:var(--orange);background:var(--paper);}
@@ -150,8 +181,8 @@ td.inv-indent-2{padding-left:38px;}
 /* Cuántos quedan: la cifra que más se mira, la más grande de la fila */
 .inv-remaining{font-family:'Baloo 2';font-size:16px;font-weight:700;color:var(--ink);}
 .inv-remaining em{
-  margin-left:7px;padding:2px 7px;border-radius:6px;font-style:normal;
-  font-family:'Inter';font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+  margin-left:7px;padding:3px 9px;border-radius:999px;font-style:normal;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2px;
 }
 .inv-remaining.inv-low{color:var(--brown);}
 .inv-remaining.inv-low em{background:rgba(217,154,43,.2);border:1px solid rgba(217,154,43,.55);}
@@ -167,7 +198,7 @@ td.inv-indent-2{padding-left:38px;}
 .inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
 .inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}
 
-/* Botón secundario admin */
+/* Botón secundario admin — mismo lenguaje que .cc-btn */
 .cc-btn-secondary{
   background:var(--cream);color:var(--ink);
   border:1.5px solid var(--line);
