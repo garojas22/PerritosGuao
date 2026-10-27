@@ -10,6 +10,7 @@ import {
 import { downloadSalesExcel } from '../utils/salesExcel';
 import { summarizeInventory } from '../utils/inventoryReport';
 import { PAY_MOBILE, getOrderPayments, isSplitPayment, paymentBs } from '../utils/payment';
+import { useBcvRateInfo, setManualRate, clearManualRate } from '../hooks/useBcvRate';
 import { describeLine, partTitle } from '../utils/lineOptions';
 
 // Clave localStorage para el estado abierto/cerrado de los subgrupos.
@@ -91,7 +92,21 @@ function StockInput({ value, onCommit, label, className = 'inv-input' }) {
 const INV_STATUS_LABEL = { out: 'Agotado', low: 'Poco' };
 
 /** Fila de datos del inventario (insumo individual). */
-function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem, isAdmin, onEditItem }) {
+/** "= 4 paquetes" bajo la casilla, para insumos que llegan empacados. */
+function PackHint({ pack, value }) {
+  if (!pack) return null;
+  const units = Number(value);
+  if (!Number.isFinite(units) || units <= 0) {
+    return <span className="inv-pack-hint">1 paq. = {pack}</span>;
+  }
+  const packs = units / pack;
+  const label = Number.isInteger(packs)
+    ? `= ${packs} paq.`
+    : `= ${Math.floor(packs)} paq. + ${units % pack}`;
+  return <span className="inv-pack-hint">{label}</span>;
+}
+
+function InvRow({ row, dayKey, onSetStock, onSetStart, onSetWaste, isSubgroupItem, isAdmin, onEditItem }) {
   return (
     <tr key={row.id} className={row.status ? `inv-row-${row.status}` : ''}>
       {/* El insumo es el nivel MÁS ligero: sin cc-strong, que lo dejaba
@@ -143,10 +158,19 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem, isAdmin, 
           onCommit={value => onSetStock(dayKey, row.id, value)}
           label={`Ingresó: ${row.name}`}
         />
+        <PackHint pack={row.pack} value={row.entered} />
+      </td>
+      <td className="cc-num">
+        <StockInput
+          className="inv-input inv-input-waste"
+          value={row.wasted || null}
+          onCommit={value => onSetWaste(dayKey, row.id, value)}
+          label={`Dañado: ${row.name}`}
+        />
       </td>
       <td className="cc-num">
         <span className={`inv-fig ${row.available === null ? 'inv-muted' : ''}`}>
-          {row.available !== null ? row.available : '—'}
+          {row.available !== null ? row.available : '–'}
         </span>
       </td>
       <td className="cc-num">
@@ -158,7 +182,7 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, isSubgroupItem, isAdmin, 
             {row.remaining}
             {row.status && <em>{INV_STATUS_LABEL[row.status]}</em>}
           </span>
-        ) : <span className="inv-fig inv-muted">—</span>}
+        ) : <span className="inv-fig inv-muted">–</span>}
       </td>
     </tr>
   );
@@ -185,12 +209,12 @@ function AlertBadges({ alerts }) {
   );
 }
 
-/** Celda numérica de una fila de subgrupo: el total, o "—" si nadie ingresó nada. */
+/** Celda numérica de una fila de subgrupo: el total, o "–" si nadie ingresó nada. */
 function SgNum({ value }) {
   return (
     <td className="cc-num">
       <span className={`inv-sg-num ${value === null ? 'inv-muted' : ''}`}>
-        {value !== null ? value : '—'}
+        {value !== null ? value : '–'}
       </span>
     </td>
   );
@@ -208,6 +232,7 @@ function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
       </td>
       <SgNum value={summary.carry} />
       <SgNum value={summary.entered} />
+      <SgNum value={summary.wasted || null} />
       <SgNum value={summary.available} />
       <SgNum value={summary.sold} />
       {/* El total del subgrupo NO lleva etiqueta "Agotado": decía
@@ -218,9 +243,96 @@ function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
   );
 }
 
+/**
+ * Tasa del día. Solo el administrador la toca: si el trabajador pudiera
+ * cambiarla, el día que falte plata en la caja la sospecha cae sobre él
+ * aunque no haya hecho nada.
+ *
+ * La tasa con la que se cobró cada pedido ya queda guardada en la venta
+ * (`bcvRate`), así que cambiarla hoy no altera el histórico.
+ */
+function RatePanel() {
+  const { rate, autoRate, isManual, ageHours } = useBcvRateInfo();
+  const [draft, setDraft] = useState('');
+
+  function apply(event) {
+    event.preventDefault();
+    const value = Number(String(draft).replace(',', '.'));
+    if (!Number.isFinite(value) || value <= 0) return;
+    setManualRate(value);
+    setDraft('');
+  }
+
+  // Más de un día con la misma tasa manual casi siempre es un olvido, no una
+  // decisión: el riesgo real no es ponerla mal, es dejarla puesta.
+  const isStale = isManual && ageHours !== null && ageHours >= 24;
+
+  return (
+    <section className="cc-panel cc-panel-wide rate-panel">
+      <div className="inv-head">
+        <div>
+          <h3>Tasa del día</h3>
+          <p className="cc-panel-hint">
+            Los bolívares de cada cobro salen de aquí. Normalmente se toma sola del dólar oficial;
+            fíjala a mano solo cuando la del día no refleje lo que se está cobrando en el local.
+          </p>
+        </div>
+      </div>
+
+      <div className="rate-row">
+        <div className="rate-current">
+          <span className="cc-stat-label">En uso ahora</span>
+          <strong className="rate-value">
+            {rate !== null && rate !== undefined ? `Bs. ${Number(rate).toFixed(2)}` : 'Sin tasa'}
+          </strong>
+          <span className={`rate-tag ${isManual ? 'rate-tag-manual' : 'rate-tag-auto'}`}>
+            {isManual ? 'Fijada a mano' : 'Automática'}
+          </span>
+        </div>
+
+        {isManual && (
+          <div className="rate-current">
+            <span className="cc-stat-label">Automática hoy</span>
+            <strong className="rate-value rate-value-soft">
+              {autoRate !== null ? `Bs. ${Number(autoRate).toFixed(2)}` : '–'}
+            </strong>
+          </div>
+        )}
+
+        <form className="rate-form" onSubmit={apply}>
+          <input
+            className="inv-input rate-input"
+            inputMode="decimal"
+            value={draft}
+            onChange={event => setDraft(event.target.value)}
+            placeholder="900"
+            aria-label="Nueva tasa en bolívares"
+          />
+          <button type="submit" className="cc-btn cc-btn-secondary" disabled={draft.trim() === ''}>
+            Fijar tasa
+          </button>
+          {isManual && (
+            <button type="button" className="cc-btn cc-btn-danger" onClick={clearManualRate}>
+              Volver a la automática
+            </button>
+          )}
+        </form>
+      </div>
+
+      {isManual && (
+        <div className={`inv-note ${isStale ? 'rate-note-stale' : ''}`}>
+          {isStale
+            ? `Esta tasa lleva ${Math.floor(ageHours / 24)} día(s) puesta a mano. Revísala o vuelve a la automática: el sistema no la está actualizando solo.`
+            : 'Mientras esté fijada a mano, el sistema no usa la tasa del dólar oficial.'}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function CashClose({
-  salesByDay, availableDays, today, stockByDay = {}, startByDay = {},
-  onSetStock, onSetStart, onClearStock, onRemoveSale, onClearDay,
+  salesByDay, availableDays, today, stockByDay = {}, startByDay = {}, wasteByDay = {},
+  onSetStock, onSetStart, onSetWaste, onClearStock, onRemoveSale, onClearDay,
   isAdmin = false,
   inventoryItems,
   usedInventoryIds,
@@ -276,6 +388,7 @@ export default function CashClose({
     ...availableDays,
     ...Object.keys(stockByDay),
     ...Object.keys(startByDay),
+    ...Object.keys(wasteByDay),
   ])].sort((a, b) => b.localeCompare(a));
 
   const dayKey = dayOptions.includes(selectedDay) ? selectedDay : today;
@@ -287,11 +400,12 @@ export default function CashClose({
   const summary = useMemo(() => summarizeSales(sales), [sales]);
   const isToday = dayKey === getBusinessDayKey();
   const inventory = useMemo(
-    () => summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay, inventoryItems, usedInventoryIds }),
-    [dayKey, sales, stockByDay, salesByDay, startByDay, inventoryItems, usedInventoryIds],
+    () => summarizeInventory({ dayKey, sales, stockByDay, salesByDay, startByDay, wasteByDay, inventoryItems, usedInventoryIds }),
+    [dayKey, sales, stockByDay, salesByDay, startByDay, wasteByDay, inventoryItems, usedInventoryIds],
   );
   const hasEntries = Object.keys(stockByDay[dayKey] || {}).length > 0
-    || Object.keys(startByDay[dayKey] || {}).length > 0;
+    || Object.keys(startByDay[dayKey] || {}).length > 0
+    || Object.keys(wasteByDay[dayKey] || {}).length > 0;
 
   async function handleExport() {
     setIsExporting(true);
@@ -304,6 +418,8 @@ export default function CashClose({
       setIsExporting(false);
     }
   }
+
+  const ratePanel = isAdmin ? <RatePanel /> : null;
 
   const inventoryPanel = (
     <section className="cc-panel cc-panel-wide">
@@ -345,6 +461,7 @@ export default function CashClose({
               <th>Insumo</th>
               <th className="cc-num">Sobrante de ayer</th>
               <th className="cc-num">Ingresó</th>
+              <th className="cc-num">Dañado</th>
               <th className="cc-num">Disponible</th>
               <th className="cc-num">Vendido</th>
               <th className="cc-num">Quedan</th>
@@ -355,9 +472,9 @@ export default function CashClose({
             const groupAlerts = computeGroupAlerts(rows, subgroups);
             return (
               <tbody key={group}>
-                {/* Fila de categoría principal — plegable */}
+                {/* Fila de categoría principal – plegable */}
                 <tr className={`inv-group ${isGroupOpen ? 'is-open' : ''}`}>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     {/* La píldora va dentro de la celda y no en el <tr>:
                         una fila de tabla no acepta border-radius. */}
                     <div
@@ -382,7 +499,7 @@ export default function CashClose({
 
                 {/* Ítems sin subgrupo: se muestran directamente */}
                 {isGroupOpen && rows.map(row => (
-                  <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} isAdmin={isAdmin} onEditItem={onEditItem} />
+                  <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} onSetWaste={onSetWaste} isAdmin={isAdmin} onEditItem={onEditItem} />
                 ))}
 
                 {/* Subgrupos plegables */}
@@ -398,7 +515,7 @@ export default function CashClose({
                         onToggle={() => toggleSubgroup(key)}
                       />
                       {isOpen && subRows.map(row => (
-                        <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} isSubgroupItem isAdmin={isAdmin} onEditItem={onEditItem} />
+                        <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} onSetWaste={onSetWaste} isSubgroupItem isAdmin={isAdmin} onEditItem={onEditItem} />
                       ))}
                     </React.Fragment>
                   );
@@ -451,6 +568,7 @@ export default function CashClose({
             Todavía no hay ventas cobradas en este día.
             <span>Los pedidos entran aquí cuando los cobras desde "Pedidos activos".</span>
           </div>
+          {ratePanel}
           {inventoryPanel}
         </>
       ) : (
@@ -532,6 +650,7 @@ export default function CashClose({
             </section>
           </div>
 
+          {ratePanel}
           {inventoryPanel}
 
           <section className="cc-panel cc-panel-wide">

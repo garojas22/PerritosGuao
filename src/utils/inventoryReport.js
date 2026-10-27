@@ -9,7 +9,7 @@ import { INVENTORY_ITEMS, getInventoryName } from '../data/inventory';
  *
  * Por insumo y por día:
  *   Disponible = Sobrante de ayer + Ingresó hoy
- *   Quedan     = Disponible − Vendido
+ *   Quedan     = Disponible − Vendido − Dañado
  * El "sobrante de ayer" se arrastra solo desde el primer día en que se
  * ingresó ese insumo. Si el conteo real no coincide, se puede corregir el
  * sobrante con que empieza un día (`startByDay`): esa cifra reemplaza a la
@@ -41,8 +41,11 @@ function countSalesWithoutUses(sales = []) {
  * Sobrante con que cada insumo llega a `dayKey` (al cierre del día anterior).
  * Un insumo que nunca se ingresó no aparece en el resultado: no hay cifra que arrastrar.
  */
-export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDay = {}) {
-  const days = [...new Set([...Object.keys(stockByDay), ...Object.keys(salesByDay), ...Object.keys(startByDay)])]
+export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDay = {}, wasteByDay = {}) {
+  const days = [...new Set([
+    ...Object.keys(stockByDay), ...Object.keys(salesByDay),
+    ...Object.keys(startByDay), ...Object.keys(wasteByDay),
+  ])]
     .filter(day => day < dayKey)
     .sort();
 
@@ -61,6 +64,12 @@ export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDa
     Object.entries(countUsage(salesByDay[day] || [])).forEach(([id, qty]) => {
       if (balance[id] !== undefined) balance[id] -= qty;
     });
+
+    // Lo dañado sale del inventario igual que lo vendido: si no se restara
+    // aquí, el sobrante de mañana vendría inflado por lo que se botó hoy.
+    Object.entries(wasteByDay[day] || {}).forEach(([id, qty]) => {
+      if (balance[id] !== undefined) balance[id] -= (Number(qty) || 0);
+    });
   });
 
   return balance;
@@ -78,7 +87,7 @@ const LOW_STOCK_UNITS = 5;
 /**
  * Suma acumulada de un campo numérico en un array de filas.
  * Devuelve null si TODAS las filas tienen ese campo en null
- * (nadie ha ingresado nada → no existe cifra que mostrar).
+ * (nadie ha ingresado nada – no existe cifra que mostrar).
  */
 function sumField(rows, field) {
   const withData = rows.filter(row => row[field] !== null);
@@ -93,6 +102,7 @@ function computeSubgroupSummary(rows) {
     entered:   sumField(rows, 'entered'),
     available: sumField(rows, 'available'),
     sold:      rows.reduce((acc, r) => acc + r.sold, 0),
+    wasted:    rows.reduce((acc, r) => acc + r.wasted, 0),
     remaining: sumField(rows, 'remaining'),
     // cuántos ítems están agotados o por acabarse: se muestra aunque el grupo esté plegado
     alerts: {
@@ -122,13 +132,15 @@ export function summarizeInventory({
   stockByDay = {},
   salesByDay = {},
   startByDay = {},
+  wasteByDay = {},
   inventoryItems = INVENTORY_ITEMS,
   usedInventoryIds = null,
 }) {
   const usage = countUsage(sales);
-  const carry = getCarryOver(dayKey, stockByDay, salesByDay, startByDay);
+  const carry = getCarryOver(dayKey, stockByDay, salesByDay, startByDay, wasteByDay);
   const entered = stockByDay[dayKey] || {};
   const fixedStart = startByDay[dayKey] || {};
+  const wasted = wasteByDay[dayKey] || {};
 
   // Un insumo que ya no está en la lista pero sí se vendió no debe desaparecer del reporte.
   const knownIds = new Set(inventoryItems.map(item => item.id));
@@ -140,6 +152,7 @@ export function summarizeInventory({
   const groupMap = new Map();
   let hasStock = false;
   let soldTotal = 0;
+  let wastedTotal = 0;
 
   [...inventoryItems, ...extraItems].forEach(item => {
     const sold = usage[item.id] || 0;
@@ -149,10 +162,13 @@ export function summarizeInventory({
     const previous = adjusted
       ? fixedStart[item.id]
       : (Number.isFinite(carry[item.id]) ? carry[item.id] : null);
-    const tracked = ingreso !== null || previous !== null;
+    const danado = Number.isFinite(wasted[item.id]) ? wasted[item.id] : 0;
+    // Anotar daño también pone al insumo bajo seguimiento: si no, alguien
+    // podría escribir "se dañaron 3" y la fila seguiría mostrando "–".
+    const tracked = ingreso !== null || previous !== null || danado !== 0;
 
     const available = tracked ? (previous ?? 0) + (ingreso ?? 0) : null;
-    const remaining = tracked ? available - sold : null;
+    const remaining = tracked ? available - sold - danado : null;
 
     let status = null;
     if (tracked) {
@@ -162,6 +178,7 @@ export function summarizeInventory({
 
     if (tracked) hasStock = true;
     soldTotal += sold;
+    wastedTotal += danado;
 
     // manualOnly: ningún producto del menú activo consume este insumo.
     // El dueño solo puede registrar entradas/salidas a mano.
@@ -176,11 +193,13 @@ export function summarizeInventory({
       group:        item.group,
       subgroup:     item.subgroup,
       isCustom:     item.isCustom === true,
+      pack:         Number.isFinite(Number(item.pack)) && Number(item.pack) > 1 ? Number(item.pack) : null,
       carry:        previous,
       carryAdjusted: adjusted,
       entered:      ingreso,
       available,
       sold,
+      wasted:       danado,
       remaining,
       status,
       manualOnly,
@@ -213,6 +232,7 @@ export function summarizeInventory({
     groups,
     hasStock,
     soldTotal,
+    wastedTotal,
     salesWithoutDetail: countSalesWithoutUses(sales),
   };
 }

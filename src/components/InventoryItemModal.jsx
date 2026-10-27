@@ -35,6 +35,7 @@ export default function InventoryItemModal({
   const [group, setGroup]       = useState(item?.group ?? 'Bebidas');
   const [subgroup, setSubgroup] = useState(item?.subgroup ?? '');
   const [note, setNote]         = useState(item?.note ?? '');
+  const [pack, setPack]         = useState(item?.pack ? String(item.pack) : '');
   const [error, setError]       = useState('');
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function InventoryItemModal({
     // Slug solo para que el id sea legible al depurar; la unicidad la da el
     // timestamp, no el nombre. Por eso renombrar después no genera otro id.
     const slug = trimmedName
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
     onSave({
@@ -65,6 +66,9 @@ export default function InventoryItemModal({
       group,
       subgroup: subgroup.trim() || undefined,
       note: note.trim() || undefined,
+      // El inventario SIEMPRE se lleva en unidades. `pack` es solo la ayuda
+      // para convertir al cargar: si llegan 4 paquetes de 5, son 20 unidades.
+      pack: Number(pack) > 1 ? Number(pack) : undefined,
       isCustom: true,
     });
   }
@@ -81,7 +85,7 @@ export default function InventoryItemModal({
               {isNew ? 'Nuevo insumo' : isReadOnly ? 'Insumo del sistema' : 'Editar insumo'}
             </h2>
           </div>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar ventana">×</button>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar ventana">✕</button>
         </div>
 
         {isNew && (
@@ -135,6 +139,18 @@ export default function InventoryItemModal({
                 disabled={isReadOnly}
               />
               <small>Opcional. Agrupa marcas de una misma presentación.</small>
+            </label>
+
+            <label>
+              Unidades por paquete
+              <input
+                inputMode="numeric"
+                value={pack}
+                onChange={event => setPack(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="Ej. 5"
+                disabled={isReadOnly}
+              />
+              <small>Opcional. El conteo siempre va en unidades; esto solo recuerda la equivalencia al cargar.</small>
             </label>
 
             <label className="modal-field-wide">

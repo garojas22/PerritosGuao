@@ -7,16 +7,22 @@
  *    no borrarlo de aquí.
  *  - El campo `subgroup` agrupa marcas de un mismo producto en la tabla del
  *    cierre: los ítems sin subgroup se muestran directamente bajo su grupo.
+ *  - El inventario se lleva SIEMPRE en unidades, nunca en paquetes. Un insumo
+ *    que llega empacado puede declarar `pack: N` (unidades por paquete): no
+ *    cambia el conteo, solo muestra la equivalencia al cargar ("= 4 paq.").
+ *    Si un insumo ya existente se contaba por paquete, NO se le cambia el
+ *    significado: se crea uno nuevo con otro id y el viejo se deja morir, o el
+ *    histórico de los días anteriores queda mintiendo.
  */
 export const INVENTORY_ITEMS = [
-  // ── Panes ───────────────────────────────────────────────────────────────
+  // ── Panes ────────────────────────────────────────────────────────────────
   { id: 'pan-brioche',       name: "Brioche Bertha's",    group: 'Panes', note: 'Hamburguesas normales' },
   { id: 'pan-brioche-promo', name: 'Brioche Crustissimo', group: 'Panes', note: 'Solo promociones' },
   { id: 'pan-batata',        name: 'Pan de batata',        group: 'Panes' },
   { id: 'pan-pretzel',       name: 'Pan de pretzel',       group: 'Panes' },
   { id: 'pan-perro',         name: 'Pan de perro',         group: 'Panes' },
 
-  // ── Proteínas — tres subgrupos para no mostrar una lista plana larga ────
+  // ── Proteínas – tres subgrupos para no mostrar una lista plana larga ─────
   { id: 'carne-normal',     name: 'Carne normal 125 g', group: 'Proteínas', subgroup: 'Carnes' },
   { id: 'carne-promo',      name: 'Carne promo',         group: 'Proteínas', subgroup: 'Carnes', note: 'Promociones y La Junior' },
 
@@ -27,11 +33,11 @@ export const INVENTORY_ITEMS = [
   { id: 'chorifrito',       name: 'Chorifrito',          group: 'Proteínas', subgroup: 'Chorizos' },
   { id: 'choripana',        name: 'Choripana',            group: 'Proteínas', subgroup: 'Chorizos' },
 
-  // ── Bebidas — sin marca: un insumo cada una, se muestran directo ────────
+  // ── Bebidas – sin marca: un insumo cada una, se muestran directo ─────────
   { id: 'bebida-malta',        name: 'Malta retornable', group: 'Bebidas' },
   { id: 'bebida-agua-mineral', name: 'Agua mineral',     group: 'Bebidas' },
 
-  // ── Bebidas — con marca: subgroup = presentación ─────────────────────────
+  // ── Bebidas – con marca: subgroup = presentación ──────────────────────────
   { id: 'refresco-lata-frescolita', name: 'Frescolita', group: 'Bebidas', subgroup: 'Refresco de lata' },
   { id: 'refresco-lata-chinotto',   name: 'Chinotto',   group: 'Bebidas', subgroup: 'Refresco de lata' },
   { id: 'refresco-lata-fanta',      name: 'Fanta',      group: 'Bebidas', subgroup: 'Refresco de lata' },
@@ -66,7 +72,7 @@ export const INVENTORY_ITEMS = [
   { id: 'nestea-limon',   name: 'Nestea Limón',   group: 'Bebidas', subgroup: 'Nestea' },
   { id: 'nestea-durazno', name: 'Nestea Durazno', group: 'Bebidas', subgroup: 'Nestea' },
 
-  // ── Extras — vendidos como productos sueltos; conteo por porción ────────
+  // ── Extras – vendidos como productos sueltos; conteo por porción ─────────
   // La salchicha extra reutiliza `salchicha-winner` que ya existe en Proteínas.
   { id: 'extra-pepinillos',     name: 'Pepinillos (porciones)',     group: 'Extras' },
   { id: 'extra-maiz',           name: 'Maíz (porciones)',           group: 'Extras' },

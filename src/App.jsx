@@ -259,7 +259,8 @@ export default function App() {
 
   // Insumos que ingresaron cada día; lo vendido sale de las ventas cobradas.
   const {
-    stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay,
+    stockByDay, startByDay, wasteByDay,
+    setStockEntry, setStartEntry, setWasteEntry, clearStockDay,
     customItems, saveCustomItem, deleteCustomItem,
   } = useInventory();
 
@@ -282,11 +283,11 @@ export default function App() {
         (line.parts || []).forEach(part => (part.uses || []).forEach(use => ids.add(use.item)));
       });
     });
-    [stockByDay, startByDay].forEach(map => {
+    [stockByDay, startByDay, wasteByDay].forEach(map => {
       Object.values(map).forEach(day => Object.keys(day).forEach(id => ids.add(id)));
     });
     return ids;
-  }, [salesByDay, stockByDay, startByDay]);
+  }, [salesByDay, stockByDay, startByDay, wasteByDay]);
 
   // IDs que algún producto del menú consume: sirve para marcar los insumos
   // que no bajan solos y el dueño tiene que llevar a mano.
@@ -613,8 +614,10 @@ export default function App() {
             today={today}
             stockByDay={stockByDay}
             startByDay={startByDay}
+            wasteByDay={wasteByDay}
             onSetStock={setStockEntry}
             onSetStart={setStartEntry}
+            onSetWaste={setWasteEntry}
             onClearStock={clearStockDay}
             onRemoveSale={removeSale}
             onClearDay={dateKey => setDayToClear(dateKey)}

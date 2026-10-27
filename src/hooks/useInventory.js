@@ -3,6 +3,11 @@ import { getBusinessDayKey } from '../utils/salesReport';
 
 export const INVENTORY_STORAGE_KEY = 'perritos_guao_inventory';
 export const INVENTORY_START_KEY = 'perritos_guao_inventory_start';
+// Unidades que se dañaron o se botaron ese día. Se llevan aparte de lo que
+// ingresó porque son cosas distintas: un ingreso negativo diría "entró menos"
+// y lo que pasó fue "se perdió". Separarlas permite que a fin de mes se sepa
+// cuánto se está botando, que es plata.
+export const INVENTORY_WASTE_KEY = 'perritos_guao_inventory_waste';
 // Insumos creados por el admin desde la app; sobreviven a actualizaciones del código.
 export const CUSTOM_ITEMS_KEY = 'perritos_guao_inventory_items_custom';
 
@@ -73,6 +78,8 @@ export function useInventory() {
   // Correcciones del sobrante con que empieza cada día (conteo real que
   // reemplaza lo que arrastraba el cálculo). { "2026-10-10": { "pan-brioche": 9 } }
   const [startByDay, setStartByDay] = useState(() => loadStock(INVENTORY_START_KEY));
+  // Dañado por día: { "2026-10-26": { "pan-brioche": 3 } }
+  const [wasteByDay, setWasteByDay] = useState(() => loadStock(INVENTORY_WASTE_KEY));
   // Insumos creados por el admin; se mezclan con INVENTORY_ITEMS en App.jsx.
   const [customItems, setCustomItems] = useState(loadCustomItems);
 
@@ -94,6 +101,14 @@ export function useInventory() {
 
   useEffect(() => {
     try {
+      localStorage.setItem(INVENTORY_WASTE_KEY, JSON.stringify(wasteByDay));
+    } catch (error) {
+      console.warn('No se pudo guardar lo dañado:', error);
+    }
+  }, [wasteByDay]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(CUSTOM_ITEMS_KEY, JSON.stringify(customItems));
     } catch (error) {
       console.warn('No se pudieron guardar los insumos personalizados:', error);
@@ -110,10 +125,16 @@ export function useInventory() {
     setStartByDay(prev => withEntry(prev, dateKey, itemId, value));
   }
 
-  /** Borra todo lo ingresado y corregido en un día. */
+  /** Cuántas unidades se dañaron o botaron de un insumo ese día. `null` borra. */
+  function setWasteEntry(dateKey, itemId, value) {
+    setWasteByDay(prev => withEntry(prev, dateKey, itemId, value));
+  }
+
+  /** Borra todo lo ingresado, corregido y dañado en un día. */
   function clearStockDay(dateKey) {
     setStockByDay(prev => withEntry({ ...prev, [dateKey]: {} }, dateKey, '', null));
     setStartByDay(prev => withEntry({ ...prev, [dateKey]: {} }, dateKey, '', null));
+    setWasteByDay(prev => withEntry({ ...prev, [dateKey]: {} }, dateKey, '', null));
   }
 
   /**
@@ -145,7 +166,8 @@ export function useInventory() {
   }
 
   return {
-    stockByDay, startByDay, setStockEntry, setStartEntry, clearStockDay,
+    stockByDay, startByDay, wasteByDay,
+    setStockEntry, setStartEntry, setWasteEntry, clearStockDay,
     customItems, saveCustomItem, deleteCustomItem,
   };
 }

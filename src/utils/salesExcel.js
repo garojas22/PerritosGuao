@@ -312,7 +312,7 @@ return sheet;
  * Los grupos principales (Panes, Proteínas, Bebidas, Extras) se marcan con
  * fondo verde; los subgrupos (Refresco de lata, Carnes, etc.) con fondo gris
  * claro. Los ítems individuales van con el zebra striping normal.
- * Columnas: Categoría · Presentación · Insumo · Nota · Sobrante · Ingresó · Disponible · Vendido · Quedan
+ * Columnas: Categoría · Presentación · Insumo · Nota · Sobrante · Ingresó · Dañado · Disponible · Vendido · Quedan
  */
 function buildInventorySheet(workbook, inventory, dateKey) {
 const sheet = workbook.addWorksheet('Inventario', {
@@ -328,23 +328,24 @@ sheet.columns = [
 { key: 'note',      width: 20 },
 { key: 'carry',     width: 16 },
 { key: 'entered',   width: 14 },
+{ key: 'wasted',    width: 12 },
 { key: 'available', width: 14 },
 { key: 'sold',      width: 12 },
 { key: 'remaining', width: 12 },
 ];
 
-writeTitle(sheet, 'I', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
+writeTitle(sheet, 'J', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
 
 const headerRow = sheet.getRow(4);
-headerRow.values = ['Grupo', 'Presentación', 'Insumo', 'Uso', 'Sobrante de ayer', 'Ingresó hoy', 'Disponible', 'Vendido', 'Quedan'];
+headerRow.values = ['Grupo', 'Presentación', 'Insumo', 'Uso', 'Sobrante de ayer', 'Ingresó hoy', 'Dañado', 'Disponible', 'Vendido', 'Quedan'];
 styleHeaderRow(headerRow);
 
 let itemIndex = 0; // para el zebra striping solo en ítems, no en cabeceras
 
 inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
-  // ── Fila de categoría principal ──────────────────────────────────────
+  // ── Fila de categoría principal ────────────────────────────────────────
   const groupRow = sheet.addRow([group]);
-  sheet.mergeCells(`A${groupRow.number}:I${groupRow.number}`);
+  sheet.mergeCells(`A${groupRow.number}:J${groupRow.number}`);
   groupRow.height = 22;
   groupRow.eachCell({ includeEmpty: true }, cell => {
     cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
@@ -353,7 +354,7 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
     cell.alignment = { vertical: 'middle' };
   });
 
-  // ── Ítems sin subgrupo ───────────────────────────────────────────────
+  // ── Ítems sin subgrupo ────────────────────────────────────────────────
   directRows.forEach(item => {
     const rowN = sheet.rowCount + 1;
     const tracked = item.available !== null;
@@ -364,19 +365,21 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
       item.note || '',
       item.carry,
       item.entered,
+      item.wasted || null,
       tracked ? { formula: `N(E${rowN})+N(F${rowN})`, result: item.available } : null,
       item.sold,
-      tracked ? { formula: `G${rowN}-H${rowN}`, result: item.remaining } : null,
+      // Quedan = Disponible − Vendido − Dañado
+      tracked ? { formula: `H${rowN}-I${rowN}-N(G${rowN})`, result: item.remaining } : null,
     ]);
     styleBodyRow(row, itemIndex++);
     styleInvRow(row, item);
   });
 
-  // ── Subgrupos ─────────────────────────────────────────────────────────
+  // ── Subgrupos ──────────────────────────────────────────────────────────
   subgroups.forEach(({ subgroup, rows: subRows }) => {
     // Cabecera del subgrupo
     const sgRow = sheet.addRow(['', subgroup]);
-    sheet.mergeCells(`B${sgRow.number}:I${sgRow.number}`);
+    sheet.mergeCells(`B${sgRow.number}:J${sgRow.number}`);
     sgRow.height = 20;
     sgRow.eachCell({ includeEmpty: true }, cell => {
       cell.font = { bold: true, size: 11, color: { argb: 'FF333333' } };
@@ -395,9 +398,11 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
         item.note || '',
         item.carry,
         item.entered,
+        item.wasted || null,
         tracked ? { formula: `N(E${rowN})+N(F${rowN})`, result: item.available } : null,
         item.sold,
-        tracked ? { formula: `G${rowN}-H${rowN}`, result: item.remaining } : null,
+        // Quedan = Disponible − Vendido − Dañado
+        tracked ? { formula: `H${rowN}-I${rowN}-N(G${rowN})`, result: item.remaining } : null,
       ]);
       styleBodyRow(row, itemIndex++);
       styleInvRow(row, item);
@@ -410,7 +415,7 @@ return sheet;
 
 /** Aplica alineación y color de alerta a una fila de insumo individual. */
 function styleInvRow(row, item) {
-for (let col = 5; col <= 9; col += 1) {
+for (let col = 5; col <= 10; col += 1) {
   row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
 }
 row.getCell('name').font = { bold: true };

@@ -33,15 +33,15 @@
 }
 .inv-table td{vertical-align:middle;height:48px;padding-top:6px;padding-bottom:6px;}
 .inv-table th:first-child,
-.inv-table td:first-child{width:30%;}
+.inv-table td:first-child{width:28%;}
 .inv-table th:not(:first-child),
-.inv-table td:not(:first-child){width:14%;}
+.inv-table td:not(:first-child){width:12%;}
 .inv-table th.cc-num,
 .inv-table td.cc-num{text-align:center;padding-right:0;padding-left:0;}
 .inv-table thead th{font-size:11px;padding-bottom:10px;}
 
 /* ============================================================
-   Nivel 1 — Categoría (Panes, Proteínas, Bebidas, Extras)
+   Nivel 1 – Categoría (Panes, Proteínas, Bebidas, Extras)
    Píldora igual que una pestaña del nav: apagada cuando está
    cerrada, naranja cuando está abierta.
    ============================================================ */
@@ -81,7 +81,7 @@
 .inv-group.is-open .inv-chevron{background:#fff;color:var(--orange-deep);}
 
 /* ============================================================
-   Nivel 2 — Subgrupo (Carnes, Salchichas, Refresco de lata…)
+   Nivel 2 – Subgrupo (Carnes, Salchichas, Refresco de lata…)
    Banda redondeada, un escalón adentro, sin línea dura.
    ============================================================ */
 .inv-subgroup td{
@@ -136,8 +136,22 @@
 .inv-group.is-open .inv-alert-low{background:#fff;border-color:#fff;}
 
 /* ============================================================
-   Nivel 3 — Insumo (el más ligero de los tres)
+   Nivel 3 – Insumo (el más ligero de los tres)
    ============================================================ */
+/* La casilla de dañado se distingue de la de ingreso: son números de signo
+   contrario y confundirlas arruina el conteo del día. */
+.inv-input.inv-input-waste{
+  border-color:rgba(193,80,46,.35);background:rgba(193,80,46,.06);
+}
+.inv-input.inv-input-waste:focus{border-color:var(--rust);background:var(--paper);}
+
+/* Equivalencia en paquetes bajo la casilla de "Ingresó" */
+.inv-pack-hint{
+  display:block;margin-top:3px;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:600;
+  color:var(--ink-soft);letter-spacing:.01em;
+}
+
 td.inv-indent-1{padding-left:26px;}
 td.inv-indent-2{padding-left:48px;}
 
@@ -165,7 +179,7 @@ td.inv-indent-2{padding-left:48px;}
   vertical-align:middle;
 }
 
-/* Campos editables — 40px de alto por el uso con el dedo en tablet */
+/* Campos editables – 40px de alto por el uso con el dedo en tablet */
 .inv-input{
   width:84px;height:40px;padding:0 10px;border-radius:999px;
   border:1.5px solid var(--line);
@@ -200,12 +214,41 @@ td.inv-indent-2{padding-left:48px;}
 .inv-input.inv-adjusted{border-color:var(--amber);background:rgba(217,154,43,.12);}
 .inv-reset:hover{background:rgba(217,154,43,.2);color:var(--brown);}
 
-/* Botón secundario admin — mismo lenguaje que .cc-btn */
+/* Botón secundario admin – mismo lenguaje que .cc-btn */
 .cc-btn-secondary{
   background:var(--cream);color:var(--ink);
   border:1.5px solid var(--line);
 }
 .cc-btn-secondary:hover{border-color:var(--orange);color:var(--orange-deep);}
+
+/* ============================================================
+   Panel de la tasa del día (solo administrador)
+   ============================================================ */
+.rate-row{
+  display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;margin:4px 0 2px;
+}
+.rate-current{display:flex;flex-direction:column;gap:3px;}
+.rate-value{font-family:'Baloo 2';font-size:24px;line-height:1.1;color:var(--ink);}
+.rate-value-soft{color:var(--ink-soft);font-size:19px;}
+.rate-tag{
+  align-self:flex-start;margin-top:2px;
+  padding:3px 10px;border-radius:999px;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2px;
+}
+.rate-tag-auto{background:rgba(94,140,90,.14);border:1px solid rgba(94,140,90,.45);color:var(--green);}
+.rate-tag-manual{background:rgba(217,154,43,.2);border:1px solid rgba(217,154,43,.55);color:var(--brown);}
+
+.rate-form{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;}
+.rate-input{width:110px;text-align:center;}
+
+.rate-note-stale{
+  background:rgba(193,80,46,.08);border-color:rgba(193,80,46,.35);color:var(--rust);
+}
+
+@media (max-width:720px){
+  .rate-form{margin-left:0;width:100%;}
+  .rate-form .cc-btn{flex:1;}
+}
 
 /* ============================================================
    Ventana de insumo (hereda todo de .product-modal en products.css)
