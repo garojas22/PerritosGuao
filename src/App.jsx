@@ -39,11 +39,11 @@ function normalizeIngredientKey(value = "") {
 }
 
 /**
- * Un ingrediente tiene que ser un nombre, no un número.
+ * Un ingrediente tiene que ser un nombre, no un nÃºmero.
  * Escribir "4" o "55" en el campo de ingredientes creaba una entrada basura
- * que después aparecía en el panel de cocina como si fuera un insumo real.
+ * que despuÃ©s aparecÃ­a en el panel de cocina como si fuera un insumo real.
  * Se exige al menos una letra, se quitan espacios sobrantes y se descartan
- * duplicados (comparando por la clave normalizada, para que "Maíz" y "maiz"
+ * duplicados (comparando por la clave normalizada, para que "MaÃ­z" y "maiz"
  * no entren dos veces).
  */
 function sanitizeIngredients(list) {
@@ -53,7 +53,7 @@ function sanitizeIngredients(list) {
   return list.reduce((valid, raw) => {
     const name = String(raw).trim();
     if (!name) return valid;
-    if (!/[a-záéíóúüñ]/i.test(name)) return valid; // sin letras => no es un ingrediente
+    if (!/[a-zÃ¡Ã©Ã­Ã³ÃºÃ¼Ã±]/i.test(name)) return valid; // sin letras => no es un ingrediente
 
     const key = normalizeIngredientKey(name);
     if (!key || seen.has(key)) return valid;
@@ -73,7 +73,7 @@ function normalizeMenu(menu) {
       ...(Array.isArray(item.variants)
         ? { variants: item.variants.map(variant => ({ ...variant, price: Number(variant.price) || 0 })) }
         : {}),
-      // Se sanea también al cargar: así los ingredientes basura que ya
+      // Se sanea tambiÃ©n al cargar: asÃ­ los ingredientes basura que ya
       // quedaron guardados en localStorage se limpian solos.
       ingredients: sanitizeIngredients(item.ingredients),
       desc: item.desc ?? "",
@@ -83,10 +83,10 @@ function normalizeMenu(menu) {
 }
 
 /**
- * Cuando sube MENU_VERSION se recarga el menú del código, pero los productos
- * que el administrador creó desde la app (isCustom) se conservan: si no, cada
- * actualización del menú borraría lo que el dueño agregó a mano.
- * Se lee la marca tal como se guardó, sin recalcularla: un producto del menú
+ * Cuando sube MENU_VERSION se recarga el menÃº del cÃ³digo, pero los productos
+ * que el administrador creÃ³ desde la app (isCustom) se conservan: si no, cada
+ * actualizaciÃ³n del menÃº borrarÃ­a lo que el dueÃ±o agregÃ³ a mano.
+ * Se lee la marca tal como se guardÃ³, sin recalcularla: un producto del menÃº
  * viejo que ya no existe en el nuevo no debe pasar por "propio".
  */
 function keepCustomProducts(baseMenu, storedMenu) {
@@ -111,7 +111,7 @@ function loadMenu() {
     if (!stored) return normalizeMenu(MENU);
 
     const parsed = JSON.parse(stored);
-    // Formato viejo: el objeto de categorías se guardaba pelado, sin
+    // Formato viejo: el objeto de categorÃ­as se guardaba pelado, sin
     // envoltorio { version, menu }. Se trata como version 0.
     const version = typeof parsed?.version === "number" ? parsed.version : 0;
     if (version < MENU_VERSION) {
@@ -120,7 +120,7 @@ function loadMenu() {
 
     return normalizeMenu(parsed.menu);
   } catch (error) {
-    console.warn("No se pudo cargar el menú guardado:", error);
+    console.warn("No se pudo cargar el menÃº guardado:", error);
     return normalizeMenu(MENU);
   }
 }
@@ -139,14 +139,14 @@ function buildIngredientAvailability(menu) {
 }
 
 /**
- * El menú vigente es la ÚNICA fuente de verdad sobre QUÉ ingredientes existen.
+ * El menÃº vigente es la ÃNICA fuente de verdad sobre QUÃ ingredientes existen.
  * Lo guardado (localStorage o estado previo) solo aporta el VALOR de cada uno
  * (disponible / agotado), nunca claves nuevas.
  *
- * Esto evita el bug de ingredientes huérfanos: antes el merge era
+ * Esto evita el bug de ingredientes huÃ©rfanos: antes el merge era
  * `{ ...buildIngredientAvailability(menu), ...guardado }`, y como lo guardado
- * iba último, sobrescribía y conservaba para siempre claves de productos que
- * ya habían sido eliminados. Nada podía borrarlas nunca.
+ * iba Ãºltimo, sobrescribÃ­a y conservaba para siempre claves de productos que
+ * ya habÃ­an sido eliminados. Nada podÃ­a borrarlas nunca.
  */
 function syncIngredientAvailability(saved, menu) {
   const fromMenu = buildIngredientAvailability(menu);
@@ -175,7 +175,7 @@ export default function App() {
   const [deliveryFee, setDeliveryFee] = useState("0");
   const [payType, setPayType] = useState("Efectivo");
   const [payRef, setPayRef] = useState("");
-  const [splitPay, setSplitPay] = useState(false); // pago repartido entre varios métodos
+  const [splitPay, setSplitPay] = useState(false); // pago repartido entre varios mÃ©todos
   const [payParts, setPayParts] = useState([]); // filas del pago dividido (ver Cart.jsx)
   const [lastOrder, setLastOrder] = useState(null);
   const [ingredientAvailability, setIngredientAvailability] = useState(() => loadIngredientAvailability(menu));
@@ -183,12 +183,12 @@ export default function App() {
   const [showOfferTypeModal, setShowOfferTypeModal] = useState(false);
   // Ventana de ofertas combinadas: { offer: null } crea una nueva, { offer } edita una existente.
   const [comboModal, setComboModal] = useState(null);
-  const [optionsProduct, setOptionsProduct] = useState(null); // producto con tamaños/elecciones por configurar
+  const [optionsProduct, setOptionsProduct] = useState(null); // producto con tamaÃ±os/elecciones por configurar
   const [productToDelete, setProductToDelete] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [dayToClear, setDayToClear] = useState(null);
   const [showAdminDialog, setShowAdminDialog] = useState(false);
-  const [editingNum, setEditingNum] = useState(null); // número del pedido que se está corrigiendo
+  const [editingNum, setEditingNum] = useState(null); // nÃºmero del pedido que se estÃ¡ corrigiendo
   const [pendingEdit, setPendingEdit] = useState(null); // pedido a corregir, a la espera de confirmar
   // null = cerrado; { item: null } = crear nuevo; { item: {...} } = editar
   const [inventoryItemModal, setInventoryItemModal] = useState(null);
@@ -215,8 +215,8 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify({ version: MENU_VERSION, menu }));
-    // Al cambiar el menú, el stock se resincroniza: entran los ingredientes
-    // nuevos y salen los que ya no usa ningún producto, conservando el estado
+    // Al cambiar el menÃº, el stock se resincroniza: entran los ingredientes
+    // nuevos y salen los que ya no usa ningÃºn producto, conservando el estado
     // (disponible / agotado) de los que siguen vigentes.
     setIngredientAvailability(prev => syncIngredientAvailability(prev, menu));
     if (!menu[activeCat]) setActiveCat(categories[0]);
@@ -253,28 +253,28 @@ export default function App() {
   } = useOrders();
 
   const {
-    salesByDay, today, availableDays,
-    recordSale, removeSale, clearDay,
+    salesByDay, todaySales, today, availableDays,
+    recordSale, removeSale, voidSale, unvoidSale, settleCredit, clearDay,
   } = useSales();
 
-  // Insumos que ingresaron cada día; lo vendido sale de las ventas cobradas.
+  // Insumos que ingresaron cada dÃ­a; lo vendido sale de las ventas cobradas.
   const {
     stockByDay, startByDay, wasteByDay,
     setStockEntry, setStartEntry, setWasteEntry, clearStockDay,
     customItems, saveCustomItem, deleteCustomItem,
   } = useInventory();
 
-  // Lista combinada: insumos del código + los que el admin creó desde la app.
-  // Los del código son intocables (el menú los referencia por id); los creados
-  // aquí se editan y, si nunca se movieron, se borran.
+  // Lista combinada: insumos del cÃ³digo + los que el admin creÃ³ desde la app.
+  // Los del cÃ³digo son intocables (el menÃº los referencia por id); los creados
+  // aquÃ­ se editan y, si nunca se movieron, se borran.
   const inventoryItems = useMemo(() => [
     ...INVENTORY_ITEMS,
     ...customItems,
   ], [customItems]);
 
-  // IDs con movimiento guardado: una venta que los gastó, o un conteo de
-  // algún día. Borrar uno de estos dejaría esos registros nombrando un id
-  // que ya no existe, así que el modal solo deja borrar los que están limpios.
+  // IDs con movimiento guardado: una venta que los gastÃ³, o un conteo de
+  // algÃºn dÃ­a. Borrar uno de estos dejarÃ­a esos registros nombrando un id
+  // que ya no existe, asÃ­ que el modal solo deja borrar los que estÃ¡n limpios.
   const itemsWithHistory = useMemo(() => {
     const ids = new Set();
     Object.values(salesByDay).flat().forEach(sale => {
@@ -289,8 +289,8 @@ export default function App() {
     return ids;
   }, [salesByDay, stockByDay, startByDay, wasteByDay]);
 
-  // IDs que algún producto del menú consume: sirve para marcar los insumos
-  // que no bajan solos y el dueño tiene que llevar a mano.
+  // IDs que algÃºn producto del menÃº consume: sirve para marcar los insumos
+  // que no bajan solos y el dueÃ±o tiene que llevar a mano.
   const usedInventoryIds = useMemo(() => {
     const ids = new Set();
     Object.values(menu).flat().forEach(product => {
@@ -305,7 +305,7 @@ export default function App() {
 
   /**
    * Cobrar un pedido: queda asentado en el registro de ventas (persistido)
-   * y sale del tablero de pedidos activos. Es el único camino por el que
+   * y sale del tablero de pedidos activos. Es el Ãºnico camino por el que
    * un pedido entra al cierre de caja.
    */
   function handleChargeOrder(order) {
@@ -313,9 +313,9 @@ export default function App() {
     removeOrder(order.num);
   }
 
-  // Pedido que se está corrigiendo. Se deriva de `orders` en vez de guardarlo
+  // Pedido que se estÃ¡ corrigiendo. Se deriva de `orders` en vez de guardarlo
   // aparte: si el pedido desaparece o pasa a "Listo" mientras se corrige,
-  // el aviso se apaga solo y lo que quedó en el carrito se trata como pedido nuevo.
+  // el aviso se apaga solo y lo que quedÃ³ en el carrito se trata como pedido nuevo.
   const editingOrder = editingNum
     ? orders.find(o => o.num === editingNum && o.status !== "Listo") ?? null
     : null;
@@ -345,7 +345,7 @@ export default function App() {
 
   function startEditOrder(order) {
     if (!order || order.status === "Listo") return;
-    // Si ya hay otro pedido a medio armar, se pide confirmación antes de reemplazarlo.
+    // Si ya hay otro pedido a medio armar, se pide confirmaciÃ³n antes de reemplazarlo.
     if (cart.length > 0 && editingNum !== order.num) {
       setPendingEdit(order);
       return;
@@ -353,7 +353,7 @@ export default function App() {
     applyEdit(order);
   }
 
-  /** Cancela la corrección: el pedido original sigue intacto en el tablero. */
+  /** Cancela la correcciÃ³n: el pedido original sigue intacto en el tablero. */
   function cancelEdit() {
     clearCart();
     setEditingNum(null);
@@ -366,7 +366,7 @@ export default function App() {
     setPayParts([]);
   }
 
-  /** Tocar un producto: si hay que elegir tamaño o pan se abre la ventana; si no, entra directo. */
+  /** Tocar un producto: si hay que elegir tamaÃ±o o pan se abre la ventana; si no, entra directo. */
   function handleAddProduct(item) {
     if (item.isCombo) {
       if (getComboIssue(item, productsById)) return;
@@ -433,7 +433,7 @@ export default function App() {
     setMenu(prev => {
       const next = { ...prev };
       const id = product.id || `product-${Date.now()}`;
-      // Se parte del producto existente para no perder sus tamaños y elecciones
+      // Se parte del producto existente para no perder sus tamaÃ±os y elecciones
       // (pan, carne) al guardar: el formulario solo edita nombre, precios y textos.
       const existing = Object.values(prev).flat().find(candidate => candidate.id === product.id);
       const item = {
@@ -461,9 +461,9 @@ export default function App() {
     if (!isAdmin || !productToDelete) return;
 
     const { id } = productToDelete;
-    // Se elimina por id en todas las categorías en lugar de asumir que el
-    // producto está en `activeCat`: si la categoría activa cambia entre el
-    // clic y la confirmación, el borrado fallaba en silencio.
+    // Se elimina por id en todas las categorÃ­as en lugar de asumir que el
+    // producto estÃ¡ en `activeCat`: si la categorÃ­a activa cambia entre el
+    // clic y la confirmaciÃ³n, el borrado fallaba en silencio.
     setMenu(prev => Object.fromEntries(
       Object.entries(prev).map(([category, items]) => [
         category,
@@ -488,7 +488,7 @@ export default function App() {
       ? roundMoney(Math.max(0, Number(deliveryFee) || 0))
       : 0);
 
-    // Con pago móvil o tarjeta la referencia es obligatoria. Cart ya avisa al
+    // Con pago mÃ³vil o tarjeta la referencia es obligatoria. Cart ya avisa al
     // cajero; esta guarda evita que un pedido sin referencia entre por otro camino.
     let payments;
     if (splitPay) {
@@ -503,7 +503,7 @@ export default function App() {
         return;
       }
       // Si el pago no lleva referencia (efectivo) se descarta cualquiera que
-      // haya quedado escrita antes de cambiar de método.
+      // haya quedado escrita antes de cambiar de mÃ©todo.
       payments = [{ method: payType, amount: roundMoney(orderTotal), ref: refRequired ? payRef : "" }];
     }
 
@@ -531,7 +531,7 @@ export default function App() {
 
   const pendingCount = orders.filter(o => o.status !== "Listo").length;
 
-  // El botón "Corregir" del comprobante solo se ofrece si ese pedido sigue activo y no está listo.
+  // El botÃ³n "Corregir" del comprobante solo se ofrece si ese pedido sigue activo y no estÃ¡ listo.
   const lastOrderLive = lastOrder
     ? orders.find(o => o.num === lastOrder.num && o.status !== "Listo") ?? null
     : null;
@@ -604,6 +604,8 @@ export default function App() {
             onCharge={handleChargeOrder}
             onEdit={startEditOrder}
             canDelete={isAdmin}
+            todaySales={todaySales}
+            onVoidSale={voidSale}
           />
         )}
 
@@ -620,6 +622,8 @@ export default function App() {
             onSetWaste={setWasteEntry}
             onClearStock={clearStockDay}
             onRemoveSale={removeSale}
+            onUnvoidSale={unvoidSale}
+            onSettleCredit={settleCredit}
             onClearDay={dateKey => setDayToClear(dateKey)}
             isAdmin={isAdmin}
             inventoryItems={inventoryItems}
@@ -689,8 +693,8 @@ export default function App() {
 
       {pendingEdit && (
         <ConfirmDialog
-          title={`¿Corregir el pedido #${pendingEdit.num}?`}
-          message="Tienes un pedido a medio armar en pantalla. Si continúas, se reemplazará por el pedido que vas a corregir."
+          title={`Â¿Corregir el pedido #${pendingEdit.num}?`}
+          message="Tienes un pedido a medio armar en pantalla. Si continÃºas, se reemplazarÃ¡ por el pedido que vas a corregir."
           confirmLabel="Continuar"
           onConfirm={() => applyEdit(pendingEdit)}
           onCancel={() => setPendingEdit(null)}
@@ -699,12 +703,12 @@ export default function App() {
 
       {productToDelete && (
         <ConfirmDialog
-          title={`¿Eliminar "${productToDelete.name}"?`}
+          title={`Â¿Eliminar "${productToDelete.name}"?`}
           message={(() => {
             const affected = productToDelete.isCombo ? [] : offersUsing(productToDelete.id);
             return affected.length > 0
-              ? `El producto se quitará del menú. Está en ${affected.length === 1 ? "la oferta" : "las ofertas"} ${affected.map(offer => `"${offer.name}"`).join(", ")}, que quedará${affected.length === 1 ? "" : "n"} incompleta${affected.length === 1 ? "" : "s"} y sin poder venderse hasta que la edites. Esta acción no se puede deshacer.`
-              : "El producto se quitará del menú. Esta acción no se puede deshacer.";
+              ? `El producto se quitarÃ¡ del menÃº. EstÃ¡ en ${affected.length === 1 ? "la oferta" : "las ofertas"} ${affected.map(offer => `"${offer.name}"`).join(", ")}, que quedarÃ¡${affected.length === 1 ? "" : "n"} incompleta${affected.length === 1 ? "" : "s"} y sin poder venderse hasta que la edites. Esta acciÃ³n no se puede deshacer.`
+              : "El producto se quitarÃ¡ del menÃº. Esta acciÃ³n no se puede deshacer.";
           })()}
           confirmLabel="Eliminar producto"
           onConfirm={confirmDeleteProduct}
@@ -725,8 +729,8 @@ export default function App() {
 
       {dayToClear && (
         <ConfirmDialog
-          title="¿Borrar el registro de este día?"
-          message="Se eliminarán todas las ventas cobradas de ese día. Exporta el Excel antes si necesitas conservarlas. Esta acción no se puede deshacer."
+          title="Â¿Borrar el registro de este dÃ­a?"
+          message="Se eliminarÃ¡n todas las ventas cobradas de ese dÃ­a. Exporta el Excel antes si necesitas conservarlas. Esta acciÃ³n no se puede deshacer."
           confirmLabel="Borrar registro"
           onConfirm={() => { clearDay(dayToClear); setDayToClear(null); }}
           onCancel={() => setDayToClear(null)}
@@ -735,8 +739,8 @@ export default function App() {
 
       {orderToDelete && (
         <ConfirmDialog
-          title={`¿Eliminar pedido #${orderToDelete.num}?`}
-          message={`El pedido de ${orderToDelete.customer} se eliminará de "Pedidos activos". Esta acción no se puede deshacer.`}
+          title={`Â¿Eliminar pedido #${orderToDelete.num}?`}
+          message={`El pedido de ${orderToDelete.customer} se eliminarÃ¡ de "Pedidos activos". Esta acciÃ³n no se puede deshacer.`}
           confirmLabel="Eliminar pedido"
           onConfirm={confirmDeleteOrder}
           onCancel={() => setOrderToDelete(null)}

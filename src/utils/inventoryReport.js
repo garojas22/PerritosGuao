@@ -1,19 +1,19 @@
 import { INVENTORY_ITEMS, getInventoryName } from '../data/inventory';
 
 /**
- * Cálculo del inventario del cierre de caja.
+ * CÃ¡lculo del inventario del cierre de caja.
  *
- * Funciones puras, igual que salesReport.js. Cada línea vendida guarda en
- * `uses` los insumos que gasta UNA unidad (ver lineOptions.js), así que lo
- * vendido de un insumo es la suma de `uses.qty × qty` de todas las líneas.
+ * Funciones puras, igual que salesReport.js. Cada lÃ­nea vendida guarda en
+ * `uses` los insumos que gasta UNA unidad (ver lineOptions.js), asÃ­ que lo
+ * vendido de un insumo es la suma de `uses.qty Ã qty` de todas las lÃ­neas.
  *
- * Por insumo y por día:
- *   Disponible = Sobrante de ayer + Ingresó hoy
- *   Quedan     = Disponible − Vendido − Dañado
- * El "sobrante de ayer" se arrastra solo desde el primer día en que se
- * ingresó ese insumo. Si el conteo real no coincide, se puede corregir el
- * sobrante con que empieza un día (`startByDay`): esa cifra reemplaza a la
- * calculada y es la que se arrastra a los días siguientes.
+ * Por insumo y por dÃ­a:
+ *   Disponible = Sobrante de ayer + IngresÃ³ hoy
+ *   Quedan     = Disponible â Vendido â DaÃ±ado
+ * El "sobrante de ayer" se arrastra solo desde el primer dÃ­a en que se
+ * ingresÃ³ ese insumo. Si el conteo real no coincide, se puede corregir el
+ * sobrante con que empieza un dÃ­a (`startByDay`): esa cifra reemplaza a la
+ * calculada y es la que se arrastra a los dÃ­as siguientes.
  */
 
 /** Total vendido por insumo en una lista de ventas: { "pan-brioche": 12, ... }. */
@@ -21,6 +21,9 @@ export function countUsage(sales = []) {
   const usage = {};
 
   sales.forEach(sale => {
+    // Un cobro anulado devuelve sus insumos al inventario: no se vendiÃ³ nada.
+    if (sale.voided) return;
+
     (sale.items || []).forEach(line => {
       const lineQty = Number(line.qty) || 0;
       (line.uses || []).forEach(use => {
@@ -32,14 +35,14 @@ export function countUsage(sales = []) {
   return usage;
 }
 
-/** Ventas con líneas cobradas antes de existir el inventario (sin el campo `uses`). */
+/** Ventas con lÃ­neas cobradas antes de existir el inventario (sin el campo `uses`). */
 function countSalesWithoutUses(sales = []) {
   return sales.filter(sale => (sale.items || []).some(line => !Array.isArray(line.uses))).length;
 }
 
 /**
- * Sobrante con que cada insumo llega a `dayKey` (al cierre del día anterior).
- * Un insumo que nunca se ingresó no aparece en el resultado: no hay cifra que arrastrar.
+ * Sobrante con que cada insumo llega a `dayKey` (al cierre del dÃ­a anterior).
+ * Un insumo que nunca se ingresÃ³ no aparece en el resultado: no hay cifra que arrastrar.
  */
 export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDay = {}, wasteByDay = {}) {
   const days = [...new Set([
@@ -52,7 +55,7 @@ export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDa
   const balance = {};
 
   days.forEach(day => {
-    // Conteo real de ese día: reemplaza lo que venía arrastrando el cálculo.
+    // Conteo real de ese dÃ­a: reemplaza lo que venÃ­a arrastrando el cÃ¡lculo.
     Object.entries(startByDay[day] || {}).forEach(([id, qty]) => {
       balance[id] = Number(qty) || 0;
     });
@@ -65,8 +68,8 @@ export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDa
       if (balance[id] !== undefined) balance[id] -= qty;
     });
 
-    // Lo dañado sale del inventario igual que lo vendido: si no se restara
-    // aquí, el sobrante de mañana vendría inflado por lo que se botó hoy.
+    // Lo daÃ±ado sale del inventario igual que lo vendido: si no se restara
+    // aquÃ­, el sobrante de maÃ±ana vendrÃ­a inflado por lo que se botÃ³ hoy.
     Object.entries(wasteByDay[day] || {}).forEach(([id, qty]) => {
       if (balance[id] !== undefined) balance[id] -= (Number(qty) || 0);
     });
@@ -78,16 +81,16 @@ export function getCarryOver(dayKey, stockByDay = {}, salesByDay = {}, startByDa
 /** Cuando lo que queda es este porcentaje (o menos) de lo disponible se avisa "Poco". */
 const LOW_STOCK_RATIO = 0.15;
 /**
- * ...y también cuando quedan pocas unidades, sin importar el porcentaje.
- * Con cifras chicas el porcentaje engaña: 1 de 6 es el 16 %, no avisaba, y
+ * ...y tambiÃ©n cuando quedan pocas unidades, sin importar el porcentaje.
+ * Con cifras chicas el porcentaje engaÃ±a: 1 de 6 es el 16 %, no avisaba, y
  * al cocinero le queda una sola salchicha.
  */
 const LOW_STOCK_UNITS = 5;
 
 /**
- * Suma acumulada de un campo numérico en un array de filas.
+ * Suma acumulada de un campo numÃ©rico en un array de filas.
  * Devuelve null si TODAS las filas tienen ese campo en null
- * (nadie ha ingresado nada – no existe cifra que mostrar).
+ * (nadie ha ingresado nada â no existe cifra que mostrar).
  */
 function sumField(rows, field) {
   const withData = rows.filter(row => row[field] !== null);
@@ -104,7 +107,7 @@ function computeSubgroupSummary(rows) {
     sold:      rows.reduce((acc, r) => acc + r.sold, 0),
     wasted:    rows.reduce((acc, r) => acc + r.wasted, 0),
     remaining: sumField(rows, 'remaining'),
-    // cuántos ítems están agotados o por acabarse: se muestra aunque el grupo esté plegado
+    // cuÃ¡ntos Ã­tems estÃ¡n agotados o por acabarse: se muestra aunque el grupo estÃ© plegado
     alerts: {
       out: rows.filter(r => r.status === 'out').length,
       low: rows.filter(r => r.status === 'low').length,
@@ -113,17 +116,17 @@ function computeSubgroupSummary(rows) {
 }
 
 /**
- * Filas del inventario de un día con soporte de dos niveles (group → subgroup).
+ * Filas del inventario de un dÃ­a con soporte de dos niveles (group â subgroup).
  *
- * Parámetros:
- *  - inventoryItems: lista combinada (código + localStorage). Por defecto usa
+ * ParÃ¡metros:
+ *  - inventoryItems: lista combinada (cÃ³digo + localStorage). Por defecto usa
  *    INVENTORY_ITEMS para no romper llamadas antiguas.
- *  - usedInventoryIds: Set de IDs que algún producto del menú consume. Si se
+ *  - usedInventoryIds: Set de IDs que algÃºn producto del menÃº consume. Si se
  *    pasa, las filas cuyo ID no aparece quedan marcadas como `manualOnly: true`.
  *
  * Salida por grupo:
- *  - rows:      ítems sin subgroup (se renderizan directamente).
- *  - subgroups: ítems con subgroup, ya agrupados. Cada subgrupo trae sus `rows`
+ *  - rows:      Ã­tems sin subgroup (se renderizan directamente).
+ *  - subgroups: Ã­tems con subgroup, ya agrupados. Cada subgrupo trae sus `rows`
  *               y un `summary` calculado (suma de todas sus marcas).
  */
 export function summarizeInventory({
@@ -142,13 +145,13 @@ export function summarizeInventory({
   const fixedStart = startByDay[dayKey] || {};
   const wasted = wasteByDay[dayKey] || {};
 
-  // Un insumo que ya no está en la lista pero sí se vendió no debe desaparecer del reporte.
+  // Un insumo que ya no estÃ¡ en la lista pero sÃ­ se vendiÃ³ no debe desaparecer del reporte.
   const knownIds = new Set(inventoryItems.map(item => item.id));
   const extraItems = Object.keys(usage)
     .filter(id => !knownIds.has(id))
     .map(id => ({ id, name: getInventoryName(id), group: 'Otros', note: '' }));
 
-  // groupMap: group → { directRows[], subgroupMap: subgroup → rows[] }
+  // groupMap: group â { directRows[], subgroupMap: subgroup â rows[] }
   const groupMap = new Map();
   let hasStock = false;
   let soldTotal = 0;
@@ -158,13 +161,13 @@ export function summarizeInventory({
     const sold = usage[item.id] || 0;
     const ingreso = Number.isFinite(entered[item.id]) ? entered[item.id] : null;
     const adjusted = Number.isFinite(fixedStart[item.id]);
-    // Si ese día se corrigió el sobrante, esa cifra manda sobre la calculada.
+    // Si ese dÃ­a se corrigiÃ³ el sobrante, esa cifra manda sobre la calculada.
     const previous = adjusted
       ? fixedStart[item.id]
       : (Number.isFinite(carry[item.id]) ? carry[item.id] : null);
     const danado = Number.isFinite(wasted[item.id]) ? wasted[item.id] : 0;
-    // Anotar daño también pone al insumo bajo seguimiento: si no, alguien
-    // podría escribir "se dañaron 3" y la fila seguiría mostrando "–".
+    // Anotar daÃ±o tambiÃ©n pone al insumo bajo seguimiento: si no, alguien
+    // podrÃ­a escribir "se daÃ±aron 3" y la fila seguirÃ­a mostrando "â".
     const tracked = ingreso !== null || previous !== null || danado !== 0;
 
     const available = tracked ? (previous ?? 0) + (ingreso ?? 0) : null;
@@ -180,8 +183,8 @@ export function summarizeInventory({
     soldTotal += sold;
     wastedTotal += danado;
 
-    // manualOnly: ningún producto del menú activo consume este insumo.
-    // El dueño solo puede registrar entradas/salidas a mano.
+    // manualOnly: ningÃºn producto del menÃº activo consume este insumo.
+    // El dueÃ±o solo puede registrar entradas/salidas a mano.
     const manualOnly = usedInventoryIds !== null && !usedInventoryIds.has(item.id);
 
     const row = {

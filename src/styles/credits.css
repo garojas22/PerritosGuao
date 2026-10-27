@@ -1,0 +1,139 @@
+/* ============================================================
+   Pago a crÃ©dito y anulaciÃ³n de cobros
+   Mismo sistema que el resto: pÃ­ldoras, Inter para rÃ³tulos,
+   Baloo solo para cifras, naranja Ãºnicamente para lo activo.
+   ============================================================ */
+
+/* ââ En el carrito âââââââââââââââââââââââââââââââââââââââââ */
+.segmented-pay button.pay-credit.active{
+  background:var(--amber);border-color:var(--amber);color:var(--brown);
+}
+.credit-notice{
+  margin:-4px 0 14px;padding:10px 14px;border-radius:12px;
+  background:rgba(217,154,43,.14);border:1px solid rgba(217,154,43,.45);
+  color:var(--brown);font-size:12.5px;font-weight:600;line-height:1.45;
+}
+
+/* ââ Panel "Por cobrar" del cierre âââââââââââââââââââââââââ */
+.credits-total{display:flex;flex-direction:column;gap:2px;text-align:right;}
+.credits-total-value{font-family:'Baloo 2';font-size:26px;line-height:1.1;color:var(--rust);}
+
+.credits-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:10px;}
+
+.credit-card{
+  border:1.5px solid var(--line);border-radius:var(--radius);
+  background:var(--cream);padding:12px 16px;
+}
+/* Una semana sin pagar deja de ser un favor y pasa a ser un problema. */
+.credit-old{border-color:rgba(193,80,46,.4);background:rgba(193,80,46,.05);}
+
+.credit-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.credit-name{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:var(--ink);}
+.credit-age{
+  margin-left:10px;padding:2px 9px;border-radius:999px;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:700;
+  background:rgba(0,0,0,.05);color:var(--ink-soft);
+}
+.credit-old .credit-age{background:rgba(193,80,46,.14);color:var(--rust);}
+.credit-amount{font-family:'Baloo 2';font-size:20px;color:var(--ink);white-space:nowrap;}
+
+.credit-sales{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.credit-sales li{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-top:7px;border-top:1px solid var(--line);
+}
+.credit-sale-main{font-size:12.5px;color:var(--ink-soft);font-weight:600;}
+.credit-sale-age{margin-left:8px;font-size:11px;opacity:.85;}
+
+.credit-pay-btn,.credit-settle-btn{padding:7px 14px;font-size:12.5px;}
+.credit-settle{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.credit-settle-label{font-size:11.5px;font-weight:700;color:var(--ink-soft);}
+.credit-cancel{
+  background:none;border:none;cursor:pointer;color:var(--ink-soft);
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-decoration:underline;
+}
+
+/* ââ Etiquetas en el detalle de pedidos ââââââââââââââââââââ */
+.cc-credit-tag{
+  display:inline-block;margin:3px 0 0 7px;padding:2px 9px;border-radius:999px;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:700;
+  background:rgba(217,154,43,.2);border:1px solid rgba(217,154,43,.55);color:var(--brown);
+}
+.cc-credit-paid{
+  background:rgba(94,140,90,.14);border-color:rgba(94,140,90,.45);color:var(--green);
+}
+
+/* Fila anulada: se ve, pero se ve que no cuenta. */
+.cc-row-voided td{opacity:.55;}
+.cc-row-voided .cc-strong,
+.cc-row-voided .cc-products{text-decoration:line-through;}
+.cc-void-tag{
+  display:block;margin-top:3px;
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--rust);
+  text-decoration:none;
+}
+.cc-row-voided .cc-void-tag{opacity:1;}
+.cc-undo{
+  background:none;border:1px solid var(--line);border-radius:999px;
+  padding:4px 11px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:var(--ink-soft);
+}
+.cc-undo:hover{border-color:var(--orange);color:var(--orange-deep);}
+
+/* ââ Cobros de hoy, en el tablero (lo ve el trabajador) ââââ */
+.charges{
+  margin-top:22px;background:var(--paper);
+  border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+}
+.charges h3{font-family:'Baloo 2';font-size:16px;margin:0;color:var(--ink);}
+.charges-hint{margin:2px 0 12px;font-size:12px;color:var(--ink-soft);max-width:620px;}
+
+.charges-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+.charge{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:10px 14px;border-radius:999px;background:var(--cream);border:1px solid var(--line);
+}
+.charge-voided{opacity:.6;}
+.charge-voided .charge-main{text-decoration:line-through;}
+
+.charge-main{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:13px;}
+.charge-num{font-family:'Baloo 2';font-weight:700;color:var(--ink);}
+.charge-name{font-weight:600;color:var(--ink);}
+.charge-total{font-family:'Baloo 2';font-weight:700;color:var(--ink);}
+.charge-pay{font-size:12px;color:var(--ink-soft);font-weight:600;}
+
+.charge-void-btn{
+  background:none;border:1px solid var(--line);border-radius:999px;
+  padding:6px 14px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--ink-soft);
+}
+.charge-void-btn:hover{border-color:var(--rust);color:var(--rust);}
+.charge-void-note{
+  font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:var(--rust);
+  text-decoration:none;
+}
+.charge-voided .charge-void-note{text-decoration:none;}
+
+.charge-void-form{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.charge-void-form input{
+  min-width:230px;padding:8px 14px;border-radius:999px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink);
+  font-family:'Inter',sans-serif;font-size:12.5px;
+}
+.charge-void-form input:focus{outline:none;border-color:var(--orange);}
+.charge-confirm{
+  padding:8px 16px;border-radius:999px;border:none;cursor:pointer;
+  background:var(--rust);color:#fff;
+  font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;
+}
+.charge-confirm:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed;}
+.charge-cancel{
+  background:none;border:none;cursor:pointer;color:var(--ink-soft);
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-decoration:underline;
+}
+
+@media (max-width:720px){
+  .charge{border-radius:14px;}
+  .charge-void-form input{min-width:100%;}
+  .credit-sales li{flex-direction:column;align-items:flex-start;}
+}

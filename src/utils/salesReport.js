@@ -1,29 +1,29 @@
-import { getOrderPayments, paymentBs } from './payment';
+import { getOrderPayments, paymentBs, isCreditSale } from './payment';
 
 /**
- * Cálculos del cierre de caja.
+ * CÃ¡lculos del cierre de caja.
  *
  * Funciones puras: no tocan React ni localStorage. Reciben la lista de
- * ventas del día y devuelven los números ya listos para mostrar o exportar.
- * Al no depender de nada externo son fáciles de probar y de reutilizar.
- * La exportación a Excel vive aparte, en salesExcel.js.
+ * ventas del dÃ­a y devuelven los nÃºmeros ya listos para mostrar o exportar.
+ * Al no depender de nada externo son fÃ¡ciles de probar y de reutilizar.
+ * La exportaciÃ³n a Excel vive aparte, en salesExcel.js.
  */
 
-/** Hora a partir de la cual un pedido cuenta para el día SIGUIENTE.
- *  0 = el día de caja va de medianoche a medianoche.
- *  Si el negocio cierra después de medianoche (ej. cierra a las 2am y quiere
- *  que esas ventas cuenten para el día anterior), pon aquí 4 y el corte del
- *  día pasa a ser a las 4:00 a. m. */
+/** Hora a partir de la cual un pedido cuenta para el dÃ­a SIGUIENTE.
+ *  0 = el dÃ­a de caja va de medianoche a medianoche.
+ *  Si el negocio cierra despuÃ©s de medianoche (ej. cierra a las 2am y quiere
+ *  que esas ventas cuenten para el dÃ­a anterior), pon aquÃ­ 4 y el corte del
+ *  dÃ­a pasa a ser a las 4:00 a. m. */
 export const BUSINESS_DAY_CUTOFF_HOUR = 0;
 
-/** Devuelve la clave de día de caja ("2026-08-23") para una fecha dada. */
+/** Devuelve la clave de dÃ­a de caja ("2026-08-23") para una fecha dada. */
 export function getBusinessDayKey(date = new Date()) {
   const d = new Date(date);
   if (BUSINESS_DAY_CUTOFF_HOUR > 0 && d.getHours() < BUSINESS_DAY_CUTOFF_HOUR) {
     d.setDate(d.getDate() - 1);
   }
-  // Se construye a mano en vez de usar toISOString() porque ese método
-  // convierte a UTC y en Venezuela (UTC-4) adelantaría el día después
+  // Se construye a mano en vez de usar toISOString() porque ese mÃ©todo
+  // convierte a UTC y en Venezuela (UTC-4) adelantarÃ­a el dÃ­a despuÃ©s
   // de las 8 p. m., metiendo ventas en la fecha equivocada.
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -31,7 +31,7 @@ export function getBusinessDayKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-/** "2026-08-23" -> "sábado, 23 de agosto de 2026" */
+/** "2026-08-23" -> "sÃ¡bado, 23 de agosto de 2026" */
 export function formatDayLabel(dateKey) {
   if (!dateKey) return '';
   const [year, month, day] = dateKey.split('-').map(Number);
@@ -42,11 +42,11 @@ export function formatDayLabel(dateKey) {
     month: 'long',
     year: 'numeric',
   });
-  // Solo la primera letra en mayúscula. Antes el CSS usaba capitalize y salía "15 De Octubre De 2026".
+  // Solo la primera letra en mayÃºscula. Antes el CSS usaba capitalize y salÃ­a "15 De Octubre De 2026".
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-/** ¿Hay un número real? `null` y '' NO cuentan (Number(null) sería 0 y pasaría por válido). */
+/** Â¿Hay un nÃºmero real? `null` y '' NO cuentan (Number(null) serÃ­a 0 y pasarÃ­a por vÃ¡lido). */
 export function hasAmount(value) {
   return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 }
@@ -56,7 +56,7 @@ export function formatUsd(value) {
 }
 
 export function formatBs(value) {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'â';
   return `Bs. ${Number(value).toLocaleString('es-VE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -64,18 +64,30 @@ export function formatBs(value) {
 }
 
 /**
- * Resume las ventas de un día: totales, desglose por método de pago,
+ * Resume las ventas de un dÃ­a: totales, desglose por mÃ©todo de pago,
  * por tipo de pedido y ranking de productos.
  */
 export function summarizeSales(sales = []) {
+  // Las anuladas no cuentan para nada: ni total, ni productos, ni mÃ©todos de
+  // pago. Pero no desaparecen â se informan aparte para que el dueÃ±o las vea.
+  const activas = sales.filter(sale => !sale.voided);
+  const anuladas = sales.filter(sale => sale.voided);
+
   const summary = {
-    count: sales.length,
+    count: activas.length,
     totalUsd: 0,
+    // Lo vendido y lo cobrado dejan de ser el mismo nÃºmero cuando hay crÃ©dito:
+    // la comida saliÃ³, la plata no entrÃ³.
+    collectedUsd: 0,
+    creditOpenUsd: 0,
+    creditOpenCount: 0,
+    voidedCount: anuladas.length,
+    voidedUsd: anuladas.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0),
     totalBs: 0,
     hasBsData: false,
     averageTicket: 0,
     byPayment: {},
-    splitCount: 0, // pedidos pagados con más de un método
+    splitCount: 0, // pedidos pagados con mÃ¡s de un mÃ©todo
     byType: {},
     products: [],
     itemsSold: 0,
@@ -83,17 +95,22 @@ export function summarizeSales(sales = []) {
 
   const productMap = new Map();
 
-  sales.forEach(sale => {
+  activas.forEach(sale => {
     const total = Number(sale.total) || 0;
     summary.totalUsd += total;
+
+    if (isCreditSale(sale) && !sale.creditPaid) {
+      summary.creditOpenUsd += total;
+      summary.creditOpenCount += 1;
+    }
 
     if (hasAmount(sale.totalBs)) {
       summary.totalBs += Number(sale.totalBs);
       summary.hasBsData = true;
     }
 
-    // Un pedido puede pagarse con varios métodos: cada uno suma SU parte del
-    // total, así el efectivo de la caja cuadra aunque el pedido sea mixto.
+    // Un pedido puede pagarse con varios mÃ©todos: cada uno suma SU parte del
+    // total, asÃ­ el efectivo de la caja cuadra aunque el pedido sea mixto.
     const payments = getOrderPayments(sale);
     if (payments.length > 1) summary.splitCount += 1;
 
@@ -136,6 +153,9 @@ export function summarizeSales(sales = []) {
     });
   });
 
+  // Lo que de verdad entrÃ³ a la caja hoy. Un crÃ©dito ya pagado sÃ­ entrÃ³, pero
+  // entrÃ³ el dÃ­a que lo pagaron, no hoy: por eso solo se descuenta lo abierto.
+  summary.collectedUsd = summary.totalUsd - summary.creditOpenUsd;
   summary.averageTicket = summary.count > 0 ? summary.totalUsd / summary.count : 0;
   summary.products = Array.from(productMap.values())
     .map(({ hasDirectSales, ...product }) => ({
