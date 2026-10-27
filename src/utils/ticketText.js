@@ -1,5 +1,6 @@
 import { getLineParts, partTitle } from './lineOptions';
 import { getOrderPayments, isSplitPayment } from './payment';
+import { hasExtras } from './extras';
 
 // Ancho de línea en caracteres para la impresora térmica.
 // La mayoría de las POS-80 con "Generic / Text Only" imprimen 42-48
@@ -120,6 +121,11 @@ export function buildTicketText(order, totalBs) {
       (l.mods || []).forEach((mod) => {
         rows.push(...wrappedRows(`» ${mod}`, '  '));
       });
+      if (hasExtras(l)) {
+        (l.extras || []).forEach((extra) => {
+          rows.push(...wrappedRows(`++ ${extra.name}`, '  '));
+        });
+      }
     }
   });
 

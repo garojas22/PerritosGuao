@@ -249,7 +249,7 @@ export default function App() {
   const {
     cart, orders, cartTotal,
     addToCart, updateQty, removeLine, toggleMod, loadCartFromOrder, clearCart,
-    generateTicket, advanceStatus, removeOrder,
+    generateTicket, advanceStatus, removeOrder, toggleExtra,
   } = useOrders();
 
   const {
@@ -572,6 +572,8 @@ export default function App() {
               onQty={updateQty}
               onRemove={removeLine}
               onToggleMod={toggleMod}
+              onToggleExtra={toggleExtra}
+              productsById={productsById}
               customer={customer} setCustomer={setCustomer}
               orderType={orderType} setOrderType={setOrderType}
               deliveryFee={deliveryFee} setDeliveryFee={setDeliveryFee}

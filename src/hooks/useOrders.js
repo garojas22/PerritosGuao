@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { nextOrderNumber } from "../utils/orderCounter.js";
 import { describeLine, partTitle, getComboIssue, getDefaultSelection, resolveComboParts, resolveSelection } from "../utils/lineOptions.js";
+import { toggleLineExtra } from '../utils/extras';
 import { buildPayLabel, buildPayRefText, roundMoney } from "../utils/payment.js";
 
 // STATUS_FLOW define a qué estado salta un pedido al hacer clic en su tarjeta.
@@ -37,6 +38,11 @@ function copyOrderLine(line) {
   return {
     ...line,
     uses: (line.uses || []).map(use => ({ ...use })),
+    baseUses: (line.baseUses || line.uses || []).map(use => ({ ...use })),
+    extras: (line.extras || []).map(extra => ({
+      ...extra,
+      uses: (extra.uses || []).map(use => ({ ...use })),
+    })),
     ingredients: [...(line.ingredients || [])],
     availMods: [...(line.availMods || [])],
     mods: [...(line.mods || [])],
@@ -116,12 +122,19 @@ export function useOrders() {
         name: item.name,
         isCombo: Boolean(item.isCombo),
         price: item.isCombo ? Number(item.price) : resolved.price,
+        // La base se guarda aparte: el precio y los insumos de la línea se
+        // recalculan desde aquí cada vez que se agrega o quita un extra.
+        basePrice: item.isCombo ? Number(item.price) : resolved.price,
         variantLabel: resolved?.variantLabel ?? '',
         optionLabels: resolved?.optionLabels ?? [],
         parts,
         uses: item.isCombo
           ? parts.flatMap(part => part.uses.map(use => ({ ...use })))
           : resolved.uses, // insumos que gasta UNA unidad (para el inventario)
+        baseUses: item.isCombo
+          ? parts.flatMap(part => part.uses.map(use => ({ ...use })))
+          : resolved.uses,
+        extras: [],
         qty: 1,
         ingredients: item.ingredients ?? [],
         availMods: availableMods,
@@ -129,6 +142,17 @@ export function useOrders() {
       },
     ]);
     return true;
+  }
+
+  /**
+   * Agrega o quita un extra de UNA línea. El extra se aplica a todas las
+   * unidades de esa línea: si de dos hamburguesas solo una lleva carne extra,
+   * se agregan en dos líneas separadas.
+   */
+  function toggleExtra(uid, extra, product) {
+    setCart(prev => prev.map(line => (
+      line.uid === uid && !line.isCombo ? toggleLineExtra(line, extra, product) : line
+    )));
   }
 
   function updateQty(uid, delta) {
@@ -305,5 +329,5 @@ export function useOrders() {
     setOrders(prev => prev.filter(o => o.num !== num));
   }
 
-  return { cart, orders, cartTotal, addToCart, updateQty, removeLine, toggleMod, loadCartFromOrder, clearCart, generateTicket, advanceStatus, removeOrder };
+  return { cart, orders, cartTotal, addToCart, updateQty, removeLine, toggleMod, toggleExtra, loadCartFromOrder, clearCart, generateTicket, advanceStatus, removeOrder };
 }

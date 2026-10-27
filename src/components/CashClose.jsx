@@ -16,6 +16,7 @@ import {
 import { summarizeOpenCredits, describeAge } from '../utils/credits';
 import { useBcvRateInfo, setManualRate, clearManualRate } from '../hooks/useBcvRate';
 import { describeLine, partTitle } from '../utils/lineOptions';
+import { describeExtras, hasExtras } from '../utils/extras';
 
 // Clave localStorage para el estado abierto/cerrado de los subgrupos.
 const COLLAPSED_KEY = 'perritos_inv_collapsed';
@@ -922,6 +923,9 @@ export default function CashClose({
                             <span key={item.uid ?? item.name} className="cc-product-line">
                               {item.qty}x {item.name}
                               {details.length > 0 && <em> ({details.join(', ')})</em>}
+                              {hasExtras(item) && (
+                                <span className="cc-line-extra">{describeExtras(item)}</span>
+                              )}
                             </span>
                           );
                         })}
@@ -953,7 +957,7 @@ export default function CashClose({
                             title="Borrar este cobro del registro"
                             aria-label={`Borrar cobro del pedido ${sale.num}`}
                           >
-                            ✕
+                            ×
                           </button>
                         )}
                       </td>

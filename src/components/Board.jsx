@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { describeLine, partTitle } from "../utils/lineOptions.js";
+import { describeExtras, hasExtras } from "../utils/extras.js";
 import { formatUsd } from "../utils/salesReport.js";
 import { isCreditSale } from "../utils/payment.js";
 
@@ -28,7 +29,7 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
             onClick={event => { event.stopPropagation(); onDelete(order); }}
             aria-label={`Eliminar pedido #${order.num}`}
           >
-            ✕
+            ×
           </button>
         )}
       </div>
@@ -52,7 +53,12 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
           );
         }
         const detail = describeLine(l);
-        return <span key={l.uid ?? `${l.name}-${index}`}>{separator}{l.qty}x {l.name}{detail ? ` (${detail})` : ""}</span>;
+        return (
+          <span key={l.uid ?? `${l.name}-${index}`}>
+            {separator}{l.qty}x {l.name}{detail ? ` (${detail})` : ""}
+            {hasExtras(l) && <span className="oc-item-extra">{describeExtras(l)}</span>}
+          </span>
+        );
       })}</div>
       {order.revision > 0 && <div className="oc-corrected">Corregido</div>}
       <div className="oc-foot">

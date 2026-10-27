@@ -2,6 +2,7 @@ import { summarizeSales, formatDayLabel, formatUsd } from './salesReport';
 import { getOrderPayments, isSplitPayment, isCreditSale } from './payment';
 import { summarizeOpenCredits, describeAge } from './credits';
 import { describeLine, partTitle } from './lineOptions';
+import { describeExtras, hasExtras } from './extras';
 
 /**
  * Exportación del cierre de caja a un Excel real (.xlsx) con formato.
@@ -143,7 +144,8 @@ return `  - ${item.qty}x ${label}${detail ? ` (${detail})` : ''}`;
 return [`${item.qty}x ${item.name} · ${formatUsd(item.price * item.qty)}`, ...partLines];
 }
 const detail = describeLine(item);
-return `${item.qty}x ${item.name}${detail ? ` (${detail})` : ''}`;
+const extras = hasExtras(item) ? `  ${describeExtras(item)}` : '';
+return [`${item.qty}x ${item.name}${detail ? ` (${detail})` : ''}`, ...(extras ? [extras] : [])];
 }).flat();
 const modLines = items
     .filter(item => Array.isArray(item.mods) && item.mods.length > 0)
@@ -388,7 +390,7 @@ styleHeaderRow(headerRow);
 let itemIndex = 0; // para el zebra striping solo en ítems, no en cabeceras
 
 inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
-  // ── Fila de categoría principal ────────────────────────────────────────
+  // ── Fila de categoría principal ──────────────────────────────────────────
   const groupRow = sheet.addRow([group]);
   sheet.mergeCells(`A${groupRow.number}:J${groupRow.number}`);
   groupRow.height = 22;
@@ -399,7 +401,7 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
     cell.alignment = { vertical: 'middle' };
   });
 
-  // ── Ítems sin subgrupo ────────────────────────────────────────────────
+  // ── Ítems sin subgrupo ────────────────────────────────────────────────────
   directRows.forEach(item => {
     const rowN = sheet.rowCount + 1;
     const tracked = item.available !== null;
@@ -420,7 +422,7 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
     styleInvRow(row, item);
   });
 
-  // ── Subgrupos ──────────────────────────────────────────────────────────
+  // ── Subgrupos ─────────────────────────────────────────────────────────────
   subgroups.forEach(({ subgroup, rows: subRows }) => {
     // Cabecera del subgrupo
     const sgRow = sheet.addRow(['', subgroup]);

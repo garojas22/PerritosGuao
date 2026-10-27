@@ -114,3 +114,19 @@
 }
 .btn-primary:hover{background:var(--orange-deep);}
 .btn-primary:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed;}
+
+/* ============================================================
+   Agregados de una línea ("+ Carne extra")
+   Se diferencian de los chips "Sin X": aquellos QUITAN, estos AGREGAN
+   y cuestan plata, así que llevan el ámbar de los avisos y su precio.
+   ============================================================ */
+.chips-extra{margin-top:5px;}
+.chip-add{
+  border-color:rgba(217,154,43,.5);
+  background:rgba(217,154,43,.1);
+  color:var(--brown);
+}
+.chip-add:hover{border-color:var(--amber);}
+.chip-add.on{
+  background:var(--amber);border-color:var(--amber);color:#fff;font-weight:700;
+}

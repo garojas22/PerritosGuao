@@ -10,7 +10,7 @@
 //
 // Si cambias algo aquí, sube MENU_VERSION para que los equipos recarguen el menú.
 
-export const MENU_VERSION = 11;
+export const MENU_VERSION = 12;
 
 // Precio confirmado por el dueño; mantenerlo aquí evita que el cajero pueda
 // modificar el precio de la oferta al armar un pedido.
@@ -21,6 +21,42 @@ const BURGER_COMBO_BREADS = [...BURGER_BREADS, "pan-brioche-promo"];
 const BURGER_COMBO_MEATS = ["carne-normal", "carne-promo"];
 // Una sola carne: no se le pregunta a nadie, pero igual se descuenta del inventario.
 const BURGER_MEATS = ["carne-normal"];
+
+/** Carnes de hamburguesa. La "carne extra" reutiliza la que el cliente eligió. */
+export const MEAT_ITEMS = ["carne-normal", "carne-promo"];
+
+/**
+ * Precio de una carne extra cuando la hamburguesa NO tiene variantes de
+ * tamaño. Cuando sí las tiene, el precio sale de la diferencia entre
+ * "2 carnes" y "1 carne" de ESA hamburguesa, que es lo que el dueño ya
+ * decidió cobrar por la segunda carne. Así no hay dos precios distintos
+ * para lo mismo.
+ */
+export const EXTRA_MEAT_PRICE = 2.00;
+
+/**
+ * Agregados que se le suman a UNA línea del pedido, no al pedido completo.
+ *
+ * La regla, decidida con el dueño: un extra solo se ofrece si ese ingrediente
+ * YA forma parte de la preparación del producto (`ingredients`). Así nadie
+ * inventa una hamburguesa nueva agregándole algo que esa receta no lleva.
+ *
+ * La única excepción es la carne de hamburguesa: se le puede agregar a
+ * cualquier hamburguesa porque no cambia la receta, solo el tamaño. Al perro
+ * caliente NO se le agrega salchicha ni chorizo: eso sería otro producto.
+ *
+ * `requires` se compara CONTRA EL TEXTO EXACTO de un ingrediente del producto
+ * (sin tildes ni mayúsculas). "mermelada de tocineta" no habilita "Tocineta":
+ * son cosas distintas. Si el dueño quiere habilitarlo, se agrega "tocineta"
+ * a los `ingredients` de ese producto.
+ */
+export const EXTRAS = [
+  { id: "x-carne",          name: "Carne extra",    scope: "burger" },
+  { id: "x-pepinillos",     name: "Pepinillos",     price: 0.50, item: "extra-pepinillos",     requires: "pepinillos" },
+  { id: "x-maiz",           name: "Maíz",           price: 0.50, item: "extra-maiz",           requires: "maíz" },
+  { id: "x-queso-amarillo", name: "Queso amarillo", price: 0.75, item: "extra-queso-amarillo", requires: "queso amarillo" },
+  { id: "x-tocineta",       name: "Tocineta",       price: 1.00, item: "extra-tocineta",       requires: "tocineta" },
+];
 
 /** Elecciones de una hamburguesa: pan y carne (la cantidad de carne depende del tamaño). */
 const burgerChoices = (breads = BURGER_BREADS, meatQty = "variant", meats = BURGER_MEATS) => [
@@ -67,6 +103,10 @@ const promoBurgerPart = label => ({
 });
 
 export const MENU = {
+  // La categoría "Extras" se eliminó: los agregados ya no son productos
+  // sueltos sino parte de una línea del pedido (ver EXTRAS arriba y
+  // utils/extras.js). Un renglón suelto de "Pepinillos" en un pedido de tres
+  // hamburguesas no decía a cuál iba, y la cocina tenía que adivinar.
   "Perros calientes": [
     {
       id: "pg",
@@ -149,30 +189,6 @@ export const MENU = {
       ],
       choices: burgerChoices(),
       comboChoiceOptions: { pan: BURGER_COMBO_BREADS, carne: BURGER_COMBO_MEATS },
-    },
-  ],
-  "Extras": [
-    {
-      id: "ex1", name: "Pepinillos", price: 0.50, desc: "Porción extra de pepinillos.", ingredients: [],
-      // choice de un solo item: no aparece en UI pero descuenta del inventario
-      choices: [{ id: "insumo", label: "Insumo", options: ["extra-pepinillos"], qty: 1 }],
-    },
-    {
-      id: "ex3", name: "Maíz", price: 0.50, desc: "Porción extra de maíz.", ingredients: [],
-      choices: [{ id: "insumo", label: "Insumo", options: ["extra-maiz"], qty: 1 }],
-    },
-    {
-      id: "ex4", name: "Queso amarillo", price: 0.75, desc: "Porción extra de queso amarillo.", ingredients: [],
-      choices: [{ id: "insumo", label: "Insumo", options: ["extra-queso-amarillo"], qty: 1 }],
-    },
-    {
-      id: "ex5", name: "Tocineta", price: 1.00, desc: "Porción extra de tocineta.", ingredients: [],
-      choices: [{ id: "insumo", label: "Insumo", options: ["extra-tocineta"], qty: 1 }],
-    },
-    {
-      id: "ex6", name: "Salchicha", price: 1.00, desc: "Salchicha adicional.", ingredients: [],
-      // reutiliza el mismo insumo que los perros calientes
-      choices: [{ id: "insumo", label: "Insumo", options: ["salchicha-winner"], qty: 1 }],
     },
   ],
   "Bebidas": [

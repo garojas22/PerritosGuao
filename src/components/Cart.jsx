@@ -6,6 +6,7 @@ import {
   createPayPart, parseAmount, roundMoney, getSplitRemaining, validateSplit,
 } from '../utils/payment';
 import { describeLine, partTitle } from '../utils/lineOptions';
+import { getAvailableExtras, extraPrice } from '../utils/extras';
 
 function normalizeIngredientKey(value = "") {
   return value
@@ -63,7 +64,41 @@ function IngredientChips({ item, line, onToggleMod, ingredientAvailability, part
   );
 }
 
-function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }) {
+/**
+ * Agregados de la línea. Solo aparecen los que esa receta admite
+ * (ver getAvailableExtras): así nadie arma una hamburguesa que el menú no
+ * tiene poniéndole un ingrediente que no lleva.
+ */
+function ExtraChips({ line, product, onToggleExtra }) {
+  if (line.isCombo || !product) return null;
+
+  const available = getAvailableExtras(product);
+  if (available.length === 0) return null;
+
+  const chosen = new Set((line.extras || []).map(extra => extra.id));
+
+  return (
+    <div className="chips chips-extra">
+      {available.map(extra => {
+        const isOn = chosen.has(extra.id);
+        const price = extraPrice(product, extra);
+        return (
+          <button
+            key={extra.id}
+            type="button"
+            className={`chip chip-add ${isOn ? 'on' : ''}`}
+            onClick={() => onToggleExtra(line.uid, extra, product)}
+            title={`${isOn ? 'Quitar' : 'Agregar'} ${extra.name}`}
+          >
+            + {extra.name} · ${price.toFixed(2)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CartLine({ line, product, onQty, onRemove, onToggleMod, onToggleExtra, ingredientAvailability }) {
   return (
     <div className="cart-line">
       <div className="top">
@@ -92,6 +127,7 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
         <>
           {describeLine(line) && <div className="line-detail">{describeLine(line)}</div>}
           <IngredientChips item={line} line={line} onToggleMod={onToggleMod} ingredientAvailability={ingredientAvailability} />
+          <ExtraChips line={line} product={product} onToggleExtra={onToggleExtra} />
         </>
       )}
       <div className="qty-ctrl">
@@ -105,7 +141,7 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
 }
 
 export default function Cart({
-  cart, cartTotal, onQty, onRemove, onToggleMod,
+  cart, cartTotal, onQty, onRemove, onToggleMod, onToggleExtra, productsById = {},
   customer, setCustomer, orderType, setOrderType, deliveryFee, setDeliveryFee,
   payType, setPayType, payRef, setPayRef,
   splitPay, setSplitPay, payParts, setPayParts,
@@ -389,7 +425,7 @@ export default function Cart({
                       onClick={() => removePart(part.id)}
                       aria-label={`Quitar ${part.method}`}
                     >
-                      ✕
+                      ×
                     </button>
                   )}
                 </div>
@@ -493,9 +529,11 @@ export default function Cart({
             <CartLine
               key={line.uid}
               line={line}
+              product={productsById[line.id]}
               onQty={onQty}
               onRemove={onRemove}
               onToggleMod={onToggleMod}
+              onToggleExtra={onToggleExtra}
               ingredientAvailability={ingredientAvailability}
             />
           ))

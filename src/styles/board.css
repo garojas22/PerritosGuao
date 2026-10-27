@@ -46,3 +46,11 @@
   touch-action:manipulation;
 }
 .oc-charge:hover{filter:brightness(1.07);}
+
+/* Agregado de una línea: va en su propio renglón para que la cocina no lo
+   pase por alto entre los demás detalles del producto. */
+.oc-item-extra{
+  display:block;margin:2px 0 0 14px;
+  font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;
+  color:var(--orange-deep);
+}
