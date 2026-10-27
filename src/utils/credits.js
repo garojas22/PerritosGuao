@@ -1,16 +1,16 @@
 /**
- * Deudas abiertas (pago a crÃ©dito), agrupadas por cliente.
+ * Deudas abiertas (pago a crédito), agrupadas por cliente.
  *
  * Funciones puras, igual que salesReport.js. Reciben TODO el registro de
- * ventas âno el de un solo dÃ­aâ porque una deuda del martes se cobra el
- * sÃ¡bado: si solo se mirara el dÃ­a del cierre, la deuda desaparecerÃ­a de
- * la vista al dÃ­a siguiente de hacerla.
+ * ventas —no el de un solo día— porque una deuda del martes se cobra el
+ * sábado: si solo se mirara el día del cierre, la deuda desaparecería de
+ * la vista al día siguiente de hacerla.
  */
 
 import { isCreditPending, isCreditSale, customerKey } from './payment';
 import { getBusinessDayKey } from './salesReport';
 
-/** DÃ­as entre dos claves de dÃ­a de caja ("2026-10-20" â "2026-10-26" = 6). */
+/** Días entre dos claves de día de caja ("2026-10-20" → "2026-10-26" = 6). */
 export function daysBetween(fromDayKey, toDayKey = getBusinessDayKey()) {
   if (!fromDayKey || !toDayKey) return 0;
   const [fy, fm, fd] = fromDayKey.split('-').map(Number);
@@ -21,20 +21,20 @@ export function daysBetween(fromDayKey, toDayKey = getBusinessDayKey()) {
   return Number.isFinite(days) && days > 0 ? days : 0;
 }
 
-/** "hace 8 dÃ­as" / "hoy" / "ayer" */
+/** "hace 8 días" / "hoy" / "ayer" */
 export function describeAge(days) {
   if (days <= 0) return 'hoy';
   if (days === 1) return 'ayer';
-  return `hace ${days} dÃ­as`;
+  return `hace ${days} días`;
 }
 
 /**
- * Deudas abiertas agrupadas por cliente, de mÃ¡s vieja a mÃ¡s reciente.
+ * Deudas abiertas agrupadas por cliente, de más vieja a más reciente.
  *
  * Devuelve:
  *   customers: [{ key, name, totalUsd, oldestDayKey, oldestDays, sales: [...] }]
  *   totalUsd:  lo que el negocio tiene en la calle
- *   count:     cuÃ¡ntos pedidos sin cobrar
+ *   count:     cuántos pedidos sin cobrar
  */
 export function summarizeOpenCredits(salesByDay = {}, todayKey = getBusinessDayKey()) {
   const byCustomer = new Map();
@@ -54,8 +54,8 @@ export function summarizeOpenCredits(salesByDay = {}, todayKey = getBusinessDayK
       }
       const entry = byCustomer.get(key);
       entry.totalUsd += amount;
-      // El nombre que se muestra es el de la deuda mÃ¡s vieja: es el que el
-      // dueÃ±o va a reconocer si lleva semanas esperando ese pago.
+      // El nombre que se muestra es el de la deuda más vieja: es el que el
+      // dueño va a reconocer si lleva semanas esperando ese pago.
       if (dayKey < entry.oldestDayKey) {
         entry.oldestDayKey = dayKey;
         entry.name = name;
@@ -76,7 +76,7 @@ export function summarizeOpenCredits(salesByDay = {}, todayKey = getBusinessDayK
   return { customers, totalUsd, count };
 }
 
-/** CrÃ©ditos de UN dÃ­a: cuÃ¡nto se dejÃ³ a crÃ©dito y cuÃ¡nto de eso sigue sin pagarse. */
+/** Créditos de UN día: cuánto se dejó a crédito y cuánto de eso sigue sin pagarse. */
 export function summarizeDayCredits(sales = []) {
   let openUsd = 0;
   let openCount = 0;

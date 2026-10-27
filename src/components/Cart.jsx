@@ -26,9 +26,9 @@ function getModIngredientKey(mod = "") {
 }
 
 const INGREDIENT_LABELS = {
-  "queso de ano": "queso de aÃ±o",
-  "maiz": "maÃ­z",
-  "limon": "limÃ³n",
+  "queso de ano": "queso de año",
+  "maiz": "maíz",
+  "limon": "limón",
   "salsa bk": "salsa BK",
   "salsa x": "salsa X",
 };
@@ -55,7 +55,7 @@ function IngredientChips({ item, line, onToggleMod, ingredientAvailability, part
             disabled={!isAvailable}
             title={!isAvailable ? 'Ingrediente agotado' : mod}
           >
-            {!isAvailable ? `${mod} Â· Agotado` : mod}
+            {!isAvailable ? `${mod} · Agotado` : mod}
           </button>
         );
       })}
@@ -76,7 +76,7 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
             <div className="combo-cart-part" key={part.id}>
               <div className="line-detail">
                 {partTitle(part)}
-                {describeLine(part) ? ` Â· ${describeLine(part)}` : ''}
+                {describeLine(part) ? ` · ${describeLine(part)}` : ''}
               </div>
               <IngredientChips
                 item={part}
@@ -95,7 +95,7 @@ function CartLine({ line, onQty, onRemove, onToggleMod, ingredientAvailability }
         </>
       )}
       <div className="qty-ctrl">
-        <button onClick={() => onQty(line.uid, -1)}>â</button>
+        <button onClick={() => onQty(line.uid, -1)}>−</button>
         <span>{line.qty}</span>
         <button onClick={() => onQty(line.uid, 1)}>+</button>
         <span className="remove-x" onClick={() => onRemove(line.uid)}>Quitar</span>
@@ -130,7 +130,7 @@ export default function Cart({
   const isCredit = !splitPay && payType === PAY_CREDIT;
   const isPayRefValid = isValidPayRef(payRef);
 
-  // Pago dividido: lo que falta (+) o sobra (â) para igualar el total del pedido.
+  // Pago dividido: lo que falta (+) o sobra (−) para igualar el total del pedido.
   const splitRemaining = getSplitRemaining(payParts, orderTotal);
   const splitError = splitPay ? validateSplit(payParts, orderTotal) : null;
 
@@ -167,7 +167,7 @@ export default function Cart({
   }
 
   function handlePayRefChange(value) {
-    // Solo dÃ­gitos y mÃ¡ximo PAY_REF_LENGTH: no hace falta validar texto libre despuÃ©s.
+    // Solo dígitos y máximo PAY_REF_LENGTH: no hace falta validar texto libre después.
     const clean = sanitizePayRef(value);
     setPayRef(clean);
     if (showPayRefError && isValidPayRef(clean)) {
@@ -184,7 +184,7 @@ export default function Cart({
   function toggleSplit() {
     setShowSplitError(false);
     if (splitPay) {
-      // Se vuelve a un solo mÃ©todo: se conserva el primero que se habÃ­a elegido.
+      // Se vuelve a un solo método: se conserva el primero que se había elegido.
       const first = payParts[0];
       if (first) {
         setPayType(first.method);
@@ -205,11 +205,11 @@ export default function Cart({
   }
 
   function handlePartAmountChange(id, value) {
-    // Solo nÃºmeros con un decimal (coma o punto).
+    // Solo números con un decimal (coma o punto).
     const clean = value.replace(/[^0-9.,]/g, '');
     setPayParts(parts => {
       const next = parts.map(part => (part.id === id ? { ...part, amount: clean } : part));
-      // Con dos mÃ©todos, al escribir el primero el segundo se completa solo con el resto.
+      // Con dos métodos, al escribir el primero el segundo se completa solo con el resto.
       if (next.length === 2 && next[0].id === id) {
         const rest = roundMoney(orderTotal - parseAmount(clean));
         next[1] = { ...next[1], amount: parseAmount(clean) > 0 && rest > 0 ? rest.toFixed(2) : '' };
@@ -259,7 +259,7 @@ export default function Cart({
       {editingOrder && (
         <div className="edit-banner">
           <span>Corrigiendo el pedido <strong>#{editingOrder.num}</strong></span>
-          <button type="button" onClick={onCancelEdit}>Cancelar correcciÃ³n</button>
+          <button type="button" onClick={onCancelEdit}>Cancelar corrección</button>
         </div>
       )}
 
@@ -296,7 +296,7 @@ export default function Cart({
 
       {orderType === "Delivery" && (
         <div className="field">
-          <label htmlFor="delivery-fee">Cargo de delivery Â· USD</label>
+          <label htmlFor="delivery-fee">Cargo de delivery · USD</label>
           <input
             id="delivery-fee"
             type="number"
@@ -305,7 +305,7 @@ export default function Cart({
             inputMode="decimal"
             value={deliveryFee}
             onChange={event => setDeliveryFee(event.target.value)}
-            aria-label="Cargo de delivery en dÃ³lares"
+            aria-label="Cargo de delivery en dólares"
           />
         </div>
       )}
@@ -326,10 +326,10 @@ export default function Cart({
           </div>
         )}
 
-        {/* El crÃ©dito no se divide: ver PAY_CREDIT en payment.js. */}
+        {/* El crédito no se divide: ver PAY_CREDIT en payment.js. */}
         {!isCredit && (
           <button type="button" className="split-toggle" onClick={toggleSplit}>
-            {splitPay ? 'â Pagar con un solo mÃ©todo' : '+ Dividir el pago en varios mÃ©todos'}
+            {splitPay ? '← Pagar con un solo método' : '+ Dividir el pago en varios métodos'}
           </button>
         )}
       </div>
@@ -357,7 +357,7 @@ export default function Cart({
                     className="split-method"
                     value={part.method}
                     onChange={e => updatePart(part.id, { method: e.target.value, ref: '' })}
-                    aria-label={`MÃ©todo de pago ${index + 1}`}
+                    aria-label={`Método de pago ${index + 1}`}
                   >
                     {PAY_METHODS.map(method => (
                       <option
@@ -378,7 +378,7 @@ export default function Cart({
                       value={part.amount}
                       onChange={e => handlePartAmountChange(part.id, e.target.value)}
                       placeholder="0.00"
-                      aria-label={`Monto en dÃ³lares del mÃ©todo ${index + 1}`}
+                      aria-label={`Monto en dólares del método ${index + 1}`}
                     />
                   </div>
 
@@ -389,7 +389,7 @@ export default function Cart({
                       onClick={() => removePart(part.id)}
                       aria-label={`Quitar ${part.method}`}
                     >
-                      â
+                      ✕
                     </button>
                   )}
                 </div>
@@ -403,15 +403,15 @@ export default function Cart({
                     className={`split-ref ${refInvalid ? 'invalid' : ''}`}
                     value={part.ref}
                     onChange={e => handlePartRefChange(part.id, e.target.value)}
-                    placeholder={`Referencia (Ãºltimos ${PAY_REF_LENGTH} dÃ­gitos)`}
-                    aria-label={`Referencia del pago ${index + 1} Â· ${part.method}`}
+                    placeholder={`Referencia (últimos ${PAY_REF_LENGTH} dígitos)`}
+                    aria-label={`Referencia del pago ${index + 1} · ${part.method}`}
                   />
                 )}
 
                 <div className="split-row-foot">
                   {partBs !== null && partBs > 0 && (
                     <span className="split-bs">
-                      â Bs. {partBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ≈ Bs. {partBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   )}
                   {splitRemaining > 0 && (
@@ -430,7 +430,7 @@ export default function Cart({
 
           <div className={`split-status ${splitRemaining === 0 && orderTotal > 0 ? 'ok' : splitRemaining < 0 ? 'over' : ''}`}>
             {orderTotal === 0 && 'Agrega productos para repartir el pago.'}
-            {orderTotal > 0 && splitRemaining === 0 && 'â El pago cubre el total'}
+            {orderTotal > 0 && splitRemaining === 0 && '✓ El pago cubre el total'}
             {orderTotal > 0 && splitRemaining > 0 && `Faltan $${splitRemaining.toFixed(2)}`}
             {orderTotal > 0 && splitRemaining < 0 && `Se pasa por $${Math.abs(splitRemaining).toFixed(2)}`}
           </div>
@@ -441,10 +441,10 @@ export default function Cart({
 
       {!splitPay && refRequired && (
         <div className="field">
-          <label>Referencia (Ãºltimos {PAY_REF_LENGTH} dÃ­gitos)</label>
-          {/* type="text" a propÃ³sito: asÃ­ toma exactamente el mismo estilo que
+          <label>Referencia (últimos {PAY_REF_LENGTH} dígitos)</label>
+          {/* type="text" a propósito: así toma exactamente el mismo estilo que
               el campo Cliente (.field input[type=text]). inputMode="numeric"
-              abre el teclado numÃ©rico en celular y tablet. */}
+              abre el teclado numérico en celular y tablet. */}
           <input
             ref={payRefInputRef}
             type="text"
@@ -458,7 +458,7 @@ export default function Cart({
             className={showPayRefError && !isPayRefValid ? 'invalid' : ''}
           />
           {showPayRefError && !isPayRefValid && (
-            <div className="field-error">Escribe los {PAY_REF_LENGTH} Ãºltimos dÃ­gitos de la referencia.</div>
+            <div className="field-error">Escribe los {PAY_REF_LENGTH} últimos dígitos de la referencia.</div>
           )}
         </div>
       )}
@@ -487,7 +487,7 @@ export default function Cart({
 
       <div className="cart-items">
         {cart.length === 0 ? (
-          <div className="cart-empty">Toca un producto del menÃº para agregarlo.</div>
+          <div className="cart-empty">Toca un producto del menú para agregarlo.</div>
         ) : (
           cart.map(line => (
             <CartLine
@@ -537,7 +537,7 @@ export default function Cart({
       )}
 
       <button className="btn-primary" onClick={handleGenerateClick}>
-        {editingOrder ? 'Actualizar comprobante â' : 'Generar comprobante â'}
+        {editingOrder ? 'Actualizar comprobante →' : 'Generar comprobante →'}
       </button>
     </aside>
   );

@@ -50,14 +50,14 @@
 }
 
 .inv-group-bar{
-  display:flex;align-items:center;gap:12px;
+  display:flex;align-items:center;gap:11px;
   height:50px;padding:0 18px;margin:14px 0 10px;
   border-radius:999px;
   background:var(--cream);border:1.5px solid var(--line);
   cursor:pointer;user-select:none;
   transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;
 }
-.inv-table tbody:first-of-type .inv-group-bar{margin-top:2px;}
+.inv-table tbody:first-of-type .inv-group-bar{margin-top:12px;}
 .inv-group-bar:hover{border-color:rgba(227,91,30,.45);}
 
 .inv-group.is-open .inv-group-bar{
@@ -70,6 +70,14 @@
   color:var(--ink);letter-spacing:.01em;
 }
 .inv-group.is-open .inv-group-name{color:#fff;}
+
+/* Símbolo de la categoría. Hereda el color del texto, así que se vuelve
+   blanco solo cuando la píldora se abre. */
+.inv-group-icon{
+  flex:0 0 auto;width:21px;height:21px;
+  color:var(--brown);transition:color .15s ease;
+}
+.inv-group.is-open .inv-group-icon{color:#fff;}
 
 /* Chevron en círculo: el mismo gesto que el punto naranja del header */
 .inv-chevron{

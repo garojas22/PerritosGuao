@@ -4,18 +4,18 @@ import { summarizeOpenCredits, describeAge } from './credits';
 import { describeLine, partTitle } from './lineOptions';
 
 /**
- * ExportaciÃ³n del cierre de caja a un Excel real (.xlsx) con formato.
+ * Exportación del cierre de caja a un Excel real (.xlsx) con formato.
  *
- * Por quÃ© .xlsx y no CSV: un CSV es texto plano, no puede llevar colores,
- * bordes ni anchos de columna, y Excel lo abre todo apelmazado. Un .xlsx sÃ­.
- * TambiÃ©n permite guardar la referencia de pago como TEXTO, asÃ­ "0042" no se
+ * Por qué .xlsx y no CSV: un CSV es texto plano, no puede llevar colores,
+ * bordes ni anchos de columna, y Excel lo abre todo apelmazado. Un .xlsx sí.
+ * También permite guardar la referencia de pago como TEXTO, así "0042" no se
  * convierte en 42 al abrirlo.
  *
- * La librerÃ­a (exceljs) pesa ~1 MB, por eso se carga con import() dinÃ¡mico:
+ * La librería (exceljs) pesa ~1 MB, por eso se carga con import() dinámico:
  * solo se descarga cuando alguien pulsa "Exportar a Excel", no al abrir la app.
  */
 
-// Verde corporativo de Excel; el botÃ³n de CashClose usa el mismo tono.
+// Verde corporativo de Excel; el botón de CashClose usa el mismo tono.
 const EXCEL_GREEN = 'FF217346';
 const ZEBRA = 'FFEAF4EE';
 const BORDER_COLOR = 'FFBFBFBF';
@@ -26,22 +26,22 @@ const FMT_USD = '"$"#,##0.00';
 const FMT_BS = '"Bs. "#,##0.00';
 const FMT_RATE = '#,##0.00';
 
-// Anchos de las columnas de texto largo; tambiÃ©n sirven para calcular la altura de fila.
+// Anchos de las columnas de texto largo; también sirven para calcular la altura de fila.
 const ORDER_COL_WIDTHS = { customer: 22, items: 42, mods: 34 };
 
 const THIN = { style: 'thin', color: { argb: BORDER_COLOR } };
 const BORDERS = { top: THIN, left: THIN, bottom: THIN, right: THIN };
 
 /**
- * CuÃ¡ntas lÃ­neas visuales ocupa un texto dentro de una columna de `width`
+ * Cuántas líneas visuales ocupa un texto dentro de una columna de `width`
  * caracteres. Excel no ajusta solo la altura de filas que escribimos con
- * cÃ³digo, asÃ­ que se calcula aquÃ­ para que el texto largo no quede cortado.
+ * código, así que se calcula aquí para que el texto largo no quede cortado.
  */
 function wrappedLineCount(lines, width) {
 return lines.reduce((total, text) => total + Math.max(1, Math.ceil(text.length / width)), 0);
 }
 
-/** NÃºmero vÃ¡lido o null (null deja la celda vacÃ­a en vez de escribir 0). */
+/** Número válido o null (null deja la celda vacía en vez de escribir 0). */
 function numberOrNull(value) {
 if (value === null || value === undefined || value === '') return null;
 return Number.isFinite(Number(value)) ? Number(value) : null;
@@ -84,13 +84,13 @@ subtitleCell.font = { size: 11, color: { argb: 'FF595959' } };
 
 /** Texto de la columna "Estado" de un pedido. */
 function saleState(sale) {
-// En una fila anulada el monto va AQUÃ y no en la columna de totales: asÃ­ la
-// fila TOTAL DEL DÃA puede seguir siendo un SUM() simple sin sumar lo anulado.
-if (sale.voided) return `ANULADO (${formatUsd(sale.total)}) Â· ${sale.voided.reason}`;
+// En una fila anulada el monto va AQUÍ y no en la columna de totales: así la
+// fila TOTAL DEL DÍA puede seguir siendo un SUM() simple sin sumar lo anulado.
+if (sale.voided) return `ANULADO (${formatUsd(sale.total)}) · ${sale.voided.reason}`;
 if (isCreditSale(sale)) {
     return sale.creditPaid
-    ? `CrÃ©dito pagado (${sale.creditPaid.method})`
-    : 'A crÃ©dito Â· SIN PAGAR';
+    ? `Crédito pagado (${sale.creditPaid.method})`
+    : 'A crédito · SIN PAGAR';
 }
 return 'Cobrado';
 }
@@ -124,15 +124,15 @@ writeTitle(sheet, 'P', 'CIERRE DE CAJA', formatDayLabel(dateKey));
 
 const headerRow = sheet.getRow(4);
 headerRow.values = [
-'NÂ° pedido', 'Hora pedido', 'Hora cobro', 'Cliente', 'Tipo', 'Delivery USD', 'MÃ©todo de pago',
+'N° pedido', 'Hora pedido', 'Hora cobro', 'Cliente', 'Tipo', 'Delivery USD', 'Método de pago',
 'Referencia', 'Productos', 'Modificadores', 'Unidades', 'Total USD', 'Total Bs', 'Tasa BCV', 'Correcciones', 'Estado',
 ];
 styleHeaderRow(headerRow);
 
 sales.forEach((sale, index) => {
 const items = sale.items || [];
-// Un producto por lÃ­nea dentro de la celda: se lee mucho mejor que
-// separarlos con " | " en una sola lÃ­nea larga.
+// Un producto por línea dentro de la celda: se lee mucho mejor que
+// separarlos con " | " en una sola línea larga.
 const productLines = items.map(item => {
 if (item.isCombo) {
 const partLines = (item.parts || []).map(part => {
@@ -140,7 +140,7 @@ const detail = [describeLine(part), ...(part.mods || [])].filter(Boolean).join('
 const label = partTitle(part);
 return `  - ${item.qty}x ${label}${detail ? ` (${detail})` : ''}`;
 });
-return [`${item.qty}x ${item.name} Â· ${formatUsd(item.price * item.qty)}`, ...partLines];
+return [`${item.qty}x ${item.name} · ${formatUsd(item.price * item.qty)}`, ...partLines];
 }
 const detail = describeLine(item);
 return `${item.qty}x ${item.name}${detail ? ` (${detail})` : ''}`;
@@ -148,8 +148,8 @@ return `${item.qty}x ${item.name}${detail ? ` (${detail})` : ''}`;
 const modLines = items
     .filter(item => Array.isArray(item.mods) && item.mods.length > 0)
     .map(item => `${item.name}: ${item.mods.join(', ')}`);
-// Pago dividido: un mÃ©todo por lÃ­nea con su monto ("Efectivo $2.00"); la
-// referencia va con el nombre de su mÃ©todo para poder cuadrarla con el banco.
+// Pago dividido: un método por línea con su monto ("Efectivo $2.00"); la
+// referencia va con el nombre de su método para poder cuadrarla con el banco.
 const payments = getOrderPayments(sale);
 const split = isSplitPayment(sale);
 const payLines = split
@@ -157,7 +157,7 @@ const payLines = split
 : [sale.pay || ''];
 const refLines = split
 ? payments.filter(part => part.ref).map(part => `${part.method}: ${part.ref}`)
-: (sale.payRef ? [String(sale.payRef)] : []); // TEXTO a propÃ³sito, ver cabecera
+: (sale.payRef ? [String(sale.payRef)] : []); // TEXTO a propósito, ver cabecera
 const units = items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
 
 const row = sheet.addRow([
@@ -172,23 +172,23 @@ const row = sheet.addRow([
     productLines.join('\n'),
     modLines.join('\n'),
     // Un cobro anulado no aporta unidades ni dinero. Dejar estas celdas
-    // vacÃ­as es lo que mantiene honesta la fila TOTAL DEL DÃA: si llevaran
-    // el monto, el SUM() de abajo lo contarÃ­a y el Excel cuadrarÃ­a mal en
+    // vacías es lo que mantiene honesta la fila TOTAL DEL DÍA: si llevaran
+    // el monto, el SUM() de abajo lo contaría y el Excel cuadraría mal en
     // cuanto Excel recalculara la hoja.
     sale.voided ? null : units,
     sale.voided ? null : numberOrNull(sale.total),
     sale.voided ? null : numberOrNull(sale.totalBs),
     sale.voided ? null : numberOrNull(sale.bcvRate),
-    // Si el pedido se corrigiÃ³ despuÃ©s de generarse, queda a la vista del administrador.
+    // Si el pedido se corrigió después de generarse, queda a la vista del administrador.
     sale.revision > 0
-    ? `${sale.revision} ${sale.revision === 1 ? 'vez' : 'veces'} Â· total original ${formatUsd(sale.edits?.[0]?.prevTotal)}`
+    ? `${sale.revision} ${sale.revision === 1 ? 'vez' : 'veces'} · total original ${formatUsd(sale.edits?.[0]?.prevTotal)}`
     : '',
     saleState(sale),
 ]);
 
 styleBodyRow(row, index);
 
-// Una venta anulada no se borra del Excel: se marca. Que el dueÃ±o la vea
+// Una venta anulada no se borra del Excel: se marca. Que el dueño la vea
 // tachada, con su motivo, es el punto de anular en vez de borrar.
 if (sale.voided) {
     row.eachCell({ includeEmpty: true }, cell => {
@@ -200,7 +200,7 @@ if (isCreditSale(sale) && !sale.creditPaid && !sale.voided) {
     row.getCell('state').font = { bold: true, color: { argb: 'FF8B6E00' } };
 }
 
-// Altura segÃºn la cantidad de lÃ­neas: asÃ­ el texto con saltos no se corta.
+// Altura según la cantidad de líneas: así el texto con saltos no se corta.
 const visualLines = Math.max(
     wrappedLineCount(productLines, ORDER_COL_WIDTHS.items),
     wrappedLineCount(modLines, ORDER_COL_WIDTHS.mods),
@@ -235,11 +235,11 @@ const first = 5;
 const last = 4 + sales.length;
 sheet.autoFilter = `A4:O${last}`;
 
-// Fila de total con fÃ³rmulas: si alguien edita un monto en Excel, el total se actualiza.
+// Fila de total con fórmulas: si alguien edita un monto en Excel, el total se actualiza.
 const summary = summarizeSales(sales);
 const totalRow = sheet.addRow([]);
 sheet.mergeCells(`A${totalRow.number}:J${totalRow.number}`);
-totalRow.getCell(1).value = 'TOTAL DEL DÃA';
+totalRow.getCell(1).value = 'TOTAL DEL DÍA';
 totalRow.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
 totalRow.getCell('units').value = { formula: `SUM(K${first}:K${last})`, result: summary.itemsSold };
 totalRow.getCell('usd').value = { formula: `SUM(L${first}:L${last})`, result: summary.totalUsd };
@@ -262,7 +262,7 @@ return sheet;
 
 /* ---------- Hoja 2: resumen ---------- */
 
-/** Escribe un bloque (tÃ­tulo + encabezado + filas) y devuelve la siguiente fila libre. */
+/** Escribe un bloque (título + encabezado + filas) y devuelve la siguiente fila libre. */
 function writeBlock(sheet, startRow, title, headers, rows, formats = {}) {
 const titleRow = sheet.getRow(startRow);
 titleRow.getCell(1).value = title;
@@ -294,17 +294,17 @@ pageSetup: { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeigh
 sheet.columns = [{ width: 36 }, { width: 14 }, { width: 18 }, { width: 22 }];
 
 const summary = summarizeSales(sales);
-writeTitle(sheet, 'D', 'CIERRE DE CAJA Â· RESUMEN', formatDayLabel(dateKey));
+writeTitle(sheet, 'D', 'CIERRE DE CAJA · RESUMEN', formatDayLabel(dateKey));
 
 const kpis = [
 ['Pedidos cobrados', summary.count],
 ['Unidades vendidas', summary.itemsSold],
 ['Total vendido USD', summary.totalUsd],
 ...(summary.hasBsData ? [['Total vendido Bs', summary.totalBs]] : []),
-// Con crÃ©dito, lo vendido y lo que entrÃ³ a la caja dejan de ser lo mismo.
+// Con crédito, lo vendido y lo que entró a la caja dejan de ser lo mismo.
 ...(summary.creditOpenUsd > 0 ? [
-['EntrÃ³ a la caja USD', summary.collectedUsd],
-['QuedÃ³ a crÃ©dito USD', summary.creditOpenUsd],
+['Entró a la caja USD', summary.collectedUsd],
+['Quedó a crédito USD', summary.creditOpenUsd],
 ] : []),
 ['Ticket promedio USD', summary.averageTicket],
 ...(summary.voidedCount > 0 ? [
@@ -312,11 +312,11 @@ const kpis = [
 ['Monto anulado USD', summary.voidedUsd],
 ] : []),
 ];
-let next = writeBlock(sheet, 4, 'Totales del dÃ­a', ['Concepto', 'Valor'], kpis);
-// Formato de cada KPI segÃºn lo que es (cantidad, dÃ³lares o bolÃ­vares).
+let next = writeBlock(sheet, 4, 'Totales del día', ['Concepto', 'Valor'], kpis);
+// Formato de cada KPI según lo que es (cantidad, dólares o bolívares).
 const kpiFormats = {
 'Total vendido USD': FMT_USD, 'Total vendido Bs': FMT_BS, 'Ticket promedio USD': FMT_USD,
-'EntrÃ³ a la caja USD': FMT_USD, 'QuedÃ³ a crÃ©dito USD': FMT_USD, 'Monto anulado USD': FMT_USD,
+'Entró a la caja USD': FMT_USD, 'Quedó a crédito USD': FMT_USD, 'Monto anulado USD': FMT_USD,
 };
 kpis.forEach(([label], index) => {
 const cell = sheet.getRow(6 + index).getCell(2);
@@ -325,8 +325,8 @@ cell.font = { bold: true };
 });
 
 next = writeBlock(
-sheet, next, 'Por mÃ©todo de pago (para cuadrar la caja)',
-['MÃ©todo', 'Pedidos', 'Total USD', 'Total Bs'],
+sheet, next, 'Por método de pago (para cuadrar la caja)',
+['Método', 'Pedidos', 'Total USD', 'Total Bs'],
 Object.entries(summary.byPayment).map(([method, data]) => [
     method, data.count, data.totalUsd, data.totalBs > 0 ? data.totalBs : null,
 ]),
@@ -353,18 +353,18 @@ return sheet;
 /* ---------- Hoja 3: inventario ---------- */
 
 /**
- * La hoja de inventario ahora tiene dos niveles (grupo â subgrupo â Ã­tems).
- * Los grupos principales (Panes, ProteÃ­nas, Bebidas, Extras) se marcan con
+ * La hoja de inventario ahora tiene dos niveles (grupo → subgrupo → ítems).
+ * Los grupos principales (Panes, Proteínas, Bebidas, Extras) se marcan con
  * fondo verde; los subgrupos (Refresco de lata, Carnes, etc.) con fondo gris
- * claro. Los Ã­tems individuales van con el zebra striping normal.
- * Columnas: CategorÃ­a Â· PresentaciÃ³n Â· Insumo Â· Nota Â· Sobrante Â· IngresÃ³ Â· DaÃ±ado Â· Disponible Â· Vendido Â· Quedan
+ * claro. Los ítems individuales van con el zebra striping normal.
+ * Columnas: Categoría · Presentación · Insumo · Nota · Sobrante · Ingresó · Dañado · Disponible · Vendido · Quedan
  */
 function buildInventorySheet(workbook, inventory, dateKey) {
 const sheet = workbook.addWorksheet('Inventario', {
 views: [{ state: 'frozen', ySplit: 4 }],
 pageSetup: { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
 });
-// Columna extra "PresentaciÃ³n" (subgrupo) para distinguir marcas iguales
+// Columna extra "Presentación" (subgrupo) para distinguir marcas iguales
 // que aparecen en varias presentaciones (ej. Coca-Cola lata vs. botella).
 sheet.columns = [
 { key: 'group',     width: 14 },
@@ -379,16 +379,16 @@ sheet.columns = [
 { key: 'remaining', width: 12 },
 ];
 
-writeTitle(sheet, 'J', 'CIERRE DE CAJA Â· INVENTARIO', formatDayLabel(dateKey));
+writeTitle(sheet, 'J', 'CIERRE DE CAJA · INVENTARIO', formatDayLabel(dateKey));
 
 const headerRow = sheet.getRow(4);
-headerRow.values = ['Grupo', 'PresentaciÃ³n', 'Insumo', 'Uso', 'Sobrante de ayer', 'IngresÃ³ hoy', 'DaÃ±ado', 'Disponible', 'Vendido', 'Quedan'];
+headerRow.values = ['Grupo', 'Presentación', 'Insumo', 'Uso', 'Sobrante de ayer', 'Ingresó hoy', 'Dañado', 'Disponible', 'Vendido', 'Quedan'];
 styleHeaderRow(headerRow);
 
-let itemIndex = 0; // para el zebra striping solo en Ã­tems, no en cabeceras
+let itemIndex = 0; // para el zebra striping solo en ítems, no en cabeceras
 
 inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
-  // ââ Fila de categorÃ­a principal ââââââââââââââââââââââââââââââââââââââââ
+  // ── Fila de categoría principal ────────────────────────────────────────
   const groupRow = sheet.addRow([group]);
   sheet.mergeCells(`A${groupRow.number}:J${groupRow.number}`);
   groupRow.height = 22;
@@ -399,13 +399,13 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
     cell.alignment = { vertical: 'middle' };
   });
 
-  // ââ Ãtems sin subgrupo ââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Ítems sin subgrupo ────────────────────────────────────────────────
   directRows.forEach(item => {
     const rowN = sheet.rowCount + 1;
     const tracked = item.available !== null;
     const row = sheet.addRow([
-      '',           // grupo ya estÃ¡ en la cabecera
-      '',           // sin presentaciÃ³n
+      '',           // grupo ya está en la cabecera
+      '',           // sin presentación
       item.name,
       item.note || '',
       item.carry,
@@ -413,14 +413,14 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
       item.wasted || null,
       tracked ? { formula: `N(E${rowN})+N(F${rowN})`, result: item.available } : null,
       item.sold,
-      // Quedan = Disponible â Vendido â DaÃ±ado
+      // Quedan = Disponible − Vendido − Dañado
       tracked ? { formula: `H${rowN}-I${rowN}-N(G${rowN})`, result: item.remaining } : null,
     ]);
     styleBodyRow(row, itemIndex++);
     styleInvRow(row, item);
   });
 
-  // ââ Subgrupos ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Subgrupos ──────────────────────────────────────────────────────────
   subgroups.forEach(({ subgroup, rows: subRows }) => {
     // Cabecera del subgrupo
     const sgRow = sheet.addRow(['', subgroup]);
@@ -438,7 +438,7 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
       const tracked = item.available !== null;
       const row = sheet.addRow([
         '',
-        '',          // subgrupo ya estÃ¡ en la cabecera
+        '',          // subgrupo ya está en la cabecera
         item.name,
         item.note || '',
         item.carry,
@@ -446,7 +446,7 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
         item.wasted || null,
         tracked ? { formula: `N(E${rowN})+N(F${rowN})`, result: item.available } : null,
         item.sold,
-        // Quedan = Disponible â Vendido â DaÃ±ado
+        // Quedan = Disponible − Vendido − Dañado
         tracked ? { formula: `H${rowN}-I${rowN}-N(G${rowN})`, result: item.remaining } : null,
       ]);
       styleBodyRow(row, itemIndex++);
@@ -458,7 +458,7 @@ inventory.groups.forEach(({ group, rows: directRows, subgroups }) => {
 return sheet;
 }
 
-/** Aplica alineaciÃ³n y color de alerta a una fila de insumo individual. */
+/** Aplica alineación y color de alerta a una fila de insumo individual. */
 function styleInvRow(row, item) {
 for (let col = 5; col <= 10; col += 1) {
   row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -470,12 +470,12 @@ if (item.status === 'out') row.getCell('remaining').font = { bold: true, color: 
 if (item.status === 'low') row.getCell('remaining').font = { bold: true, color: { argb: 'FF8B6E00' } };
 }
 
-/* ---------- API pÃºblica ---------- */
+/* ---------- API pública ---------- */
 
-/** Arma el libro de Excel del dÃ­a. Exportada aparte de la descarga para poder probarla. */
+/** Arma el libro de Excel del día. Exportada aparte de la descarga para poder probarla. */
 /**
- * Deudas abiertas de TODOS los dÃ­as, no solo del dÃ­a del cierre.
- * Es la hoja que el dueÃ±o necesita para salir a cobrar.
+ * Deudas abiertas de TODOS los días, no solo del día del cierre.
+ * Es la hoja que el dueño necesita para salir a cobrar.
  */
 function buildCreditsSheet(workbook, salesByDay, dateKey) {
 const credits = summarizeOpenCredits(salesByDay, dateKey);
@@ -496,7 +496,7 @@ sheet.columns = [
 writeTitle(sheet, 'E', 'PENDIENTE POR COBRAR', `Al ${formatDayLabel(dateKey)}`);
 
 const headerRow = sheet.getRow(4);
-headerRow.values = ['Cliente', 'DÃ­a del pedido', 'NÂ° pedido', 'AntigÃ¼edad', 'Monto USD'];
+headerRow.values = ['Cliente', 'Día del pedido', 'N° pedido', 'Antigüedad', 'Monto USD'];
 styleHeaderRow(headerRow);
 
 let index = 0;
@@ -551,7 +551,7 @@ buildOrdersSheet(workbook, sales, dateKey);
 buildSummarySheet(workbook, sales, dateKey);
 // La hoja de deudas solo aparece si hay algo que cobrar.
 if (salesByDay) buildCreditsSheet(workbook, salesByDay, dateKey);
-// Solo se agrega la hoja de inventario si ese dÃ­a se ingresÃ³ algÃºn insumo.
+// Solo se agrega la hoja de inventario si ese día se ingresó algún insumo.
 if (inventory?.hasStock) buildInventorySheet(workbook, inventory, dateKey);
 return workbook;
 }

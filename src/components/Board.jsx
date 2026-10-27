@@ -5,7 +5,7 @@ import { isCreditSale } from "../utils/payment.js";
 
 const COLUMNS = [
   { status: "Pendiente", label: "Pendiente", colClass: "col-pend" },
-  { status: "Preparando", label: "En preparaciÃ³n", colClass: "col-prep" },
+  { status: "Preparando", label: "En preparación", colClass: "col-prep" },
   { status: "Listo", label: "Listo", colClass: "col-listo" },
 ];
 
@@ -28,7 +28,7 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
             onClick={event => { event.stopPropagation(); onDelete(order); }}
             aria-label={`Eliminar pedido #${order.num}`}
           >
-            â
+            ✕
           </button>
         )}
       </div>
@@ -39,12 +39,12 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
           return (
             <div className="oc-item-combo" key={l.uid ?? `${l.name}-${index}`}>
               {separator}
-              <span>{l.qty}x {l.name} Â· ${ (l.price * l.qty).toFixed(2)}</span>
+              <span>{l.qty}x {l.name} · ${ (l.price * l.qty).toFixed(2)}</span>
               {l.parts.map((part, partIndex) => {
                 const detail = [describeLine(part), ...(part.mods || [])].filter(Boolean).join(", ");
                 return (
                   <span className="oc-item-part" key={part.id || `${part.name}-${partIndex}`}>
-                    â³ {l.qty}x {partTitle(part)}{detail ? ` (${detail})` : ""}
+                    ↳ {l.qty}x {partTitle(part)}{detail ? ` (${detail})` : ""}
                   </span>
                 );
               })}
@@ -56,7 +56,7 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
       })}</div>
       {order.revision > 0 && <div className="oc-corrected">Corregido</div>}
       <div className="oc-foot">
-        <span>{order.type} Â· {order.pay}{order.payRef ? ` Â· Ref. ${order.payRef}` : ''}</span>
+        <span>{order.type} · {order.pay}{order.payRef ? ` · Ref. ${order.payRef}` : ''}</span>
         <div className="oc-total">
           <span>${order.total.toFixed(2)}</span>
           {totalBs !== null && (
@@ -65,14 +65,14 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
         </div>
       </div>
 
-      {/* Un pedido listo ya se cocinÃ³: solo se puede cobrar, no corregir. */}
+      {/* Un pedido listo ya se cocinó: solo se puede cobrar, no corregir. */}
       {!isReady && (
         <button
           type="button"
           className="oc-edit"
           onClick={event => { event.stopPropagation(); onEdit(order); }}
         >
-          â Corregir
+          ✎ Corregir
         </button>
       )}
 
@@ -82,7 +82,7 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
           className="oc-charge"
           onClick={event => { event.stopPropagation(); onCharge(order); }}
         >
-          ðµ Cobrar y cerrar
+          💵 Cobrar y cerrar
         </button>
       )}
     </div>
@@ -90,16 +90,16 @@ function OrderCard({ order, onClick, onDelete, onCharge, onEdit, canDelete }) {
 }
 
 /**
- * Cobros del dÃ­a con opciÃ³n de anular, para el trabajador.
+ * Cobros del día con opción de anular, para el trabajador.
  *
- * El trabajador no ve el cierre de caja, asÃ­ que hasta ahora un cobro
- * equivocado solo lo podÃ­a deshacer el dueÃ±o: habÃ­a que llamarlo por
- * telÃ©fono en plena hora pico.
+ * El trabajador no ve el cierre de caja, así que hasta ahora un cobro
+ * equivocado solo lo podía deshacer el dueño: había que llamarlo por
+ * teléfono en plena hora pico.
  *
  * Anular NO borra: la venta queda en el registro, tachada, con el motivo y
- * la hora. Eso es lo que permite que el dueÃ±o vea al cierre que hubo tres
+ * la hora. Eso es lo que permite que el dueño vea al cierre que hubo tres
  * anulaciones de $8 del mismo turno. El motivo es obligatorio justamente
- * porque sin Ã©l la anulaciÃ³n no dice nada.
+ * porque sin él la anulación no dice nada.
  */
 function RecentCharges({ sales, onVoid }) {
   const [voiding, setVoiding] = useState(null);
@@ -107,7 +107,7 @@ function RecentCharges({ sales, onVoid }) {
 
   if (!Array.isArray(sales) || sales.length === 0) return null;
 
-  // Los Ãºltimos primero: un cobro que hay que deshacer casi siempre es reciente.
+  // Los últimos primero: un cobro que hay que deshacer casi siempre es reciente.
   const recent = [...sales].sort((a, b) => Number(b.num) - Number(a.num)).slice(0, 8);
 
   function confirm(sale) {
@@ -121,7 +121,7 @@ function RecentCharges({ sales, onVoid }) {
     <section className="charges">
       <h3>Cobros de hoy</h3>
       <p className="charges-hint">
-        Si cobraste un pedido por error o el cliente se arrepintiÃ³, anÃºlalo aquÃ­.
+        Si cobraste un pedido por error o el cliente se arrepintió, anúlalo aquí.
         Queda registrado con el motivo y los insumos vuelven al inventario.
       </p>
 
@@ -134,19 +134,19 @@ function RecentCharges({ sales, onVoid }) {
               <span className="charge-total">{formatUsd(sale.total)}</span>
               <span className="charge-pay">
                 {sale.pay}
-                {isCreditSale(sale) && !sale.creditPaid && " Â· sin pagar"}
+                {isCreditSale(sale) && !sale.creditPaid && " · sin pagar"}
               </span>
             </div>
 
             {sale.voided ? (
-              <span className="charge-void-note">Anulado Â· {sale.voided.reason}</span>
+              <span className="charge-void-note">Anulado · {sale.voided.reason}</span>
             ) : voiding === sale.saleId ? (
               <div className="charge-void-form">
                 <input
                   autoFocus
                   value={reason}
                   onChange={event => setReason(event.target.value)}
-                  placeholder="Â¿Por quÃ© se anula? (obligatorio)"
+                  placeholder="¿Por qué se anula? (obligatorio)"
                   maxLength={80}
                   onKeyDown={event => { if (event.key === "Enter") confirm(sale); }}
                 />
@@ -173,8 +173,8 @@ export default function Board({ orders, onAdvance, onDelete, onCharge, onEdit, c
   return (
     <>
       <div className="hint-bar">
-        ð¡ Al generar un comprobante, el pedido entra aquÃ­ en "Pendiente".
-        Haz clic en una tarjeta para avanzar su estado. Al llegar a "Listo", cÃ³bralo para que entre al cierre de caja.
+        💡 Al generar un comprobante, el pedido entra aquí en "Pendiente".
+        Haz clic en una tarjeta para avanzar su estado. Al llegar a "Listo", cóbralo para que entre al cierre de caja.
       </div>
       <div className="board">
         {COLUMNS.map(col => {

@@ -3,8 +3,8 @@ import { getBusinessDayKey } from '../utils/salesReport';
 
 export const SALES_STORAGE_KEY = 'perritos_guao_sales';
 
-/** DÃ­as de historial que se conservan. MÃ¡s allÃ¡ de eso se descartan solos
- *  para que localStorage no crezca sin lÃ­mite. */
+/** Días de historial que se conservan. Más allá de eso se descartan solos
+ *  para que localStorage no crezca sin límite. */
 const RETENTION_DAYS = 90;
 
 function loadSales() {
@@ -15,7 +15,7 @@ function loadSales() {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
 
-    // Se descartan dÃ­as viejos y cualquier clave con formato inesperado.
+    // Se descartan días viejos y cualquier clave con formato inesperado.
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
     const cutoffKey = getBusinessDayKey(cutoff);
@@ -32,11 +32,11 @@ function loadSales() {
 }
 
 /**
- * Registro de ventas cerradas, agrupado por dÃ­a de caja y persistido en
+ * Registro de ventas cerradas, agrupado por día de caja y persistido en
  * localStorage.
  *
  * A diferencia de `orders` (que es el tablero de trabajo y se puede vaciar),
- * esto es el libro contable: una vez que un pedido se cobra entra aquÃ­ y
+ * esto es el libro contable: una vez que un pedido se cobra entra aquí y
  * sobrevive a refrescos y cierres del navegador.
  */
 export function useSales() {
@@ -79,7 +79,7 @@ export function useSales() {
 
   /**
    * Anula un cobro SIN borrarlo: queda en el registro, tachado, con el motivo
-   * y la hora. No borrar es lo que permite que el dueÃ±o vea tres anulaciones
+   * y la hora. No borrar es lo que permite que el dueño vea tres anulaciones
    * de $8 del mismo trabajador en la misma semana.
    */
   function voidSale(dateKey, saleId, reason) {
@@ -101,7 +101,7 @@ export function useSales() {
     return true;
   }
 
-  /** Deshace una anulaciÃ³n. Solo el administrador deberÃ­a poder llamarla. */
+  /** Deshace una anulación. Solo el administrador debería poder llamarla. */
   function unvoidSale(dateKey, saleId) {
     setSalesByDay(prev => {
       const dayList = prev[dateKey];
@@ -118,9 +118,9 @@ export function useSales() {
   }
 
   /**
-   * Marca una venta a crÃ©dito como pagada. Solo el administrador: si el
-   * trabajador pudiera cerrarla, bastarÃ­a con cobrar en efectivo y marcar
-   * "pagado" para que la plata no apareciera por ningÃºn lado.
+   * Marca una venta a crédito como pagada. Solo el administrador: si el
+   * trabajador pudiera cerrarla, bastaría con cobrar en efectivo y marcar
+   * "pagado" para que la plata no apareciera por ningún lado.
    */
   function settleCredit(dateKey, saleId, method) {
     setSalesByDay(prev => {
@@ -162,7 +162,7 @@ export function useSales() {
     });
   }
 
-  /** Borra por completo el registro de un dÃ­a. */
+  /** Borra por completo el registro de un día. */
   function clearDay(dateKey) {
     setSalesByDay(prev => {
       const next = { ...prev };

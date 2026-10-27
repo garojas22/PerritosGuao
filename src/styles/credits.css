@@ -1,10 +1,10 @@
 /* ============================================================
-   Pago a crÃ©dito y anulaciÃ³n de cobros
-   Mismo sistema que el resto: pÃ­ldoras, Inter para rÃ³tulos,
-   Baloo solo para cifras, naranja Ãºnicamente para lo activo.
+   Pago a crédito y anulación de cobros
+   Mismo sistema que el resto: píldoras, Inter para rótulos,
+   Baloo solo para cifras, naranja únicamente para lo activo.
    ============================================================ */
 
-/* ââ En el carrito âââââââââââââââââââââââââââââââââââââââââ */
+/* ── En el carrito ───────────────────────────────────────── */
 .segmented-pay button.pay-credit.active{
   background:var(--amber);border-color:var(--amber);color:var(--brown);
 }
@@ -14,7 +14,7 @@
   color:var(--brown);font-size:12.5px;font-weight:600;line-height:1.45;
 }
 
-/* ââ Panel "Por cobrar" del cierre âââââââââââââââââââââââââ */
+/* ── Panel "Por cobrar" del cierre ───────────────────────── */
 .credits-total{display:flex;flex-direction:column;gap:2px;text-align:right;}
 .credits-total-value{font-family:'Baloo 2';font-size:26px;line-height:1.1;color:var(--rust);}
 
@@ -53,7 +53,7 @@
   font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-decoration:underline;
 }
 
-/* ââ Etiquetas en el detalle de pedidos ââââââââââââââââââââ */
+/* ── Etiquetas en el detalle de pedidos ──────────────────── */
 .cc-credit-tag{
   display:inline-block;margin:3px 0 0 7px;padding:2px 9px;border-radius:999px;
   font-family:'Inter',sans-serif;font-size:10px;font-weight:700;
@@ -80,7 +80,7 @@
 }
 .cc-undo:hover{border-color:var(--orange);color:var(--orange-deep);}
 
-/* ââ Cobros de hoy, en el tablero (lo ve el trabajador) ââââ */
+/* ── Cobros de hoy, en el tablero (lo ve el trabajador) ──── */
 .charges{
   margin-top:22px;background:var(--paper);
   border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;

@@ -30,9 +30,9 @@ const COLLAPSED_GROUPS_KEY = 'perritos_inv_groups_collapsed';
 
 /**
  * Devuelve `null` cuando nunca se ha tocado nada: eso significa "todas las
- * categorÃ­as cerradas", que es como debe abrir la tabla. No se puede
- * representar con un Set lleno porque los nombres de las categorÃ­as no se
- * conocen hasta que el inventario estÃ¡ calculado.
+ * categorías cerradas", que es como debe abrir la tabla. No se puede
+ * representar con un Set lleno porque los nombres de las categorías no se
+ * conocen hasta que el inventario está calculado.
  */
 function loadCollapsedGroups() {
   try {
@@ -60,7 +60,7 @@ function StatCard({ label, value, sub, accent }) {
 }
 
 /**
- * Campo numÃ©rico del inventario. Guarda lo escrito mientras se teclea, para
+ * Campo numérico del inventario. Guarda lo escrito mientras se teclea, para
  * poder escribir un "-" (ajuste negativo por merma) sin que el campo se borre.
  */
 function StockInput({ value, onCommit, label, className = 'inv-input' }) {
@@ -113,14 +113,14 @@ function PackHint({ pack, value }) {
 function InvRow({ row, dayKey, onSetStock, onSetStart, onSetWaste, isSubgroupItem, isAdmin, onEditItem }) {
   return (
     <tr key={row.id} className={row.status ? `inv-row-${row.status}` : ''}>
-      {/* El insumo es el nivel MÃS ligero: sin cc-strong, que lo dejaba
-          mÃ¡s pesado que el subgrupo que lo contiene. */}
+      {/* El insumo es el nivel MÁS ligero: sin cc-strong, que lo dejaba
+          más pesado que el subgrupo que lo contiene. */}
       <td className={isSubgroupItem ? 'inv-indent-2' : 'inv-indent-1'}>
         <span className="inv-item-name">
           {row.name}
           {row.manualOnly && <span className="inv-manual-tag">solo conteo manual</span>}
-          {/* Solo los insumos creados desde la app se editan. Los del cÃ³digo
-              los referencia el menÃº por id: cambiarlos rompe el histÃ³rico. */}
+          {/* Solo los insumos creados desde la app se editan. Los del código
+              los referencia el menú por id: cambiarlos rompe el histórico. */}
           {isAdmin && row.isCustom && (
             <button
               type="button"
@@ -129,7 +129,7 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, onSetWaste, isSubgroupIte
               title={`Editar ${row.name}`}
               aria-label={`Editar ${row.name}`}
             >
-              â
+              ✎
             </button>
           )}
         </span>
@@ -148,10 +148,10 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, onSetWaste, isSubgroupIte
               type="button"
               className="inv-reset"
               onClick={() => onSetStart(dayKey, row.id, null)}
-              title="Volver al cÃ¡lculo automÃ¡tico"
-              aria-label={`Volver al cÃ¡lculo automÃ¡tico: ${row.name}`}
+              title="Volver al cálculo automático"
+              aria-label={`Volver al cálculo automático: ${row.name}`}
             >
-              âº
+              ↺
             </button>
           )}
         </span>
@@ -160,7 +160,7 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, onSetWaste, isSubgroupIte
         <StockInput
           value={row.entered}
           onCommit={value => onSetStock(dayKey, row.id, value)}
-          label={`IngresÃ³: ${row.name}`}
+          label={`Ingresó: ${row.name}`}
         />
         <PackHint pack={row.pack} value={row.entered} />
       </td>
@@ -169,12 +169,12 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, onSetWaste, isSubgroupIte
           className="inv-input inv-input-waste"
           value={row.wasted || null}
           onCommit={value => onSetWaste(dayKey, row.id, value)}
-          label={`DaÃ±ado: ${row.name}`}
+          label={`Dañado: ${row.name}`}
         />
       </td>
       <td className="cc-num">
         <span className={`inv-fig ${row.available === null ? 'inv-muted' : ''}`}>
-          {row.available !== null ? row.available : 'â'}
+          {row.available !== null ? row.available : '—'}
         </span>
       </td>
       <td className="cc-num">
@@ -186,16 +186,16 @@ function InvRow({ row, dayKey, onSetStock, onSetStart, onSetWaste, isSubgroupIte
             {row.remaining}
             {row.status && <em>{INV_STATUS_LABEL[row.status]}</em>}
           </span>
-        ) : <span className="inv-fig inv-muted">â</span>}
+        ) : <span className="inv-fig inv-muted">—</span>}
       </td>
     </tr>
   );
 }
 
 /**
- * SeÃ±ales de agotado / por acabarse de un conjunto de insumos.
- * Se muestran SIEMPRE, no solo al plegar: el dueÃ±o tiene que ver que se
- * acabÃ³ el Chinotto sin tener que abrir los cuatro grupos de bebidas.
+ * Señales de agotado / por acabarse de un conjunto de insumos.
+ * Se muestran SIEMPRE, no solo al plegar: el dueño tiene que ver que se
+ * acabó el Chinotto sin tener que abrir los cuatro grupos de bebidas.
  */
 function AlertBadges({ alerts }) {
   if (alerts.out === 0 && alerts.low === 0) return null;
@@ -213,24 +213,24 @@ function AlertBadges({ alerts }) {
   );
 }
 
-/** Celda numÃ©rica de una fila de subgrupo: el total, o "â" si nadie ingresÃ³ nada. */
+/** Celda numérica de una fila de subgrupo: el total, o "—" si nadie ingresó nada. */
 function SgNum({ value }) {
   return (
     <td className="cc-num">
       <span className={`inv-sg-num ${value === null ? 'inv-muted' : ''}`}>
-        {value !== null ? value : 'â'}
+        {value !== null ? value : '—'}
       </span>
     </td>
   );
 }
 
-/** Fila de cabecera de un subgrupo (plegable). Totales alineados en las mismas columnas que los Ã­tems. */
+/** Fila de cabecera de un subgrupo (plegable). Totales alineados en las mismas columnas que los ítems. */
 function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
   const { alerts } = summary;
   return (
     <tr className="inv-subgroup" onClick={onToggle} role="button" aria-expanded={isOpen}>
       <td>
-        <span className="inv-sub-chevron">{isOpen ? 'â¾' : 'â¸'}</span>
+        <span className="inv-sub-chevron">{isOpen ? '▾' : '▸'}</span>
         <span className="inv-subgroup-name">{subgroup}</span>
         <AlertBadges alerts={alerts} />
       </td>
@@ -239,23 +239,83 @@ function SubgroupRow({ subgroup, summary, isOpen, onToggle }) {
       <SgNum value={summary.wasted || null} />
       <SgNum value={summary.available} />
       <SgNum value={summary.sold} />
-      {/* El total del subgrupo NO lleva etiqueta "Agotado": decÃ­a
+      {/* El total del subgrupo NO lleva etiqueta "Agotado": decía
           "58 Agotado" en Salchichas porque UNA de las tres estaba en cero.
-          CuÃ¡les se acabaron ya lo dicen los badges de la izquierda. */}
+          Cuáles se acabaron ya lo dicen los badges de la izquierda. */}
       <SgNum value={summary.remaining} />
     </tr>
   );
 }
 
 /**
- * Deudas abiertas de todos los dÃ­as, agrupadas por cliente.
+ * Símbolo de cada categoría del inventario.
  *
- * Cruza TODO el registro, no solo el dÃ­a del cierre: una deuda del martes se
- * cobra el sÃ¡bado, y si solo se mirara el dÃ­a seleccionado desaparecerÃ­a de
- * la vista al dÃ­a siguiente de hacerla.
+ * SVG en línea y no emoji: el emoji se dibuja distinto en cada sistema y trae
+ * su propio color, que pelearía con la paleta. Esto usa `currentColor`, así
+ * que se vuelve blanco solo cuando la píldora naranja se abre.
+ */
+function GroupIcon({ group }) {
+  const key = String(group || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const paths = {
+    // Pan: corteza redondeada arriba, base plana y tres cortes
+    panes: (
+      <>
+        <path d="M3.8 14.6c0-4.2 3.7-7.5 8.2-7.5s8.2 3.3 8.2 7.5a1.6 1.6 0 0 1-1.6 1.6H5.4a1.6 1.6 0 0 1-1.6-1.6Z" />
+        <circle cx="9" cy="11.8" r=".75" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="10.6" r=".75" fill="currentColor" stroke="none" />
+        <circle cx="15" cy="11.8" r=".75" fill="currentColor" stroke="none" />
+      </>
+    ),
+    // Salchicha en diagonal: es lo que más se mueve en este negocio
+    proteinas: (
+      <>
+        <rect x="3.3" y="8.4" width="17.4" height="7.2" rx="3.6" />
+        <path d="M9 10.7l-1.1 2.6M13 10.7l-1.1 2.6M17 10.7l-1.1 2.6" />
+      </>
+    ),
+    // Botella con su etiqueta
+    bebidas: (
+      <>
+        <path d="M10 3h4v2.5c0 .6.2 1.2.7 1.6l.9.9c.9.9 1.4 2.1 1.4 3.4V19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-7.6c0-1.3.5-2.5 1.4-3.4l.9-.9c.5-.4.7-1 .7-1.6V3Z" />
+        <path d="M7.2 13.5h9.6" />
+      </>
+    ),
+    // Un "+" : son los agregados del pedido
+    extras: (
+      <>
+        <rect x="4" y="4" width="16" height="16" rx="5" />
+        <path d="M12 9.2v5.6M9.2 12h5.6" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      className="inv-group-icon" viewBox="0 0 24 24" aria-hidden="true"
+      fill="none" stroke="currentColor" strokeWidth="1.7"
+      strokeLinecap="round" strokeLinejoin="round"
+    >
+      {paths[key] ?? (
+        <>
+          <circle cx="12" cy="12" r="8" />
+          <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/**
+ * Deudas abiertas de todos los días, agrupadas por cliente.
+ *
+ * Cruza TODO el registro, no solo el día del cierre: una deuda del martes se
+ * cobra el sábado, y si solo se mirara el día seleccionado desaparecería de
+ * la vista al día siguiente de hacerla.
  */
 function CreditsPanel({ salesByDay, today, isAdmin, onSettleCredit }) {
-  const [settling, setSettling] = useState(null); // saleId que se estÃ¡ cerrando
+  const [settling, setSettling] = useState(null); // saleId que se está cerrando
   const credits = useMemo(() => summarizeOpenCredits(salesByDay, today), [salesByDay, today]);
 
   if (credits.count === 0) return null;
@@ -266,7 +326,7 @@ function CreditsPanel({ salesByDay, today, isAdmin, onSettleCredit }) {
         <div>
           <h3>Por cobrar</h3>
           <p className="cc-panel-hint">
-            Pedidos que salieron a crÃ©dito y siguen sin pagarse. No suman a la caja de ningÃºn dÃ­a
+            Pedidos que salieron a crédito y siguen sin pagarse. No suman a la caja de ningún día
             hasta que se marquen como pagados.
           </p>
         </div>
@@ -292,14 +352,14 @@ function CreditsPanel({ salesByDay, today, isAdmin, onSettleCredit }) {
               {customer.sales.map(sale => (
                 <li key={sale.saleId}>
                   <span className="credit-sale-main">
-                    #{sale.num} Â· {formatDayLabel(sale.dayKey)} Â· {formatUsd(sale.total)}
+                    #{sale.num} · {formatDayLabel(sale.dayKey)} · {formatUsd(sale.total)}
                     <span className="credit-sale-age">{describeAge(sale.days)}</span>
                   </span>
 
                   {isAdmin && (
                     settling === sale.saleId ? (
                       <span className="credit-settle">
-                        <span className="credit-settle-label">PagÃ³ con:</span>
+                        <span className="credit-settle-label">Pagó con:</span>
                         {PAY_METHODS.map(method => (
                           <button
                             key={method}
@@ -335,12 +395,12 @@ function CreditsPanel({ salesByDay, today, isAdmin, onSettleCredit }) {
 }
 
 /**
- * Tasa del dÃ­a. Solo el administrador la toca: si el trabajador pudiera
- * cambiarla, el dÃ­a que falte plata en la caja la sospecha cae sobre Ã©l
+ * Tasa del día. Solo el administrador la toca: si el trabajador pudiera
+ * cambiarla, el día que falte plata en la caja la sospecha cae sobre él
  * aunque no haya hecho nada.
  *
- * La tasa con la que se cobrÃ³ cada pedido ya queda guardada en la venta
- * (`bcvRate`), asÃ­ que cambiarla hoy no altera el histÃ³rico.
+ * La tasa con la que se cobró cada pedido ya queda guardada en la venta
+ * (`bcvRate`), así que cambiarla hoy no altera el histórico.
  */
 function RatePanel() {
   const { rate, autoRate, isManual, ageHours } = useBcvRateInfo();
@@ -354,18 +414,18 @@ function RatePanel() {
     setDraft('');
   }
 
-  // MÃ¡s de un dÃ­a con la misma tasa manual casi siempre es un olvido, no una
-  // decisiÃ³n: el riesgo real no es ponerla mal, es dejarla puesta.
+  // Más de un día con la misma tasa manual casi siempre es un olvido, no una
+  // decisión: el riesgo real no es ponerla mal, es dejarla puesta.
   const isStale = isManual && ageHours !== null && ageHours >= 24;
 
   return (
     <section className="cc-panel cc-panel-wide rate-panel">
       <div className="inv-head">
         <div>
-          <h3>Tasa del dÃ­a</h3>
+          <h3>Tasa del día</h3>
           <p className="cc-panel-hint">
-            Los bolÃ­vares de cada cobro salen de aquÃ­. Normalmente se toma sola del dÃ³lar oficial;
-            fÃ­jala a mano solo cuando la del dÃ­a no refleje lo que se estÃ¡ cobrando en el local.
+            Los bolívares de cada cobro salen de aquí. Normalmente se toma sola del dólar oficial;
+            fíjala a mano solo cuando la del día no refleje lo que se está cobrando en el local.
           </p>
         </div>
       </div>
@@ -377,15 +437,15 @@ function RatePanel() {
             {rate !== null && rate !== undefined ? `Bs. ${Number(rate).toFixed(2)}` : 'Sin tasa'}
           </strong>
           <span className={`rate-tag ${isManual ? 'rate-tag-manual' : 'rate-tag-auto'}`}>
-            {isManual ? 'Fijada a mano' : 'AutomÃ¡tica'}
+            {isManual ? 'Fijada a mano' : 'Automática'}
           </span>
         </div>
 
         {isManual && (
           <div className="rate-current">
-            <span className="cc-stat-label">AutomÃ¡tica hoy</span>
+            <span className="cc-stat-label">Automática hoy</span>
             <strong className="rate-value rate-value-soft">
-              {autoRate !== null ? `Bs. ${Number(autoRate).toFixed(2)}` : 'â'}
+              {autoRate !== null ? `Bs. ${Number(autoRate).toFixed(2)}` : '—'}
             </strong>
           </div>
         )}
@@ -397,14 +457,14 @@ function RatePanel() {
             value={draft}
             onChange={event => setDraft(event.target.value)}
             placeholder="900"
-            aria-label="Nueva tasa en bolÃ­vares"
+            aria-label="Nueva tasa en bolívares"
           />
           <button type="submit" className="cc-btn cc-btn-secondary" disabled={draft.trim() === ''}>
             Fijar tasa
           </button>
           {isManual && (
             <button type="button" className="cc-btn cc-btn-danger" onClick={clearManualRate}>
-              Volver a la automÃ¡tica
+              Volver a la automática
             </button>
           )}
         </form>
@@ -413,8 +473,8 @@ function RatePanel() {
       {isManual && (
         <div className={`inv-note ${isStale ? 'rate-note-stale' : ''}`}>
           {isStale
-            ? `Esta tasa lleva ${Math.floor(ageHours / 24)} dÃ­a(s) puesta a mano. RevÃ­sala o vuelve a la automÃ¡tica: el sistema no la estÃ¡ actualizando solo.`
-            : 'Mientras estÃ© fijada a mano, el sistema no usa la tasa del dÃ³lar oficial.'}
+            ? `Esta tasa lleva ${Math.floor(ageHours / 24)} día(s) puesta a mano. Revísala o vuelve a la automática: el sistema no la está actualizando solo.`
+            : 'Mientras esté fijada a mano, el sistema no usa la tasa del dólar oficial.'}
         </div>
       )}
     </section>
@@ -444,8 +504,8 @@ export default function CashClose({
   }, [collapsed]);
 
   useEffect(() => {
-    // null = nunca se tocÃ³. Guardarlo como [] harÃ­a que la prÃ³xima visita
-    // abriera con todas las categorÃ­as desplegadas.
+    // null = nunca se tocó. Guardarlo como [] haría que la próxima visita
+    // abriera con todas las categorías desplegadas.
     if (collapsedGroups === null) return;
     try {
       localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...collapsedGroups]));
@@ -463,7 +523,7 @@ export default function CashClose({
 
   function toggleGroup(group) {
     setCollapsedGroups(prev => {
-      // Primer clic de la sesiÃ³n: estaba todo cerrado, se abre solo este.
+      // Primer clic de la sesión: estaba todo cerrado, se abre solo este.
       if (prev === null) {
         return new Set(inventory.groups.map(g => g.group).filter(g => g !== group));
       }
@@ -474,7 +534,7 @@ export default function CashClose({
     });
   }
 
-  // Se puede abrir cualquier dÃ­a con ventas o con inventario cargado.
+  // Se puede abrir cualquier día con ventas o con inventario cargado.
   const dayOptions = [...new Set([
     today,
     ...availableDays,
@@ -526,11 +586,11 @@ export default function CashClose({
     <section className="cc-panel cc-panel-wide">
       <div className="inv-head">
         <div>
-          <h3>Inventario del dÃ­a</h3>
+          <h3>Inventario del día</h3>
           <p className="cc-panel-hint">
-            Escribe cuÃ¡ntas unidades ingresaron de cada insumo. Lo vendido se descuenta solo de los pedidos cobrados.
-            Si te equivocaste, corrige el nÃºmero: en "IngresÃ³" lo de este dÃ­a, en "Sobrante de ayer" el conteo real con que empezÃ³ el dÃ­a.
-            Para corregir otro dÃ­a, elÃ­gelo arriba.
+            Escribe cuántas unidades ingresaron de cada insumo. Lo vendido se descuenta solo de los pedidos cobrados.
+            Si te equivocaste, corrige el número: en "Ingresó" lo de este día, en "Sobrante de ayer" el conteo real con que empezó el día.
+            Para corregir otro día, elígelo arriba.
           </p>
         </div>
         <div className="inv-head-actions">
@@ -541,7 +601,7 @@ export default function CashClose({
           )}
           {hasEntries && (
             <button type="button" className="cc-btn cc-btn-danger" onClick={() => onClearStock(dayKey)}>
-              Limpiar inventario del dÃ­a
+              Limpiar inventario del día
             </button>
           )}
         </div>
@@ -550,8 +610,8 @@ export default function CashClose({
       {inventory.salesWithoutDetail > 0 && (
         <div className="inv-note">
           {inventory.salesWithoutDetail === 1
-            ? '1 venta de este dÃ­a se cobrÃ³ antes de activar el inventario y no descuenta insumos.'
-            : `${inventory.salesWithoutDetail} ventas de este dÃ­a se cobraron antes de activar el inventario y no descuentan insumos.`}
+            ? '1 venta de este día se cobró antes de activar el inventario y no descuenta insumos.'
+            : `${inventory.salesWithoutDetail} ventas de este día se cobraron antes de activar el inventario y no descuentan insumos.`}
         </div>
       )}
 
@@ -561,8 +621,8 @@ export default function CashClose({
             <tr>
               <th>Insumo</th>
               <th className="cc-num">Sobrante de ayer</th>
-              <th className="cc-num">IngresÃ³</th>
-              <th className="cc-num">DaÃ±ado</th>
+              <th className="cc-num">Ingresó</th>
+              <th className="cc-num">Dañado</th>
               <th className="cc-num">Disponible</th>
               <th className="cc-num">Vendido</th>
               <th className="cc-num">Quedan</th>
@@ -573,10 +633,10 @@ export default function CashClose({
             const groupAlerts = computeGroupAlerts(rows, subgroups);
             return (
               <tbody key={group}>
-                {/* Fila de categorÃ­a principal â plegable */}
+                {/* Fila de categoría principal – plegable */}
                 <tr className={`inv-group ${isGroupOpen ? 'is-open' : ''}`}>
                   <td colSpan={7}>
-                    {/* La pÃ­ldora va dentro de la celda y no en el <tr>:
+                    {/* La píldora va dentro de la celda y no en el <tr>:
                         una fila de tabla no acepta border-radius. */}
                     <div
                       className="inv-group-bar"
@@ -591,14 +651,15 @@ export default function CashClose({
                         }
                       }}
                     >
-                      <span className="inv-chevron">{isGroupOpen ? 'â¾' : 'â¸'}</span>
+                      <span className="inv-chevron">{isGroupOpen ? '▾' : '▸'}</span>
+                      <GroupIcon group={group} />
                       <span className="inv-group-name">{group}</span>
                       <AlertBadges alerts={groupAlerts} />
                     </div>
                   </td>
                 </tr>
 
-                {/* Ãtems sin subgrupo: se muestran directamente */}
+                {/* Ítems sin subgrupo: se muestran directamente */}
                 {isGroupOpen && rows.map(row => (
                   <InvRow key={row.id} row={row} dayKey={dayKey} onSetStock={onSetStock} onSetStart={onSetStart} onSetWaste={onSetWaste} isAdmin={isAdmin} onEditItem={onEditItem} />
                 ))}
@@ -634,7 +695,7 @@ export default function CashClose({
       <div className="cc-head">
         <div>
           <h2>Cierre de caja</h2>
-          <p className="cc-day">{formatDayLabel(dayKey)}{isToday && <span className="cc-live">Â· en curso</span>}</p>
+          <p className="cc-day">{formatDayLabel(dayKey)}{isToday && <span className="cc-live">· en curso</span>}</p>
         </div>
 
         <div className="cc-head-actions">
@@ -643,7 +704,7 @@ export default function CashClose({
               className="cc-select"
               value={dayKey}
               onChange={event => setSelectedDay(event.target.value)}
-              aria-label="Seleccionar dÃ­a"
+              aria-label="Seleccionar día"
             >
               {dayOptions.map(day => (
                 <option key={day} value={day}>
@@ -658,7 +719,7 @@ export default function CashClose({
             onClick={handleExport}
             disabled={(sales.length === 0 && !inventory.hasStock) || isExporting}
           >
-            {isExporting ? 'Generandoâ¦' : 'â¬ Exportar a Excel'}
+            {isExporting ? 'Generando…' : '⬇ Exportar a Excel'}
           </button>
         </div>
       </div>
@@ -666,8 +727,8 @@ export default function CashClose({
       {sales.length === 0 ? (
         <>
           <div className="cc-empty">
-            TodavÃ­a no hay ventas cobradas en este dÃ­a.
-            <span>Los pedidos entran aquÃ­ cuando los cobras desde "Pedidos activos".</span>
+            Todavía no hay ventas cobradas en este día.
+            <span>Los pedidos entran aquí cuando los cobras desde "Pedidos activos".</span>
           </div>
           {creditsPanel}
           {ratePanel}
@@ -682,12 +743,12 @@ export default function CashClose({
               sub={summary.hasBsData ? formatBs(summary.totalBs) : null}
               accent
             />
-            {/* Con crÃ©dito, vendido y cobrado dejan de ser el mismo nÃºmero. */}
+            {/* Con crédito, vendido y cobrado dejan de ser el mismo número. */}
             {summary.creditOpenUsd > 0 && (
               <StatCard
-                label="EntrÃ³ a la caja"
+                label="Entró a la caja"
                 value={formatUsd(summary.collectedUsd)}
-                sub={`${formatUsd(summary.creditOpenUsd)} quedÃ³ a crÃ©dito`}
+                sub={`${formatUsd(summary.creditOpenUsd)} quedó a crédito`}
               />
             )}
             <StatCard label="Pedidos cobrados" value={summary.count} />
@@ -704,14 +765,14 @@ export default function CashClose({
 
           <div className="cc-grid">
             <section className="cc-panel">
-              <h3>Por mÃ©todo de pago</h3>
+              <h3>Por método de pago</h3>
               <p className="cc-panel-hint">
                 Usa esto para cuadrar el efectivo en caja.
-                {summary.splitCount > 0 && ` ${summary.splitCount} ${summary.splitCount === 1 ? 'pedido se pagÃ³' : 'pedidos se pagaron'} con mÃ¡s de un mÃ©todo: cada uno suma solo su parte.`}
+                {summary.splitCount > 0 && ` ${summary.splitCount} ${summary.splitCount === 1 ? 'pedido se pagó' : 'pedidos se pagaron'} con más de un método: cada uno suma solo su parte.`}
               </p>
               <table className="cc-mini-table">
                 <thead>
-                  <tr><th>MÃ©todo</th><th>Pagos</th><th>Total</th></tr>
+                  <tr><th>Método</th><th>Pagos</th><th>Total</th></tr>
                 </thead>
                 <tbody>
                   {Object.entries(summary.byPayment).map(([method, data]) => (
@@ -730,7 +791,7 @@ export default function CashClose({
 
             <section className="cc-panel">
               <h3>Por tipo de pedido</h3>
-              <p className="cc-panel-hint">Local vs. delivery del dÃ­a.</p>
+              <p className="cc-panel-hint">Local vs. delivery del día.</p>
               <table className="cc-mini-table">
                 <thead>
                   <tr><th>Tipo</th><th>Pedidos</th><th>Total</th></tr>
@@ -748,8 +809,8 @@ export default function CashClose({
             </section>
 
             <section className="cc-panel">
-              <h3>Productos mÃ¡s vendidos</h3>
-              <p className="cc-panel-hint">QuÃ© reponer y quÃ© se mueve.</p>
+              <h3>Productos más vendidos</h3>
+              <p className="cc-panel-hint">Qué reponer y qué se mueve.</p>
               <table className="cc-mini-table">
                 <thead>
                   <tr><th>Producto</th><th>Unid.</th><th>Total</th></tr>
@@ -796,14 +857,14 @@ export default function CashClose({
                         {sale.customer}
                         {sale.voided && (
                           <span className="cc-void-tag">
-                            Anulado Â· {sale.voided.reason}
+                            Anulado · {sale.voided.reason}
                           </span>
                         )}
                         {sale.revision > 0 && (
                           <span className="cc-sub-bs">
-                            Corregido{sale.revision > 1 ? ` Ã${sale.revision}` : ''}
+                            Corregido{sale.revision > 1 ? ` ×${sale.revision}` : ''}
                             {Number.isFinite(Number(sale.edits?.[0]?.prevTotal)) &&
-                              ` Â· total original ${formatUsd(sale.edits[0].prevTotal)}`}
+                              ` · total original ${formatUsd(sale.edits[0].prevTotal)}`}
                           </span>
                         )}
                       </td>
@@ -814,7 +875,7 @@ export default function CashClose({
                             <span className="cc-split-tag">Pago dividido</span>
                             {getOrderPayments(sale).map((part, index) => (
                               <span key={`${part.method}-${index}`} className="cc-pay-part">
-                                {part.method} Â· {formatUsd(part.amount)}
+                                {part.method} · {formatUsd(part.amount)}
                                 {paymentBs(sale, part) !== null && part.method === PAY_MOBILE && (
                                   <span className="cc-sub-bs">{formatBs(paymentBs(sale, part))}</span>
                                 )}
@@ -843,12 +904,12 @@ export default function CashClose({
                           if (item.isCombo) {
                             return (
                               <span key={item.uid ?? item.name} className="cc-product-line cc-combo-line">
-                                {item.qty}x {item.name} Â· {formatUsd(item.price * item.qty)}
+                                {item.qty}x {item.name} · {formatUsd(item.price * item.qty)}
                                 {(item.parts || []).map((part, index) => {
                                   const details = [describeLine(part), ...(part.mods || [])].filter(Boolean);
                                   return (
                                     <span className="cc-combo-part" key={part.id || `${part.name}-${index}`}>
-                                      â³ {item.qty}x {partTitle(part)}
+                                      ↳ {item.qty}x {partTitle(part)}
                                       {details.length > 0 && <em> ({details.join(', ')})</em>}
                                     </span>
                                   );
@@ -880,7 +941,7 @@ export default function CashClose({
                             type="button"
                             className="cc-undo"
                             onClick={() => onUnvoidSale(dayKey, sale.saleId)}
-                            title="Deshacer la anulaciÃ³n"
+                            title="Deshacer la anulación"
                           >
                             Reactivar
                           </button>
@@ -892,7 +953,7 @@ export default function CashClose({
                             title="Borrar este cobro del registro"
                             aria-label={`Borrar cobro del pedido ${sale.num}`}
                           >
-                            â
+                            ✕
                           </button>
                         )}
                       </td>
@@ -901,7 +962,7 @@ export default function CashClose({
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={6}>TOTAL DEL DÃA</td>
+                    <td colSpan={6}>TOTAL DEL DÍA</td>
                     <td className="cc-num cc-strong">
                       {formatUsd(summary.totalUsd)}
                       {summary.hasBsData && <span className="cc-sub-bs">{formatBs(summary.totalBs)}</span>}
@@ -915,7 +976,7 @@ export default function CashClose({
 
           <div className="cc-footer-actions">
             <button type="button" className="cc-btn cc-btn-danger" onClick={() => onClearDay(dayKey)}>
-              Borrar registro de este dÃ­a
+              Borrar registro de este día
             </button>
           </div>
         </>
